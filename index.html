@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Pomodoro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const WORK_MIN = 25;
+const BREAK_MIN = 5;
+const LONG_BREAK_MIN = 30;
+const CYCLES_BEFORE_LONG_BREAK = 4;
+
+const MODES = {
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#0ea5e9", emoji: "☕", bg: "#f0f9ff" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
+};
+
+function formatTime(s) {
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
+function formatClock(date) {
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+const N = { G4:392.00, A4:440.00, C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00, C6:1046.50, D6:1174.66, E6:1318.51, G6:1567.98 };
+
+function playNotes(notes) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const now = ctx.currentTime;
+  let maxEnd = 0;
+  notes.forEach(({ freq, start, dur, gain = 0.22, type = "sine" }) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const t0 = now + start;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+    maxEnd = Math.max(maxEnd, start + dur);
+  });
+  setTimeout(() => ctx.close(), (maxEnd + 0.3) * 1000);
+}
+
+const FANFARE_EXTENDED = [
+  { freq: N.G4, start: 0,    dur: 0.2 },
+  { freq: N.C5, start: 0.15, dur: 0.2 },
+  { freq: N.E5, start: 0.30, dur: 0.2 },
+  { freq: N.G5, start: 0.45, dur: 0.2 },
+  { freq: N.C6, start: 0.60, dur: 0.2 },
+  { freq: N.E6, start: 0.75, dur: 0.2 },
+  { freq: N.G6, start: 0.90, dur: 0.25 },
+  { freq: N.C6, start: 1.10, dur: 0.8 },
+];
+
+const PENTATONIC_CLIMB = [
+  { freq: N.C5, start: 0,    dur: 0.22 },
+  { freq: N.D5, start: 0.16, dur: 0.22 },
+  { freq: N.E5, start: 0.32, dur: 0.22 },
+  { freq: N.G5, start: 0.48, dur: 0.22 },
+  { freq: N.A5, start: 0.64, dur: 0.22 },
+  { freq: N.C6, start: 0.80, dur: 0.6 },
+];
+
+function playSound(kind) {
+  // kind: "workEnd" — a focus round just finished, "breakEnd" — a break just finished
+  playNotes(kind === "workEnd" ? FANFARE_EXTENDED : PENTATONIC_CLIMB);
+}
+
+// how long each melody actually plays, used to hold off starting the next round
+const SOUND_DURATION_MS = { workEnd: 1900, breakEnd: 1400 };
+
+function Icon({ children, size = 18, className, style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+      {children}
+    </svg>
+  );
+}
+const PlayIcon = (props) => <Icon {...props}><polygon points="6 3 20 12 6 21 6 3" /></Icon>;
+const PauseIcon = (props) => <Icon {...props}><rect x="14" y="4" width="4" height="16" rx="1" /><rect x="6" y="4" width="4" height="16" rx="1" /></Icon>;
+const RotateCcwIcon = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icon>;
+const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
+const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
+const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
+
+function PomodoroTimer() {
+  const [mode, setMode] = useState("work");
+  const [secondsLeft, setSecondsLeft] = useState(WORK_MIN * 60);
+  const [segmentTotal, setSegmentTotal] = useState(WORK_MIN * 60);
+  const [isRunning, setIsRunning] = useState(false);
+  const [completedCycles, setCompletedCycles] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [logOpen, setLogOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [preTransitionLabel, setPreTransitionLabel] = useState("Pause");
+  const [longBreakMinutes, setLongBreakMinutes] = useState(30);
+  const [roundsLimit, setRoundsLimit] = useState(null); // null = unlimited (default), number = limit
+  const [setupComplete, setSetupComplete] = useState(false);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const intervalRef = useRef(null);
+  const segmentStartRef = useRef(null);
+
+  const totalSeconds = segmentTotal;
+  const progress = 1 - secondsLeft / totalSeconds;
+
+  const logSegment = useCallback(
+    (endedMode, startTime, endTime) => {
+      if (endedMode === "work") {
+        const newCompleted = completedCycles + 1;
+        setCompletedCycles(newCompleted);
+        setHistory((h) => [...h, { type: "focus", round: newCompleted, start: startTime, end: endTime }]);
+      } else {
+        setHistory((h) => [
+          ...h,
+          { type: endedMode === "longBreak" ? "longBreak" : "break", round: completedCycles, start: startTime, end: endTime },
+        ]);
+      }
+    },
+    [completedCycles]
+  );
+
+  // automatic: timer hit zero — play the sound, show the transition animation,
+  // and only start the next round once the sound has actually finished
+  const handleAutoComplete = useCallback((labelOverride) => {
+    const endTime = new Date();
+    const startTime = segmentStartRef.current || endTime;
+    const endedMode = mode;
+    const soundKind = endedMode === "work" ? "workEnd" : "breakEnd";
+    const newCompletedIfWork = completedCycles + 1;
+
+    setPreTransitionLabel(labelOverride ?? "Pause");
+    playSound(soundKind);
+    setIsRunning(false);
+    setIsTransitioning(true);
+    logSegment(endedMode, startTime, endTime);
+
+    setTimeout(() => {
+      if (endedMode === "work") {
+        const isLongBreak = newCompletedIfWork % CYCLES_BEFORE_LONG_BREAK === 0;
+        const nextTotal = (isLongBreak ? longBreakMinutes : BREAK_MIN) * 60;
+        setMode(isLongBreak ? "longBreak" : "break");
+        setSecondsLeft(nextTotal);
+        setSegmentTotal(nextTotal);
+        segmentStartRef.current = new Date();
+        setIsRunning(true);
+        setIsTransitioning(false);
+      } else if (roundsLimit && completedCycles >= roundsLimit) {
+        // that was the break after the last permitted round — end the session instead of looping back
+        setIsTransitioning(false);
+        setSessionComplete(true);
+      } else {
+        setMode("work");
+        setSecondsLeft(WORK_MIN * 60);
+        setSegmentTotal(WORK_MIN * 60);
+        segmentStartRef.current = new Date();
+        setIsRunning(true);
+        setIsTransitioning(false);
+      }
+    }, SOUND_DURATION_MS[soundKind]);
+  }, [mode, logSegment, completedCycles, longBreakMinutes, roundsLimit]);
+
+  // lets the group cut a 30-min long break short and drop into a fresh 5-min break instead
+  function switchToShortBreak() {
+    const endTime = new Date();
+    const startTime = segmentStartRef.current || endTime;
+    logSegment("longBreak", startTime, endTime);
+    setMode("break");
+    setSecondsLeft(BREAK_MIN * 60);
+    setSegmentTotal(BREAK_MIN * 60);
+    segmentStartRef.current = new Date();
+  }
+
+  function startLongBreak() {
+    const endTime = new Date();
+    const startTime = segmentStartRef.current || endTime;
+    const endedMode = mode;
+    const soundKind = endedMode === "work" ? "workEnd" : "breakEnd";
+    const label = isRunning ? "Pause" : secondsLeft === totalSeconds ? "Start" : "Resume";
+
+    setPreTransitionLabel(label);
+    playSound(soundKind);
+    setIsRunning(false);
+    setIsTransitioning(true);
+    logSegment(endedMode, startTime, endTime);
+
+    setTimeout(() => {
+      setMode("longBreak");
+      setSecondsLeft(longBreakMinutes * 60);
+      setSegmentTotal(longBreakMinutes * 60);
+      segmentStartRef.current = new Date();
+      setIsRunning(true);
+      setIsTransitioning(false);
+    }, SOUND_DURATION_MS[soundKind]);
+  }
+
+  // lets the group top up the current long break by 5 more minutes — extend the total too,
+  // so the progress ring reflects the new, longer duration instead of appearing to jump backwards
+  function addFiveMinutes() {
+    setSecondsLeft((s) => s + 5 * 60);
+    setSegmentTotal((t) => t + 5 * 60);
+  }
+
+  useEffect(() => {
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setSecondsLeft((s) => {
+          if (s <= 1) {
+            handleAutoComplete();
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, handleAutoComplete]);
+
+  useEffect(() => {
+    document.title = `${formatTime(secondsLeft)} — ${MODES[mode].label}`;
+  }, [secondsLeft, mode]);
+
+  function startSession() {
+    setSetupComplete(true);
+    setMode("work");
+    setSecondsLeft(WORK_MIN * 60);
+    setSegmentTotal(WORK_MIN * 60);
+    segmentStartRef.current = new Date();
+    setIsRunning(true);
+  }
+
+  function startNewSession() {
+    setSessionComplete(false);
+    setSetupComplete(false);
+    setLongBreakMinutes(30);
+    setRoundsLimit(null);
+    setMode("work");
+    setSecondsLeft(WORK_MIN * 60);
+    setSegmentTotal(WORK_MIN * 60);
+    setCompletedCycles(0);
+    setHistory([]);
+    setIsRunning(false);
+    segmentStartRef.current = null;
+  }
+
+  function keepGoingUnlimited() {
+    setRoundsLimit(null);
+    setSessionComplete(false);
+    setMode("work");
+    setSecondsLeft(WORK_MIN * 60);
+    setSegmentTotal(WORK_MIN * 60);
+    segmentStartRef.current = new Date();
+    setIsRunning(true);
+  }
+
+  function handleToggle() {
+    setIsRunning((r) => {
+      const newRunning = !r;
+      if (newRunning && !segmentStartRef.current) {
+        segmentStartRef.current = new Date();
+      }
+      return newRunning;
+    });
+  }
+
+  function handleReset() {
+    const baseTotal = (mode === "longBreak" ? longBreakMinutes : MODES[mode].minutes) * 60;
+    setSecondsLeft(baseTotal);
+    setSegmentTotal(baseTotal);
+    segmentStartRef.current = new Date();
+    setIsRunning(true);
+  }
+
+  function handleSkip() {
+    // reuse the same sound + transition-delay flow as auto-complete, so it's easy to test
+    const label = isRunning ? "Pause" : secondsLeft === totalSeconds ? "Start" : "Resume";
+    handleAutoComplete(label);
+  }
+
+  const color = MODES[mode].color;
+  const radius = 120;
+  const circumference = 2 * Math.PI * radius;
+  const dashoffset = circumference * (1 - progress);
+
+  const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
+
+  if (sessionComplete) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-neutral-50 p-6">
+        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center gap-5 text-center">
+          <div className="text-4xl">🎉</div>
+          <div>
+            <div className="text-lg font-bold text-neutral-800">Session complete</div>
+            <div className="text-sm text-neutral-400 mt-1">{completedCycles} rounds done. Nice work.</div>
+          </div>
+          <button
+            onClick={keepGoingUnlimited}
+            className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+          >
+            Keep going
+          </button>
+          <button onClick={startNewSession} className="text-sm text-neutral-400 hover:text-neutral-600 underline">
+            Start a new session
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full flex items-start justify-center bg-neutral-50 p-6 pt-16">
+      {!setupComplete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
+        >
+          <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+            <div className="text-center">
+              <div className="text-lg font-bold text-neutral-800">Focus timer</div>
+              <div className="text-sm text-neutral-400 mt-1">
+                25 min focus rounds, 5 min breaks, with a longer break every 4th round.
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col items-center gap-2">
+              <div className="text-sm font-medium text-neutral-600">Number of rounds</div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
+                  className="w-9 h-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-lg font-medium"
+                >
+                  −
+                </button>
+                <span className="text-lg text-neutral-800 w-24 text-center tabular-nums">
+                  <span className="font-bold">{roundsLimit === null ? "∞" : roundsLimit}</span>{" "}
+                  <span className="font-normal">rounds</span>
+                </span>
+                <button
+                  onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(40, r + 1)))}
+                  className="w-9 h-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-lg font-medium"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col items-center gap-2">
+              <div className="text-sm font-medium text-neutral-600">Long break length</div>
+              <div className="flex gap-3">
+                {[15, 30].map((mins) => (
+                  <button
+                    key={mins}
+                    onClick={() => setLongBreakMinutes(mins)}
+                    className={`px-6 py-3 rounded-xl text-sm font-medium border-2 ${
+                      longBreakMinutes === mins
+                        ? "border-violet-500 bg-violet-50 text-violet-700"
+                        : "border-neutral-200 text-neutral-500"
+                    }`}
+                  >
+                    {mins} min
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={startSession}
+              className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+            >
+              Start
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-sm flex flex-col items-center">
+        <div className="text-xl font-bold tracking-wide uppercase" style={{ color }}>
+          {MODES[mode].label}
+        </div>
+
+        <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+            <circle
+              cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10"
+              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {isTransitioning ? (
+              <>
+                <div className="text-4xl" style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+                <div className="text-sm text-neutral-400 mt-1">
+                  {mode === "work" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  className="flex items-center justify-center gap-1"
+                  style={{ height: "30px", marginBottom: "12px" }}
+                >
+                  {Array.isArray(MODES[mode].emoji) ? (
+                    MODES[mode].emoji.map((e, i) => (
+                      <span key={i} style={{ fontSize: "30px", lineHeight: "30px" }}>{e}</span>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: "30px", lineHeight: "30px" }}>{MODES[mode].emoji}</span>
+                  )}
+                </div>
+                <div className="text-5xl font-bold tabular-nums text-neutral-800">{formatTime(secondsLeft)}</div>
+                <div
+                  className="flex items-center justify-center text-sm text-neutral-400"
+                  style={{ height: "30px", marginTop: "12px" }}
+                >
+                  {mode === "work" ? centerLabel : ""}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3" style={{ marginTop: "24px" }}>
+          {(() => {
+            const buttonLabel = isTransitioning
+              ? preTransitionLabel
+              : isRunning
+              ? "Pause"
+              : secondsLeft === totalSeconds
+              ? "Start"
+              : "Resume";
+            const looksActive = buttonLabel === "Pause";
+            return (
+              <button
+                onClick={handleToggle}
+                disabled={isTransitioning}
+                className={`flex items-center justify-center gap-2 px-6 rounded-full text-sm font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                  looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
+                }`}
+                style={{ height: "44px", ...(looksActive ? {} : { backgroundColor: color }) }}
+              >
+                {looksActive ? <PauseIcon /> : <PlayIcon />}
+                {buttonLabel}
+              </button>
+            );
+          })()}
+          <button
+            onClick={handleReset}
+            disabled={isTransitioning}
+            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: "44px", width: "44px" }}
+            title="Reset current round"
+          >
+            <RotateCcwIcon />
+          </button>
+          <button
+            onClick={handleSkip}
+            disabled={isTransitioning}
+            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: "44px", width: "44px" }}
+            title="Skip"
+          >
+            <SkipForwardIcon />
+          </button>
+        </div>
+
+        {mode === "longBreak" ? (
+          <div className="flex flex-col items-center gap-3" style={{ marginTop: "12px" }}>
+            <button
+              onClick={switchToShortBreak}
+              disabled={isTransitioning}
+              className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ height: "44px" }}
+            >
+              Switch to 5 min break
+            </button>
+            <button
+              onClick={addFiveMinutes}
+              disabled={isTransitioning}
+              className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ height: "44px" }}
+            >
+              Add another 5 min
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={startLongBreak}
+            disabled={isTransitioning}
+            className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: "44px", marginTop: "12px" }}
+          >
+            Start long break
+          </button>
+        )}
+
+        <div className="w-full flex flex-col items-center gap-1" style={{ marginTop: "24px" }}>
+          <button
+            onClick={() => setLogOpen((o) => !o)}
+            className="flex items-center"
+            style={{ minHeight: "44px" }}
+          >
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-xl font-bold text-neutral-900 leading-none">{completedCycles}</span>
+              <span className="text-sm text-neutral-900 leading-none">completed</span>
+              {completedCycles > 0 && (
+                <span className="self-end py-px">
+                  {logOpen ? (
+                    <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+                  ) : (
+                    <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+                  )}
+                </span>
+              )}
+            </span>
+          </button>
+
+          {logOpen && history.length > 0 && (
+            <div className="flex flex-col items-start gap-0.5 mt-4">
+              {history.map((entry, i) => {
+                const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
+                return (
+                  <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
+                    <span className="inline-block" style={{ width: "80px" }}>{label}</span>
+                    <span className="font-mono">
+                      {formatClock(entry.start)} – {formatClock(entry.end)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<PomodoroTimer />);
+</script>
+</body>
+</html>
