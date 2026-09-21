@@ -218,9 +218,15 @@ function PomodoroTimer() {
     setIsRunning(false);
     setIsTransitioning(true);
     logSegment(endedMode, startTime, endTime);
+    const isLastRound = endedMode === "work" && roundsLimit && newCompletedIfWork >= roundsLimit;
 
     setTimeout(() => {
-      if (endedMode === "work") {
+      if (isLastRound) {
+        // the last permitted focus is done — end the session right away, no trailing break
+        setIsTransitioning(false);
+        setCompletionHeading(COMPLETION_HEADINGS[Math.floor(Math.random() * COMPLETION_HEADINGS.length)]);
+        setSessionComplete(true);
+      } else if (endedMode === "work") {
         const isLongBreak = newCompletedIfWork % CYCLES_BEFORE_LONG_BREAK === 0;
         const nextTotal = (isLongBreak ? longBreakMinutes : BREAK_MIN) * 60;
         setMode(isLongBreak ? "longBreak" : "break");
@@ -229,11 +235,6 @@ function PomodoroTimer() {
         segmentStartRef.current = new Date();
         setIsRunning(true);
         setIsTransitioning(false);
-      } else if (roundsLimit && completedCycles >= roundsLimit) {
-        // that was the break after the last permitted round — end the session instead of looping back
-        setIsTransitioning(false);
-        setCompletionHeading(COMPLETION_HEADINGS[Math.floor(Math.random() * COMPLETION_HEADINGS.length)]);
-        setSessionComplete(true);
       } else {
         setMode("work");
         setSecondsLeft(WORK_MIN * 60);
@@ -364,15 +365,15 @@ function PomodoroTimer() {
   if (sessionComplete) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-neutral-50 p-6">
-        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center gap-5 text-center">
+        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-4xl">🎉</div>
-          <div className="w-full flex flex-col items-center">
+          <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
             <div className="text-lg font-bold text-neutral-800">{completionHeading}</div>
             <button
               onClick={() => setSummaryLogOpen((o) => !o)}
               disabled={history.length === 0}
               className="w-full flex items-center justify-center gap-1 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:hover:text-neutral-500 disabled:cursor-default"
-              style={{ height: "44px" }}
+              style={{ height: "44px", marginTop: "8px" }}
             >
               <span>
                 {completedCycles === 1 ? "You completed 1 round" : `You completed all ${completedCycles} rounds`}
@@ -384,7 +385,11 @@ function PomodoroTimer() {
                   <ChevronDownIcon size={16} style={{ color: "#808080" }} />
                 ))}
             </button>
-            {summaryLogOpen && history.length > 0 && <HistoryLog history={history} />}
+            {summaryLogOpen && history.length > 0 && (
+              <div style={{ marginBottom: "12px" }}>
+                <HistoryLog history={history} />
+              </div>
+            )}
           </div>
           <button
             onClick={() => {
@@ -392,7 +397,7 @@ function PomodoroTimer() {
               setAddRoundsModalOpen(true);
             }}
             className="w-full flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700"
-            style={{ height: "44px" }}
+            style={{ height: "44px", marginTop: "4px" }}
           >
             Add more rounds
           </button>
@@ -456,7 +461,10 @@ function PomodoroTimer() {
             <div className="text-center">
               <div className="text-lg font-bold text-neutral-800">Focus timer</div>
               <div className="text-sm text-neutral-400 mt-1">
-                25 min focus rounds, 5 min breaks, with a longer break every 4th round.
+                Press Start once — focus and breaks switch automatically until you stop. Every session is logged.
+              </div>
+              <div className="text-sm text-neutral-400 mt-1">
+                25 min focus, 5 min breaks, a longer break every 4th round.
               </div>
             </div>
 
