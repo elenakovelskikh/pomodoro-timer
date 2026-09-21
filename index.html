@@ -28,7 +28,7 @@
 <div id="root">
 <main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
 <h1>Pomodoro Timer</h1>
-<p>A free online Pomodoro timer: work in focused 25-minute sessions, take 5-minute breaks and a long break after every fourth round. Track your rounds and get a sound alert when time is up.</p>
+<p>A free online Pomodoro timer: work in focused 25-minute sessions, take 5-minute breaks and a long break after every fourth round. Review a time log of every focus session and break, and get a sound alert when time is up.</p>
 <noscript><p>Please enable JavaScript to use the timer.</p></noscript>
 </main>
 </div>
@@ -126,6 +126,24 @@ const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5
 const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
 const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
 
+function HistoryLog({ history }) {
+  return (
+    <div className="flex flex-col items-start gap-0.5 mt-4">
+      {history.map((entry, i) => {
+        const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
+        return (
+          <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
+            <span className="inline-block" style={{ width: "80px" }}>{label}</span>
+            <span className="font-mono">
+              {formatClock(entry.start)} – {formatClock(entry.end)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Credit() {
   return (
     <div
@@ -153,6 +171,7 @@ function PomodoroTimer() {
   const [completedCycles, setCompletedCycles] = useState(0);
   const [history, setHistory] = useState([]);
   const [logOpen, setLogOpen] = useState(false);
+  const [summaryLogOpen, setSummaryLogOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [preTransitionLabel, setPreTransitionLabel] = useState("Pause");
   const [longBreakMinutes, setLongBreakMinutes] = useState(30);
@@ -363,6 +382,23 @@ function PomodoroTimer() {
           >
             Add more rounds
           </button>
+          {history.length > 0 && (
+            <div className="w-full flex flex-col items-center">
+              <button
+                onClick={() => setSummaryLogOpen((o) => !o)}
+                className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700"
+                style={{ minHeight: "44px" }}
+              >
+                <span>Session log</span>
+                {summaryLogOpen ? (
+                  <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+                ) : (
+                  <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+                )}
+              </button>
+              {summaryLogOpen && <HistoryLog history={history} />}
+            </div>
+          )}
         </div>
 
         {addRoundsModalOpen && (
@@ -623,21 +659,7 @@ function PomodoroTimer() {
             </span>
           </button>
 
-          {logOpen && history.length > 0 && (
-            <div className="flex flex-col items-start gap-0.5 mt-4">
-              {history.map((entry, i) => {
-                const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
-                return (
-                  <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
-                    <span className="inline-block" style={{ width: "80px" }}>{label}</span>
-                    <span className="font-mono">
-                      {formatClock(entry.start)} – {formatClock(entry.end)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {logOpen && history.length > 0 && <HistoryLog history={history} />}
         </div>
       </div>
       <Credit />
