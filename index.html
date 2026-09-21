@@ -285,8 +285,10 @@ function PomodoroTimer() {
   }, [isRunning, handleAutoComplete]);
 
   useEffect(() => {
-    document.title = `${formatTime(secondsLeft)} — ${MODES[mode].label}`;
-  }, [secondsLeft, mode]);
+    document.title = isRunning
+      ? `${formatTime(secondsLeft)} — ${MODES[mode].label}`
+      : "Pomodoro Timer – Free Online Focus Timer with Breaks";
+  }, [secondsLeft, mode, isRunning]);
 
   function startSession() {
     setSetupComplete(true);
