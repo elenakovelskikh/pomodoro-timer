@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="Auto-Cycling Pomodoro Timer – Start Once, It Runs Itself" />
 <meta name="twitter:description" content="Focus and break timers switch automatically until you stop. Optional round limit and a session time log. Free, no sign-up." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍅%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%237c3aed'/%3E%3Ccircle cx='50' cy='50' r='27' fill='none' stroke='white' stroke-opacity='.35' stroke-width='10'/%3E%3Cpath d='M50 23a27 27 0 0 1 27 27' fill='none' stroke='white' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Pomodoro Timer","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
 </script>
@@ -128,7 +128,7 @@ const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></I
 
 function HistoryLog({ history }) {
   return (
-    <div className="flex flex-col items-start gap-0.5 mt-4">
+    <div className="flex flex-col items-start gap-0.5 mt-4 text-left">
       {history.map((entry, i) => {
         const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
         return (
@@ -181,6 +181,7 @@ function PomodoroTimer() {
   const [completionHeading, setCompletionHeading] = useState("Great job!");
   const [addRoundsModalOpen, setAddRoundsModalOpen] = useState(false);
   const [addRoundsAmount, setAddRoundsAmount] = useState(4);
+  const [addStartsWithBreak, setAddStartsWithBreak] = useState(true);
   const [originalRoundsChoice, setOriginalRoundsChoice] = useState(null);
   const intervalRef = useRef(null);
   const segmentStartRef = useRef(null);
@@ -324,9 +325,14 @@ function PomodoroTimer() {
     setRoundsLimit((r) => (r ?? 0) + addRoundsAmount);
     setAddRoundsModalOpen(false);
     setSessionComplete(false);
-    setMode("work");
-    setSecondsLeft(WORK_MIN * 60);
-    setSegmentTotal(WORK_MIN * 60);
+    let nextMode = "work";
+    if (addStartsWithBreak) {
+      nextMode = completedCycles % CYCLES_BEFORE_LONG_BREAK === 0 ? "longBreak" : "break";
+    }
+    const nextTotal = (nextMode === "longBreak" ? longBreakMinutes : MODES[nextMode].minutes) * 60;
+    setMode(nextMode);
+    setSecondsLeft(nextTotal);
+    setSegmentTotal(nextTotal);
     segmentStartRef.current = new Date();
     setIsRunning(true);
   }
@@ -429,6 +435,27 @@ function PomodoroTimer() {
                   +
                 </button>
               </div>
+              <div className="w-full flex flex-col items-center gap-2">
+                <div className="text-sm font-medium text-neutral-600">Start with</div>
+                <div className="flex gap-3">
+                  {[
+                    { value: true, label: "A break" },
+                    { value: false, label: "Focus" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setAddStartsWithBreak(opt.value)}
+                      className={`px-6 py-3 rounded-xl text-sm font-medium border-2 ${
+                        addStartsWithBreak === opt.value
+                          ? "border-violet-500 bg-violet-50 text-violet-700"
+                          : "border-neutral-200 text-neutral-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 onClick={confirmAddRounds}
                 className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
@@ -457,14 +484,16 @@ function PomodoroTimer() {
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
           style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
         >
-          <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
-            <div className="text-center">
+          <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+            <div className="w-full text-left">
               <div className="text-lg font-bold text-neutral-800">Focus timer</div>
               <div className="text-sm text-neutral-400 mt-1">
-                Press Start once — focus and breaks switch automatically until you stop. Every session is logged.
+                Press Start once — focus and breaks then switch automatically until you stop, and every session is
+                logged with its start and end time.
               </div>
-              <div className="text-sm text-neutral-400 mt-1">
-                25 min focus, 5 min breaks, a longer break every 4th round.
+              <div className="text-sm text-neutral-400 mt-2">
+                Each round is 25 minutes of focus followed by a break of 5 minutes, with a longer break after
+                every fourth round.
               </div>
             </div>
 
@@ -505,7 +534,7 @@ function PomodoroTimer() {
                         : "border-neutral-200 text-neutral-500"
                     }`}
                   >
-                    {mins} min
+                    {mins} minutes
                   </button>
                 ))}
               </div>
