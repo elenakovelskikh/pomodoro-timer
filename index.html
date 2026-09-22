@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Violet Pomodoro – Automatic Pomodoro Focus Timer</title>
+<title>Violet Tomato – Automatic Pomodoro Focus Timer</title>
 <meta name="description" content="Press Start once: focus and break timers switch automatically, round after round, until you stop, with a sound at the end of each one. Optional round limit and a time log of every session. Free, no sign-up." />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="author" content="Elena Kovelskikh" />
 <meta name="robots" content="index, follow" />
 <link rel="canonical" href="https://elenakovelskikh.github.io/pomodoro-timer/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Violet Pomodoro – Automatic Pomodoro Focus Timer" />
+<meta property="og:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
 <meta property="og:description" content="Focus and break timers switch automatically until you stop, with a sound at the end of each one. Optional round limit and a session time log. Free, no sign-up." />
 <meta property="og:url" content="https://elenakovelskikh.github.io/pomodoro-timer/" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Violet Pomodoro – Automatic Pomodoro Focus Timer" />
+<meta name="twitter:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
 <meta name="twitter:description" content="Focus and break timers switch automatically until you stop, with a sound at the end of each one. Optional round limit and a session time log. Free, no sign-up." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🟣%3C/text%3E%3C/svg%3E" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Violet Pomodoro","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"Violet Tomato","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -310,7 +310,7 @@ function PomodoroTimer() {
   useEffect(() => {
     document.title = isRunning
       ? `${formatTime(secondsLeft)} — ${MODES[mode].label}`
-      : "Violet Pomodoro – Automatic Pomodoro Focus Timer";
+      : "Violet Tomato – Automatic Pomodoro Focus Timer";
   }, [secondsLeft, mode, isRunning]);
 
   function startSession() {
@@ -428,9 +428,11 @@ function PomodoroTimer() {
                   >
                     −
                   </button>
-                  <span className="w-24 flex items-baseline justify-center gap-1.5 tabular-nums border-x border-neutral-200">
-                    <span className="text-xl font-bold text-neutral-800 leading-none">{addRoundsAmount}</span>
-                    <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                  <span className="w-24 flex items-center justify-center border-x border-neutral-200">
+                    <span className="flex items-baseline gap-1.5 tabular-nums">
+                      <span className="text-xl font-bold text-neutral-800 leading-none">{addRoundsAmount}</span>
+                      <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                    </span>
                   </span>
                   <button
                     onClick={() => setAddRoundsAmount((n) => Math.min(16, n + 1))}
@@ -515,9 +517,11 @@ function PomodoroTimer() {
                 >
                   −
                 </button>
-                <span className="w-24 flex items-baseline justify-center gap-1.5 tabular-nums border-x border-neutral-200">
-                  <span className="text-xl font-bold text-neutral-800 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
-                  <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                <span className="w-24 flex items-center justify-center border-x border-neutral-200">
+                  <span className="flex items-baseline gap-1.5 tabular-nums">
+                    <span className="text-xl font-bold text-neutral-800 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
+                    <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                  </span>
                 </span>
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
