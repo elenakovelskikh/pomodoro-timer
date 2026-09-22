@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="Auto-Cycling Pomodoro Timer – Start Once, It Runs Itself" />
 <meta name="twitter:description" content="Focus and break timers switch automatically until you stop. Optional round limit and a session time log. Free, no sign-up." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔮%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🟣%3C/text%3E%3C/svg%3E" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Pomodoro Timer","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
 </script>
@@ -400,6 +400,7 @@ function PomodoroTimer() {
           <button
             onClick={() => {
               setAddRoundsAmount(originalRoundsChoice ?? 4);
+              setAddStartsWithBreak(true);
               setAddRoundsModalOpen(true);
             }}
             className="w-full flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700"
@@ -425,7 +426,8 @@ function PomodoroTimer() {
                   −
                 </button>
                 <span className="text-lg text-neutral-800 w-24 text-center tabular-nums">
-                  <span className="font-bold">{addRoundsAmount}</span> <span className="font-normal">rounds</span>
+                  <span className="font-bold">{addRoundsAmount}</span>{" "}
+                  <span className="font-normal">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
                 </span>
                 <button
                   onClick={() => setAddRoundsAmount((n) => Math.min(16, n + 1))}
@@ -488,7 +490,7 @@ function PomodoroTimer() {
         >
           <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
             <div className="w-full text-left">
-              <div className="text-lg font-bold text-neutral-800">Automatic Pomodoro focus timer</div>
+              <div className="text-lg font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
               <div className="text-sm text-neutral-400 mt-3">
                 Press Start once — focus and breaks then switch automatically until you stop, and every session is
                 logged with its start and end time.
