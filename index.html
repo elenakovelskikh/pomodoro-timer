@@ -54,7 +54,7 @@ const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Wel
 
 const MODES = {
   work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#0284c7", emoji: "☕", bg: "#f0f9ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", emoji: "☕", bg: "#f0f9ff" },
   longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
 };
 
@@ -380,7 +380,7 @@ function PomodoroTimer() {
 
   if (sessionComplete) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-neutral-50 p-6">
+      <div className="min-h-screen w-full flex items-center justify-center bg-white p-6">
         <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
@@ -518,7 +518,7 @@ function PomodoroTimer() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-start justify-center bg-neutral-50 p-6 pt-16">
+    <div className="min-h-screen w-full flex items-start justify-center bg-white p-6 pt-16">
       {!setupComplete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
