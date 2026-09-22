@@ -2,14 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Pomodoro</title>
+<title>Violet Tomato – Automatic Pomodoro Focus Timer</title>
+<meta name="description" content="Press Start once: focus and break timers switch automatically, round after round, until you stop, with a sound at the end of each one. Optional round limit and a time log of every session. Free, no sign-up." />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="author" content="Elena Kovelskikh" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://elenakovelskikh.github.io/pomodoro-timer/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
+<meta property="og:description" content="Focus and break timers switch automatically until you stop, with a sound at the end of each one. Optional round limit and a session time log. Free, no sign-up." />
+<meta property="og:url" content="https://elenakovelskikh.github.io/pomodoro-timer/" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
+<meta name="twitter:description" content="Focus and break timers switch automatically until you stop, with a sound at the end of each one. Optional round limit and a session time log. Free, no sign-up." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🟣%3C/text%3E%3C/svg%3E" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Violet Tomato","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+<noscript>
+<main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
+<h1>Automatic Pomodoro Focus Timer</h1>
+<p>Press Start once — focus and breaks then switch automatically until you stop, and every session is logged with its start and end time. Each round is 25 minutes of focus followed by a break of 5 minutes, with a longer break after every 4th round. Set a round limit or let it run without one. Free, no sign-up.</p>
+<p>Please enable JavaScript to use the timer.</p>
+</main>
+</noscript>
+</div>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
@@ -17,6 +41,8 @@ const WORK_MIN = 25;
 const BREAK_MIN = 5;
 const LONG_BREAK_MIN = 30;
 const CYCLES_BEFORE_LONG_BREAK = 4;
+
+const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
   work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
@@ -102,6 +128,43 @@ const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5
 const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
 const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
 
+function HistoryLog({ history }) {
+  return (
+    <div className="flex flex-col items-start gap-0.5 mt-4 text-left">
+      {history.map((entry, i) => {
+        const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
+        return (
+          <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
+            <span className="inline-block" style={{ width: "80px" }}>{label}</span>
+            <span className="font-mono">
+              {formatClock(entry.start)} – {formatClock(entry.end)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Credit() {
+  return (
+    <div
+      className="fixed bottom-3 left-0 w-full flex items-center justify-center gap-1.5"
+      style={{ fontSize: "10px", color: "#999999" }}
+    >
+      <span>Made by Elena Kovelskikh</span>
+      <span>·</span>
+      <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-600 underline">
+        LinkedIn
+      </a>
+      <span>·</span>
+      <a href="https://github.com/elenakovelskikh" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-600 underline">
+        GitHub
+      </a>
+    </div>
+  );
+}
+
 function PomodoroTimer() {
   const [mode, setMode] = useState("work");
   const [secondsLeft, setSecondsLeft] = useState(WORK_MIN * 60);
@@ -110,12 +173,18 @@ function PomodoroTimer() {
   const [completedCycles, setCompletedCycles] = useState(0);
   const [history, setHistory] = useState([]);
   const [logOpen, setLogOpen] = useState(false);
+  const [summaryLogOpen, setSummaryLogOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [preTransitionLabel, setPreTransitionLabel] = useState("Pause");
   const [longBreakMinutes, setLongBreakMinutes] = useState(30);
   const [roundsLimit, setRoundsLimit] = useState(null); // null = unlimited (default), number = limit
   const [setupComplete, setSetupComplete] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [completionHeading, setCompletionHeading] = useState("Great job!");
+  const [addRoundsModalOpen, setAddRoundsModalOpen] = useState(false);
+  const [addRoundsAmount, setAddRoundsAmount] = useState(4);
+  const [addStartsWithBreak, setAddStartsWithBreak] = useState(true);
+  const [originalRoundsChoice, setOriginalRoundsChoice] = useState(null);
   const intervalRef = useRef(null);
   const segmentStartRef = useRef(null);
 
@@ -152,9 +221,15 @@ function PomodoroTimer() {
     setIsRunning(false);
     setIsTransitioning(true);
     logSegment(endedMode, startTime, endTime);
+    const isLastRound = endedMode === "work" && roundsLimit && newCompletedIfWork >= roundsLimit;
 
     setTimeout(() => {
-      if (endedMode === "work") {
+      if (isLastRound) {
+        // the last permitted focus is done — end the session right away, no trailing break
+        setIsTransitioning(false);
+        setCompletionHeading(COMPLETION_HEADINGS[Math.floor(Math.random() * COMPLETION_HEADINGS.length)]);
+        setSessionComplete(true);
+      } else if (endedMode === "work") {
         const isLongBreak = newCompletedIfWork % CYCLES_BEFORE_LONG_BREAK === 0;
         const nextTotal = (isLongBreak ? longBreakMinutes : BREAK_MIN) * 60;
         setMode(isLongBreak ? "longBreak" : "break");
@@ -163,10 +238,6 @@ function PomodoroTimer() {
         segmentStartRef.current = new Date();
         setIsRunning(true);
         setIsTransitioning(false);
-      } else if (roundsLimit && completedCycles >= roundsLimit) {
-        // that was the break after the last permitted round — end the session instead of looping back
-        setIsTransitioning(false);
-        setSessionComplete(true);
       } else {
         setMode("work");
         setSecondsLeft(WORK_MIN * 60);
@@ -237,11 +308,14 @@ function PomodoroTimer() {
   }, [isRunning, handleAutoComplete]);
 
   useEffect(() => {
-    document.title = `${formatTime(secondsLeft)} — ${MODES[mode].label}`;
-  }, [secondsLeft, mode]);
+    document.title = isRunning
+      ? `${formatTime(secondsLeft)} — ${MODES[mode].label}`
+      : "Violet Tomato – Automatic Pomodoro Focus Timer";
+  }, [secondsLeft, mode, isRunning]);
 
   function startSession() {
     setSetupComplete(true);
+    setOriginalRoundsChoice(roundsLimit);
     setMode("work");
     setSecondsLeft(WORK_MIN * 60);
     setSegmentTotal(WORK_MIN * 60);
@@ -249,26 +323,18 @@ function PomodoroTimer() {
     setIsRunning(true);
   }
 
-  function startNewSession() {
+  function confirmAddRounds() {
+    setRoundsLimit((r) => (r ?? 0) + addRoundsAmount);
+    setAddRoundsModalOpen(false);
     setSessionComplete(false);
-    setSetupComplete(false);
-    setLongBreakMinutes(30);
-    setRoundsLimit(null);
-    setMode("work");
-    setSecondsLeft(WORK_MIN * 60);
-    setSegmentTotal(WORK_MIN * 60);
-    setCompletedCycles(0);
-    setHistory([]);
-    setIsRunning(false);
-    segmentStartRef.current = null;
-  }
-
-  function keepGoingUnlimited() {
-    setRoundsLimit(null);
-    setSessionComplete(false);
-    setMode("work");
-    setSecondsLeft(WORK_MIN * 60);
-    setSegmentTotal(WORK_MIN * 60);
+    let nextMode = "work";
+    if (addStartsWithBreak) {
+      nextMode = completedCycles % CYCLES_BEFORE_LONG_BREAK === 0 ? "longBreak" : "break";
+    }
+    const nextTotal = (nextMode === "longBreak" ? longBreakMinutes : MODES[nextMode].minutes) * 60;
+    setMode(nextMode);
+    setSecondsLeft(nextTotal);
+    setSegmentTotal(nextTotal);
     segmentStartRef.current = new Date();
     setIsRunning(true);
   }
@@ -307,22 +373,116 @@ function PomodoroTimer() {
   if (sessionComplete) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-neutral-50 p-6">
-        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center gap-5 text-center">
-          <div className="text-4xl">🎉</div>
-          <div>
-            <div className="text-lg font-bold text-neutral-800">Session complete</div>
-            <div className="text-sm text-neutral-400 mt-1">{completedCycles} rounds done. Nice work.</div>
+        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
+          <div className="text-[30px]">🎉</div>
+          <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
+            <div className="text-xl font-bold text-neutral-800">{completionHeading}</div>
+            <button
+              onClick={() => setSummaryLogOpen((o) => !o)}
+              disabled={history.length === 0}
+              className="w-full flex items-center justify-center gap-1 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:hover:text-neutral-500 disabled:cursor-default"
+              style={{ height: "44px", marginTop: "8px" }}
+            >
+              <span>
+                {completedCycles === 1 ? "You completed 1 round" : `You completed all ${completedCycles} rounds`}
+              </span>
+              {history.length > 0 &&
+                (summaryLogOpen ? (
+                  <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+                ) : (
+                  <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+                ))}
+            </button>
+            {summaryLogOpen && history.length > 0 && (
+              <div style={{ marginBottom: "12px" }}>
+                <HistoryLog history={history} />
+              </div>
+            )}
           </div>
           <button
-            onClick={keepGoingUnlimited}
-            className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+            onClick={() => {
+              setAddRoundsAmount(originalRoundsChoice ?? 4);
+              setAddStartsWithBreak(true);
+              setAddRoundsModalOpen(true);
+            }}
+            className="w-full flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700"
+            style={{ height: "44px", marginTop: "4px" }}
           >
-            Keep going
-          </button>
-          <button onClick={startNewSession} className="text-sm text-neutral-400 hover:text-neutral-600 underline">
-            Start a new session
+            Add more rounds
           </button>
         </div>
+
+        {addRoundsModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
+          >
+            <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+              <div className="w-full flex flex-col items-start gap-2">
+                <div className="text-sm font-medium text-neutral-600">How many more rounds?</div>
+                <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
+                  <button
+                    onClick={() => setAddRoundsAmount((n) => Math.max(1, n - 1))}
+                    disabled={addRoundsAmount === 1}
+                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  >
+                    −
+                  </button>
+                  <span className="w-24 flex items-center justify-center border-x border-neutral-200">
+                    <span className="flex items-baseline gap-1.5 tabular-nums">
+                      <span className="text-xl font-bold text-neutral-800 leading-none">{addRoundsAmount}</span>
+                      <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => setAddRoundsAmount((n) => Math.min(16, n + 1))}
+                    disabled={addRoundsAmount === 16}
+                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="w-full flex flex-col items-start gap-2">
+                <div className="text-sm font-medium text-neutral-600">Start with</div>
+                <div className="flex gap-3">
+                  {[
+                    { value: true, label: "Break" },
+                    { value: false, label: "Focus" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setAddStartsWithBreak(opt.value)}
+                      className={`px-6 py-3 rounded-xl text-sm font-medium ${
+                        addStartsWithBreak === opt.value
+                          ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
+                          : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-full flex flex-col items-center gap-1">
+                <button
+                  onClick={confirmAddRounds}
+                  className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+                >
+                  {addRoundsAmount === 1 ? "Add 1 round" : `Add ${addRoundsAmount} rounds`}
+                </button>
+                <button
+                  onClick={() => setAddRoundsModalOpen(false)}
+                  className="w-full flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700"
+                  style={{ height: "44px" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <Credit />
       </div>
     );
   }
@@ -334,47 +494,56 @@ function PomodoroTimer() {
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
           style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
         >
-          <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
-            <div className="text-center">
-              <div className="text-lg font-bold text-neutral-800">Focus timer</div>
-              <div className="text-sm text-neutral-400 mt-1">
-                25 min focus rounds, 5 min breaks, with a longer break every 4th round.
+          <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+            <div className="w-full text-left">
+              <div className="text-xl font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
+              <div className="text-sm text-neutral-400 mt-3">
+                Press Start once — focus and breaks then switch automatically until you stop, with a sound at the
+                end of each one, and every session is logged with its start and end time.
+              </div>
+              <div className="text-sm text-neutral-400 mt-2">
+                Each round is 25 minutes of focus followed by a break of 5 minutes, with a longer break after
+                every 4th round.
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-center gap-2">
+            <div className="w-full flex flex-col items-start gap-2">
               <div className="text-sm font-medium text-neutral-600">Number of rounds</div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
-                  className="w-9 h-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-lg font-medium"
+                  disabled={roundsLimit === null}
+                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
                   −
                 </button>
-                <span className="text-lg text-neutral-800 w-24 text-center tabular-nums">
-                  <span className="font-bold">{roundsLimit === null ? "∞" : roundsLimit}</span>{" "}
-                  <span className="font-normal">rounds</span>
+                <span className="w-24 flex items-center justify-center border-x border-neutral-200">
+                  <span className="flex items-baseline gap-1.5 tabular-nums">
+                    <span className="text-xl font-bold text-neutral-800 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
+                    <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                  </span>
                 </span>
                 <button
-                  onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(40, r + 1)))}
-                  className="w-9 h-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-lg font-medium"
+                  onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
+                  disabled={roundsLimit === 16}
+                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-center gap-2">
+            <div className="w-full flex flex-col items-start gap-2">
               <div className="text-sm font-medium text-neutral-600">Long break length</div>
               <div className="flex gap-3">
                 {[15, 30].map((mins) => (
                   <button
                     key={mins}
                     onClick={() => setLongBreakMinutes(mins)}
-                    className={`px-6 py-3 rounded-xl text-sm font-medium border-2 ${
+                    className={`px-6 py-3 rounded-xl text-sm font-medium ${
                       longBreakMinutes === mins
-                        ? "border-violet-500 bg-violet-50 text-violet-700"
-                        : "border-neutral-200 text-neutral-500"
+                        ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
+                        : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
                     }`}
                   >
                     {mins} min
@@ -410,7 +579,7 @@ function PomodoroTimer() {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
               <>
-                <div className="text-4xl" style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+                <div style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
                 <div className="text-sm text-neutral-400 mt-1">
                   {mode === "work" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
                 </div>
@@ -486,7 +655,7 @@ function PomodoroTimer() {
         </div>
 
         {mode === "longBreak" ? (
-          <div className="flex flex-col items-center gap-3" style={{ marginTop: "12px" }}>
+          <div className="flex flex-col items-center" style={{ marginTop: "12px", gap: "4px" }}>
             <button
               onClick={switchToShortBreak}
               disabled={isTransitioning}
@@ -536,23 +705,10 @@ function PomodoroTimer() {
             </span>
           </button>
 
-          {logOpen && history.length > 0 && (
-            <div className="flex flex-col items-start gap-0.5 mt-4">
-              {history.map((entry, i) => {
-                const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
-                return (
-                  <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
-                    <span className="inline-block" style={{ width: "80px" }}>{label}</span>
-                    <span className="font-mono">
-                      {formatClock(entry.start)} – {formatClock(entry.end)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {logOpen && history.length > 0 && <HistoryLog history={history} />}
         </div>
       </div>
+      <Credit />
     </div>
   );
 }
