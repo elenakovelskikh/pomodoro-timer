@@ -20,10 +20,36 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Violet Tomato","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit","Long break after every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Libraries are vendored (not loaded from CDNs) so the page also works inside a Discord Activity,
+     whose proxy blocks requests to domains that aren't URL-mapped in the Developer Portal -->
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="vendor/babel.min.js"></script>
+<script src="vendor/tailwindcss-3.4.17.js"></script>
+<!-- Discord Activity wrapper: runs only when the page is launched inside Discord (it adds frame_id to the URL);
+     on the regular website nothing here loads -->
+<script type="module">
+const DISCORD_CLIENT_ID = "1552028275574964275"; // Developer Portal → OAuth2 → Client ID (public, not a secret)
+
+if (new URLSearchParams(location.search).has("frame_id")) {
+  try {
+    const { DiscordSDK } = await import("./vendor/discord-embedded-app-sdk-2.5.0.mjs");
+    const discordSdk = new DiscordSDK(DISCORD_CLIENT_ID);
+    await discordSdk.ready(); // tells Discord to hide its loading screen
+    window.discordSdk = discordSdk;
+
+    // Plain target="_blank" links don't open from inside the Activity iframe; route them through Discord
+    document.addEventListener("click", (e) => {
+      const link = e.target.closest("a[href^='http']");
+      if (!link) return;
+      e.preventDefault();
+      discordSdk.commands.openExternalLink({ url: link.href });
+    });
+  } catch (err) {
+    console.error("Discord SDK init failed:", err);
+  }
+}
+</script>
 </head>
 <body>
 <div id="root">
