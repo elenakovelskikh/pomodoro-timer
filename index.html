@@ -27,8 +27,8 @@
 <body>
 <div id="root">
 <main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
-<h1>Auto-Cycling Pomodoro Timer</h1>
-<p>Start once — focus (25 min), break (5 min) and a long break after every fourth round follow each other automatically. Set a round limit or let it run without one. Every focus session and break is recorded in a time log, so you can see what happened and when. Sound alerts tell you when time is up. Free, no sign-up.</p>
+<h1>Automatic Pomodoro Focus Timer</h1>
+<p>Press Start once — focus and breaks then switch automatically until you stop, and every session is logged with its start and end time. Each round is 25 minutes of focus followed by a break of 5 minutes, with a longer break after every 4th round. Set a round limit or let it run without one. Free, no sign-up.</p>
 <noscript><p>Please enable JavaScript to use the timer.</p></noscript>
 </main>
 </div>
@@ -447,7 +447,7 @@ function PomodoroTimer() {
                     <button
                       key={opt.label}
                       onClick={() => setAddStartsWithBreak(opt.value)}
-                      className={`px-6 py-3 rounded-xl text-sm font-medium border-2 ${
+                      className={`px-6 py-3 rounded-xl text-sm font-medium border ${
                         addStartsWithBreak === opt.value
                           ? "border-violet-500 bg-violet-50 text-violet-700"
                           : "border-neutral-200 text-neutral-500"
@@ -501,24 +501,24 @@ function PomodoroTimer() {
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-start gap-1">
+            <div className="w-full flex flex-col items-start gap-2">
               <div className="text-sm font-medium text-neutral-600">Number of rounds</div>
-              <div className="flex items-stretch rounded-xl border-2 border-neutral-200 overflow-hidden">
+              <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 text-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  className="w-11 h-11 flex items-center justify-center bg-neutral-50 text-neutral-600 hover:bg-neutral-100 text-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-50"
                 >
                   −
                 </button>
-                <span className="text-lg text-neutral-800 w-24 flex items-center justify-center tabular-nums border-x-2 border-neutral-200">
+                <span className="text-lg text-neutral-800 w-24 flex items-center justify-center tabular-nums border-x border-neutral-200">
                   <span className="font-bold">{roundsLimit === null ? "∞" : roundsLimit}</span>{" "}
                   <span className="font-normal">&nbsp;{roundsLimit === 1 ? "round" : "rounds"}</span>
                 </span>
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 text-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  className="w-11 h-11 flex items-center justify-center bg-neutral-50 text-neutral-600 hover:bg-neutral-100 text-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-50"
                 >
                   +
                 </button>
@@ -532,7 +532,7 @@ function PomodoroTimer() {
                   <button
                     key={mins}
                     onClick={() => setLongBreakMinutes(mins)}
-                    className={`px-6 py-3 rounded-xl text-sm font-medium border-2 ${
+                    className={`px-6 py-3 rounded-xl text-sm font-medium border ${
                       longBreakMinutes === mins
                         ? "border-violet-500 bg-violet-50 text-violet-700"
                         : "border-neutral-200 text-neutral-500"
