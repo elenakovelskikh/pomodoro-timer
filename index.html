@@ -54,7 +54,7 @@ const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Wel
 
 const MODES = {
   work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#0ea5e9", emoji: "☕", bg: "#f0f9ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", emoji: "☕", bg: "#f0f9ff" },
   longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
 };
 
@@ -380,7 +380,7 @@ function PomodoroTimer() {
 
   if (sessionComplete) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-neutral-50 p-6">
+      <div className="min-h-screen w-full flex items-center justify-center bg-white p-6">
         <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
@@ -518,7 +518,7 @@ function PomodoroTimer() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-start justify-center bg-neutral-50 p-6 pt-16">
+    <div className="min-h-screen w-full flex items-start justify-center bg-white p-6 pt-16">
       {!setupComplete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
@@ -528,12 +528,8 @@ function PomodoroTimer() {
             <div className="w-full text-left">
               <div className="text-xl font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
               <div className="text-sm text-neutral-400 mt-3">
-                Press Start once — focus and breaks then switch automatically until you stop, with a sound at the
-                end of each one, and every session is logged with its start and end time.
-              </div>
-              <div className="text-sm text-neutral-400 mt-2">
-                Each round is 25 minutes of focus followed by a break of 5 minutes, with a longer break after
-                every 4th round.
+                Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, with a
+                sound and a time log for each. Every 4th round gets a longer break.
               </div>
             </div>
 
