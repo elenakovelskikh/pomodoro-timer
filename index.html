@@ -134,7 +134,7 @@ function HistoryLog({ history }) {
       {history.map((entry, i) => {
         const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
         return (
-          <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
+          <div key={i} className="flex text-sm" style={{ color: "#666666" }}>
             <span className="inline-block" style={{ width: "80px" }}>{label}</span>
             <span className="font-mono">
               {formatClock(entry.start)} – {formatClock(entry.end)}
@@ -449,10 +449,10 @@ function PomodoroTimer() {
                     <button
                       key={opt.label}
                       onClick={() => setAddStartsWithBreak(opt.value)}
-                      className={`px-6 py-3 rounded-xl text-sm font-medium border ${
+                      className={`px-6 py-3 rounded-xl text-sm font-medium ${
                         addStartsWithBreak === opt.value
-                          ? "border-violet-500 bg-violet-50 text-violet-700"
-                          : "border-neutral-200 text-neutral-500"
+                          ? "border-2 border-violet-500 bg-violet-50 text-violet-700"
+                          : "border border-neutral-200 text-neutral-500"
                       }`}
                     >
                       {opt.label}
@@ -534,10 +534,10 @@ function PomodoroTimer() {
                   <button
                     key={mins}
                     onClick={() => setLongBreakMinutes(mins)}
-                    className={`px-6 py-3 rounded-xl text-sm font-medium border ${
+                    className={`px-6 py-3 rounded-xl text-sm font-medium ${
                       longBreakMinutes === mins
-                        ? "border-violet-500 bg-violet-50 text-violet-700"
-                        : "border-neutral-200 text-neutral-500"
+                        ? "border-2 border-violet-500 bg-violet-50 text-violet-700"
+                        : "border border-neutral-200 text-neutral-500"
                     }`}
                   >
                     {mins} min
@@ -573,7 +573,7 @@ function PomodoroTimer() {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
               <>
-                <div className="text-4xl" style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+                <div style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
                 <div className="text-sm text-neutral-400 mt-1">
                   {mode === "work" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
                 </div>
