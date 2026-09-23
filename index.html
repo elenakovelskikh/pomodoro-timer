@@ -666,6 +666,15 @@ function PomodoroTimer() {
         </div>
 
         <div className="flex items-center gap-3" style={{ marginTop: "24px" }}>
+          <button
+            onClick={handleReset}
+            disabled={isTransitioning}
+            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: "44px", width: "44px" }}
+            title="Reset current round"
+          >
+            <RotateCcwIcon />
+          </button>
           {(() => {
             const buttonLabel = isTransitioning
               ? preTransitionLabel
@@ -679,25 +688,17 @@ function PomodoroTimer() {
               <button
                 onClick={handleToggle}
                 disabled={isTransitioning}
-                className={`flex items-center justify-center gap-2 px-6 rounded-full text-sm font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                aria-label={buttonLabel}
+                title={buttonLabel}
+                className={`flex items-center justify-center rounded-full shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
                   looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
                 }`}
-                style={{ height: "44px", ...(looksActive ? {} : { backgroundColor: color }) }}
+                style={{ height: "44px", width: "44px", ...(looksActive ? {} : { backgroundColor: color }) }}
               >
                 {looksActive ? <PauseIcon /> : <PlayIcon />}
-                {buttonLabel}
               </button>
             );
           })()}
-          <button
-            onClick={handleReset}
-            disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: "44px", width: "44px" }}
-            title="Reset current round"
-          >
-            <RotateCcwIcon />
-          </button>
           <button
             onClick={handleSkip}
             disabled={isTransitioning}
