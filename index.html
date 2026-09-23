@@ -183,7 +183,7 @@ function HistoryLog({ history }) {
 function Credit() {
   return (
     <div
-      className="fixed bottom-3 left-0 w-full flex items-center justify-center gap-1.5"
+      className="w-full flex items-center justify-center gap-1 py-4"
       style={{ fontSize: "10px", color: "#999999" }}
     >
       <span>Made by Elena Kovelskikh</span>
@@ -406,7 +406,8 @@ function PomodoroTimer() {
 
   if (sessionComplete) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-white p-6">
+      <div className="min-h-screen w-full flex flex-col bg-white">
+        <div className="flex-1 w-full flex items-center justify-center p-6">
         <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
@@ -538,13 +539,15 @@ function PomodoroTimer() {
             </div>
           </div>
         )}
+        </div>
         <Credit />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full flex items-start justify-center bg-white p-6 pt-16">
+    <div className="min-h-screen w-full flex flex-col bg-white">
+      <div className="flex-1 w-full flex items-start justify-center p-6 pt-16">
       {!setupComplete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
@@ -555,7 +558,7 @@ function PomodoroTimer() {
               <div className="text-xl font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
               <div className="text-sm text-neutral-400 mt-3">
                 Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, each
-                one is logged and ends with a sound alert. Every 4th round gets a longer break.
+                one is logged and ends with a sound alert. Every 4th round gets an optional longer break.
               </div>
             </div>
 
@@ -759,6 +762,7 @@ function PomodoroTimer() {
 
           {logOpen && history.length > 0 && <HistoryLog history={history} />}
         </div>
+      </div>
       </div>
       <Credit />
     </div>
