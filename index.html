@@ -466,7 +466,9 @@ function PomodoroTimer() {
                   <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                     <span className="flex items-baseline gap-1.5 tabular-nums">
                       <span className="text-xl font-bold text-neutral-800 leading-none">{addRoundsAmount === null ? "∞" : addRoundsAmount}</span>
-                      <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                      {addRoundsAmount !== null && (
+                        <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                      )}
                     </span>
                   </span>
                   <button
@@ -575,7 +577,9 @@ function PomodoroTimer() {
                 <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                   <span className="flex items-baseline gap-1.5 tabular-nums">
                     <span className="text-xl font-bold text-neutral-800 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
-                    <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                    {roundsLimit !== null && (
+                      <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                    )}
                   </span>
                 </span>
                 <button
@@ -665,7 +669,16 @@ function PomodoroTimer() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3" style={{ marginTop: "24px" }}>
+        <div className="flex items-center gap-5" style={{ marginTop: "24px" }}>
+          <button
+            onClick={handleReset}
+            disabled={isTransitioning}
+            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: "44px", width: "44px" }}
+            title="Reset current round"
+          >
+            <RotateCcwIcon size={20} />
+          </button>
           {(() => {
             const buttonLabel = isTransitioning
               ? preTransitionLabel
@@ -679,25 +692,17 @@ function PomodoroTimer() {
               <button
                 onClick={handleToggle}
                 disabled={isTransitioning}
-                className={`flex items-center justify-center gap-2 px-6 rounded-full text-sm font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                aria-label={buttonLabel}
+                title={buttonLabel}
+                className={`flex items-center justify-center rounded-full shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
                   looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
                 }`}
-                style={{ height: "44px", ...(looksActive ? {} : { backgroundColor: color }) }}
+                style={{ height: "56px", width: "56px", ...(looksActive ? {} : { backgroundColor: color }) }}
               >
-                {looksActive ? <PauseIcon /> : <PlayIcon />}
-                {buttonLabel}
+                {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
               </button>
             );
           })()}
-          <button
-            onClick={handleReset}
-            disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-neutral-200 text-neutral-600 hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: "44px", width: "44px" }}
-            title="Reset current round"
-          >
-            <RotateCcwIcon />
-          </button>
           <button
             onClick={handleSkip}
             disabled={isTransitioning}
@@ -705,12 +710,12 @@ function PomodoroTimer() {
             style={{ height: "44px", width: "44px" }}
             title="Skip"
           >
-            <SkipForwardIcon />
+            <SkipForwardIcon size={20} />
           </button>
         </div>
 
         {mode === "longBreak" ? (
-          <div className="flex flex-col items-center" style={{ marginTop: "12px", gap: "4px" }}>
+          <div className="flex flex-col items-center" style={{ marginTop: "24px", gap: "4px" }}>
             <button
               onClick={switchToShortBreak}
               disabled={isTransitioning}
@@ -733,7 +738,7 @@ function PomodoroTimer() {
             onClick={startLongBreak}
             disabled={isTransitioning}
             className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: "44px", marginTop: "12px" }}
+            style={{ height: "44px", marginTop: "24px" }}
           >
             Start long break
           </button>
