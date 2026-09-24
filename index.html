@@ -665,7 +665,7 @@ function PomodoroTimer() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3" style={{ marginTop: "24px" }}>
+        <div className="flex items-center gap-5" style={{ marginTop: "24px" }}>
           <button
             onClick={handleReset}
             disabled={isTransitioning}
@@ -673,7 +673,7 @@ function PomodoroTimer() {
             style={{ height: "44px", width: "44px" }}
             title="Reset current round"
           >
-            <RotateCcwIcon />
+            <RotateCcwIcon size={20} />
           </button>
           {(() => {
             const buttonLabel = isTransitioning
@@ -693,9 +693,9 @@ function PomodoroTimer() {
                 className={`flex items-center justify-center rounded-full shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
                   looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
                 }`}
-                style={{ height: "44px", width: "44px", ...(looksActive ? {} : { backgroundColor: color }) }}
+                style={{ height: "56px", width: "56px", ...(looksActive ? {} : { backgroundColor: color }) }}
               >
-                {looksActive ? <PauseIcon /> : <PlayIcon />}
+                {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
               </button>
             );
           })()}
@@ -706,12 +706,12 @@ function PomodoroTimer() {
             style={{ height: "44px", width: "44px" }}
             title="Skip"
           >
-            <SkipForwardIcon />
+            <SkipForwardIcon size={20} />
           </button>
         </div>
 
         {mode === "longBreak" ? (
-          <div className="flex flex-col items-center" style={{ marginTop: "12px", gap: "4px" }}>
+          <div className="flex flex-col items-center" style={{ marginTop: "24px", gap: "4px" }}>
             <button
               onClick={switchToShortBreak}
               disabled={isTransitioning}
@@ -734,7 +734,7 @@ function PomodoroTimer() {
             onClick={startLongBreak}
             disabled={isTransitioning}
             className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: "44px", marginTop: "12px" }}
+            style={{ height: "44px", marginTop: "24px" }}
           >
             Start long break
           </button>
