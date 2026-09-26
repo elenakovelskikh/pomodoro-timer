@@ -368,7 +368,10 @@ function PomodoroTimer() {
     pauseStartedAtRef.current = null;
   }
 
-  function startLongBreak() {
+  // mins lets a one-off long break be started even when the auto-cycle's long break is set to
+  // "None" — it doesn't touch the longBreakMinutes setting, so the 4th-round rule stays as configured
+  function startLongBreak(mins) {
+    const durationMinutes = mins ?? longBreakMinutes;
     const endTime = new Date();
     const startTime = segmentStartRef.current || endTime;
     const endedMode = mode;
@@ -383,8 +386,8 @@ function PomodoroTimer() {
 
     setTimeout(() => {
       setMode("longBreak");
-      setSecondsLeft(longBreakMinutes * 60);
-      setSegmentTotal(longBreakMinutes * 60);
+      setSecondsLeft(durationMinutes * 60);
+      setSegmentTotal(durationMinutes * 60);
       segmentStartRef.current = new Date();
       pausedMsRef.current = 0;
       pauseStartedAtRef.current = null;
@@ -836,14 +839,38 @@ function PomodoroTimer() {
           </div>
         ) : longBreakMinutes !== null ? (
           <button
-            onClick={startLongBreak}
+            onClick={() => startLongBreak()}
             disabled={isTransitioning}
             className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ height: "44px", marginTop: "24px" }}
           >
             Start long break
           </button>
-        ) : null}
+        ) : (
+          // "Long break length" is set to None, so there's no default duration to fall back on —
+          // offer both lengths here instead, without changing that setting for future rounds
+          <div className="flex flex-col items-center" style={{ marginTop: "24px", gap: "4px" }}>
+            <div className="text-sm text-neutral-400">Start a long break</div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => startLongBreak(15)}
+                disabled={isTransitioning}
+                className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ height: "44px" }}
+              >
+                15 min
+              </button>
+              <button
+                onClick={() => startLongBreak(30)}
+                disabled={isTransitioning}
+                className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ height: "44px" }}
+              >
+                30 min
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="w-full flex flex-col items-center gap-1" style={{ marginTop: "24px" }}>
           <button
