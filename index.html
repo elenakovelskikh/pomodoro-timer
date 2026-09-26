@@ -543,11 +543,11 @@ function PomodoroTimer() {
             <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
               <div className="w-full flex flex-col items-start gap-2">
                 <div className="text-sm font-medium text-neutral-600">How many more rounds?</div>
-                <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
+                <div className="flex items-stretch rounded-xl border border-neutral-200">
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}
                     disabled={addRoundsAmount === null}
-                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
                     −
                   </button>
@@ -562,7 +562,7 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? 1 : Math.min(16, n + 1)))}
                     disabled={addRoundsAmount === 16}
-                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
                     +
                   </button>
@@ -654,11 +654,11 @@ function PomodoroTimer() {
 
             <div className="w-full flex flex-col items-start gap-2">
               <div className="text-sm font-medium text-neutral-600">Number of rounds</div>
-              <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
+              <div className="flex items-stretch rounded-xl border border-neutral-200">
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
                   −
                 </button>
@@ -673,7 +673,7 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
                   +
                 </button>
