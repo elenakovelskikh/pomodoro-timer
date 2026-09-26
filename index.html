@@ -57,6 +57,12 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   button:focus:not(:focus-visible) {
     outline: none;
   }
+  /* Keyboard focus ring: a 2px white ring against the button itself, then a 2px black ring
+     outside that — stays visible on any of the app's button colors (violet/blue/cyan/gray/white). */
+  button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000;
+  }
 </style>
 </head>
 <body>
