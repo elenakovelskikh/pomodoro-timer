@@ -89,6 +89,11 @@ const LONG_BREAK_OPTIONS = [
   { value: null, label: "None" },
 ];
 
+const START_WITH_OPTIONS = [
+  { value: true, label: "Break" },
+  { value: false, label: "Focus" },
+];
+
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
@@ -174,6 +179,50 @@ const RotateCcwIcon = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9
 const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
 const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
 const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
+
+// A proper ARIA radiogroup: one tab stop for the whole group (only the checked option is in the
+// tab order), Left/Up and Right/Down move the checked option and keyboard focus together. Since
+// focus and selection always coincide here, the checked pill's own ring already shows where
+// focus is — no separate focus ring is drawn on top of it.
+function RadioGroup({ label, options, value, onChange, pillClassName }) {
+  function handleKeyDown(e) {
+    const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const idx = options.findIndex((o) => o.value === value);
+    const nextIdx = (idx + dir + options.length) % options.length;
+    onChange(options[nextIdx].value);
+    e.currentTarget.querySelectorAll('[role="radio"]')[nextIdx]?.focus();
+  }
+
+  return (
+    <div className="w-full flex flex-col items-start gap-2">
+      <div className="text-sm font-medium text-neutral-600">{label}</div>
+      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex gap-2">
+        {options.map((opt) => {
+          const selected = value === opt.value;
+          return (
+            <button
+              key={String(opt.value)}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onChange(opt.value)}
+              className={`${pillClassName} focus-visible:outline-none ${
+                selected
+                  ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
+                  : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function HistoryLog({ history }) {
   return (
@@ -568,45 +617,20 @@ function PomodoroTimer() {
                   </button>
                 </div>
               </div>
-              <div className="w-full flex flex-col items-start gap-2">
-                <div className="text-sm font-medium text-neutral-600">Start with</div>
-                <div className="flex gap-3">
-                  {[
-                    { value: true, label: "Break" },
-                    { value: false, label: "Focus" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => setAddStartsWithBreak(opt.value)}
-                      className={`px-6 py-3 rounded-xl text-sm font-medium ${
-                        addStartsWithBreak === opt.value
-                          ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                          : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="w-full flex flex-col items-start gap-2">
-                <div className="text-sm font-medium text-neutral-600">Long break length</div>
-                <div className="flex gap-2">
-                  {LONG_BREAK_OPTIONS.map((opt) => (
-                    <button
-                      key={String(opt.value)}
-                      onClick={() => setLongBreakMinutes(opt.value)}
-                      className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap ${
-                        longBreakMinutes === opt.value
-                          ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                          : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <RadioGroup
+                label="Start with"
+                options={START_WITH_OPTIONS}
+                value={addStartsWithBreak}
+                onChange={setAddStartsWithBreak}
+                pillClassName="px-6 py-3 rounded-xl text-sm font-medium"
+              />
+              <RadioGroup
+                label="Long break length"
+                options={LONG_BREAK_OPTIONS}
+                value={longBreakMinutes}
+                onChange={setLongBreakMinutes}
+                pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
+              />
               <div className="w-full flex flex-col items-center gap-1">
                 <button
                   onClick={confirmAddRounds}
@@ -680,24 +704,13 @@ function PomodoroTimer() {
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-start gap-2">
-              <div className="text-sm font-medium text-neutral-600">Long break length</div>
-              <div className="flex gap-2">
-                {LONG_BREAK_OPTIONS.map((opt) => (
-                  <button
-                    key={String(opt.value)}
-                    onClick={() => setLongBreakMinutes(opt.value)}
-                    className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap ${
-                      longBreakMinutes === opt.value
-                        ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                        : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <RadioGroup
+              label="Long break length"
+              options={LONG_BREAK_OPTIONS}
+              value={longBreakMinutes}
+              onChange={setLongBreakMinutes}
+              pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
+            />
 
             <button
               onClick={startSession}
