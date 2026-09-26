@@ -50,6 +50,14 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   }
 }
 </script>
+<style>
+  /* Tapping a button on mobile leaves the browser's default focus outline stuck on it until
+     something else is tapped. Keep the outline for real keyboard navigation (:focus-visible),
+     drop it after a touch/mouse click. */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+</style>
 </head>
 <body>
 <div id="root">
@@ -221,6 +229,11 @@ function PomodoroTimer() {
   const [originalRoundsChoice, setOriginalRoundsChoice] = useState(null);
   const intervalRef = useRef(null);
   const segmentStartRef = useRef(null);
+  // How long the current segment has spent paused so far, plus when the current pause began
+  // (if any) — segmentStartRef must stay the true wall-clock start for the session log, so the
+  // real-time countdown recompute below subtracts this out instead.
+  const pausedMsRef = useRef(0);
+  const pauseStartedAtRef = useRef(null);
 
   const totalSeconds = segmentTotal;
   const progress = 1 - secondsLeft / totalSeconds;
@@ -270,6 +283,8 @@ function PomodoroTimer() {
         setSecondsLeft(nextTotal);
         setSegmentTotal(nextTotal);
         segmentStartRef.current = new Date();
+        pausedMsRef.current = 0;
+        pauseStartedAtRef.current = null;
         setIsRunning(true);
         setIsTransitioning(false);
       } else {
@@ -277,6 +292,8 @@ function PomodoroTimer() {
         setSecondsLeft(WORK_MIN * 60);
         setSegmentTotal(WORK_MIN * 60);
         segmentStartRef.current = new Date();
+        pausedMsRef.current = 0;
+        pauseStartedAtRef.current = null;
         setIsRunning(true);
         setIsTransitioning(false);
       }
@@ -292,6 +309,8 @@ function PomodoroTimer() {
     setSecondsLeft(BREAK_MIN * 60);
     setSegmentTotal(BREAK_MIN * 60);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
   }
 
   function startLongBreak() {
@@ -312,6 +331,8 @@ function PomodoroTimer() {
       setSecondsLeft(longBreakMinutes * 60);
       setSegmentTotal(longBreakMinutes * 60);
       segmentStartRef.current = new Date();
+      pausedMsRef.current = 0;
+      pauseStartedAtRef.current = null;
       setIsRunning(true);
       setIsTransitioning(false);
     }, SOUND_DURATION_MS[soundKind]);
@@ -324,22 +345,66 @@ function PomodoroTimer() {
     setSegmentTotal((t) => t + 5 * 60);
   }
 
+  // Recompute from the real start time (rather than just decrementing by 1 each tick) so a
+  // throttled or fully paused background tab still lands on the correct remaining time —
+  // and completes the round immediately — the moment the phone/tab is looked at again.
+  const syncSecondsLeft = useCallback(() => {
+    const start = segmentStartRef.current;
+    if (!start) return;
+    // still paused right now? count up to this instant instead of leaving a stale pause length
+    const pausedMs = pausedMsRef.current + (pauseStartedAtRef.current ? Date.now() - pauseStartedAtRef.current : 0);
+    const elapsed = Math.floor((Date.now() - start.getTime() - pausedMs) / 1000);
+    const remaining = Math.max(0, segmentTotal - elapsed);
+    setSecondsLeft(remaining);
+    if (remaining <= 0) handleAutoComplete();
+  }, [segmentTotal, handleAutoComplete]);
+
   useEffect(() => {
     if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            handleAutoComplete();
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
+      intervalRef.current = setInterval(syncSecondsLeft, 1000);
     } else {
       clearInterval(intervalRef.current);
     }
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, handleAutoComplete]);
+  }, [isRunning, syncSecondsLeft]);
+
+  // Mobile browsers pause/throttle JS timers while the tab is hidden (backgrounded, screen
+  // locked, another app in front) — there's no way for a web page to keep the countdown
+  // ticking through that, but re-checking the real elapsed time the instant the tab becomes
+  // visible again means it snaps to the correct value (or completes the round) right away
+  // instead of showing a stale number.
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden && isRunning) syncSecondsLeft();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isRunning, syncSecondsLeft]);
+
+  // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
+  // the tab is in view. Released automatically by the browser once the tab is hidden, and
+  // there's no API to keep a background tab's screen awake or to override the phone's own
+  // lock button — so this only helps while the timer is actually on screen.
+  useEffect(() => {
+    if (!("wakeLock" in navigator)) return;
+    let wakeLock = null;
+    async function acquire() {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+      } catch (err) {
+        // often rejects on low battery / when the tab isn't visible — not worth surfacing
+      }
+    }
+    async function onVisible() {
+      if (isRunning && !document.hidden && !wakeLock) await acquire();
+    }
+    if (isRunning) acquire();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      if (wakeLock) wakeLock.release().catch(() => {});
+    };
+  }, [isRunning]);
 
   useEffect(() => {
     document.title = isRunning
@@ -354,6 +419,8 @@ function PomodoroTimer() {
     setSecondsLeft(WORK_MIN * 60);
     setSegmentTotal(WORK_MIN * 60);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
@@ -370,14 +437,27 @@ function PomodoroTimer() {
     setSecondsLeft(nextTotal);
     setSegmentTotal(nextTotal);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
   function handleToggle() {
     setIsRunning((r) => {
       const newRunning = !r;
-      if (newRunning && !segmentStartRef.current) {
-        segmentStartRef.current = new Date();
+      if (newRunning) {
+        if (!segmentStartRef.current) {
+          segmentStartRef.current = new Date();
+          pausedMsRef.current = 0;
+          pauseStartedAtRef.current = null;
+        } else if (pauseStartedAtRef.current) {
+          // resuming: fold the just-finished pause into the running total so the real-time
+          // recompute doesn't count it as elapsed segment time
+          pausedMsRef.current += Date.now() - pauseStartedAtRef.current;
+          pauseStartedAtRef.current = null;
+        }
+      } else {
+        pauseStartedAtRef.current = Date.now();
       }
       return newRunning;
     });
@@ -388,6 +468,8 @@ function PomodoroTimer() {
     setSecondsLeft(baseTotal);
     setSegmentTotal(baseTotal);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
