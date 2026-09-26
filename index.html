@@ -57,11 +57,10 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   button:focus:not(:focus-visible) {
     outline: none;
   }
-  /* Keyboard focus ring: a 2px white ring against the button itself, then a 2px black ring
-     outside that — stays visible on any of the app's button colors (violet/blue/cyan/gray/white). */
+  /* Keyboard focus ring: leave the browser's own default outline (color/style/width) alone,
+     just push it 2px away from the button so there's a transparent gap first. */
   button:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000;
+    outline-offset: 2px;
   }
 </style>
 </head>
@@ -194,9 +193,10 @@ function HistoryLog({ history }) {
   );
 }
 
-function Credit() {
+function Credit({ inert }) {
   return (
     <div
+      inert={inert ? "" : undefined}
       className="w-full flex items-center justify-center gap-1 py-4"
       style={{ fontSize: "10px", color: "#999999" }}
     >
@@ -496,7 +496,7 @@ function PomodoroTimer() {
     return (
       <div className="min-h-screen w-full flex flex-col bg-white">
         <div className="flex-1 w-full flex items-center justify-center p-6">
-        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
+        <div inert={addRoundsModalOpen ? "" : undefined} className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
             <div className="text-xl font-bold text-neutral-800">{completionHeading}</div>
@@ -630,7 +630,7 @@ function PomodoroTimer() {
           </div>
         )}
         </div>
-        <Credit />
+        <Credit inert={addRoundsModalOpen} />
       </div>
     );
   }
@@ -709,7 +709,7 @@ function PomodoroTimer() {
         </div>
       )}
 
-      <div className="w-full max-w-sm flex flex-col items-center">
+      <div inert={!setupComplete ? "" : undefined} className="w-full max-w-sm flex flex-col items-center">
         <div className="text-xl font-bold tracking-wide uppercase" style={{ color }}>
           {MODES[mode].label}
         </div>
@@ -857,7 +857,7 @@ function PomodoroTimer() {
         </div>
       </div>
       </div>
-      <Credit />
+      <Credit inert={!setupComplete} />
     </div>
   );
 }
