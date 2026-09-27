@@ -359,13 +359,24 @@ function PomodoroTimer() {
   function switchToShortBreak() {
     const endTime = new Date();
     const startTime = segmentStartRef.current || endTime;
+    const label = isRunning ? "Pause" : secondsLeft === totalSeconds ? "Start" : "Resume";
+
+    setPreTransitionLabel(label);
+    playSound("breakEnd");
+    setIsRunning(false);
+    setIsTransitioning(true);
     logSegment("longBreak", startTime, endTime);
-    setMode("break");
-    setSecondsLeft(BREAK_MIN * 60);
-    setSegmentTotal(BREAK_MIN * 60);
-    segmentStartRef.current = new Date();
-    pausedMsRef.current = 0;
-    pauseStartedAtRef.current = null;
+
+    setTimeout(() => {
+      setMode("break");
+      setSecondsLeft(BREAK_MIN * 60);
+      setSegmentTotal(BREAK_MIN * 60);
+      segmentStartRef.current = new Date();
+      pausedMsRef.current = 0;
+      pauseStartedAtRef.current = null;
+      setIsRunning(true);
+      setIsTransitioning(false);
+    }, SOUND_DURATION_MS.breakEnd);
   }
 
   // mins lets a one-off long break be started even when the auto-cycle's long break is set to
