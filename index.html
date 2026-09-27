@@ -577,13 +577,11 @@ function PomodoroTimer() {
   // counterclockwise from the 12 o'clock anchor) as time passes, uncovering the colored track
   // underneath — so the colored area always shows exactly how much of this segment is done
   const dashoffset = circumference * progress;
-  // where the gray arc's moving end currently sits (its other end is always pinned at the
-  // 12 o'clock anchor, which needs no shadow since nothing is happening there) — used to place
-  // a small shadowed cap only at that one moving point, matching a reference where only the
-  // active edge casts a shadow, and only onto the ring itself, not the page around it
-  const capAngle = (1 - progress) * 2 * Math.PI;
-  const capX = 140 + radius * Math.cos(capAngle);
-  const capY = 140 + radius * Math.sin(capAngle);
+  // a short dark arc drawn just past the gray arc's moving end (its other end is pinned at the
+  // fixed 12 o'clock anchor, which needs no shadow since nothing happens there) — using the same
+  // offset as the gray arc means this dash starts exactly where gray ends and reaches a few px
+  // into the just-revealed colored track, so it reads as a contact shadow cast by that edge,
+  // and — since it never overlaps gray's own dash — it can't get masked or bleed anywhere else
 
   const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
 
@@ -775,20 +773,13 @@ function PomodoroTimer() {
 
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-            <defs>
-              {/* keeps the moving cap's shadow from ever bleeding onto the page outside the
-                  ring itself — only the donut-shaped track area shows through */}
-              <mask id="ringMask">
-                <rect x="0" y="0" width="280" height="280" fill="black" />
-                <circle cx="140" cy="140" r={radius + 5} fill="white" />
-                <circle cx="140" cy="140" r={radius - 5} fill="black" />
-              </mask>
-            </defs>
             <circle cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10" />
             {progress > 0.0005 && progress < 0.9995 && (
-              <g mask="url(#ringMask)">
-                <circle cx={capX} cy={capY} r="5" fill="#e5e7eb" style={{ filter: "drop-shadow(0 0 1.5px rgba(0,0,0,0.55))" }} />
-              </g>
+              <circle
+                cx="140" cy="140" r={radius} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="10"
+                strokeDasharray={`8 ${circumference - 8}`} strokeDashoffset={dashoffset}
+                style={{ transition: "stroke-dashoffset 1s linear" }}
+              />
             )}
             <circle
               cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10"
