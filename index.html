@@ -578,10 +578,11 @@ function PomodoroTimer() {
   // retreats counter-clockwise as the segment runs.
   const dashoffset = circumference * progress;
   const tipDeg = (1 - progress) * 360;
-  // Short shadow patch cast by the moving end onto whatever lies just clockwise of it —
-  // the gray track mid-segment, or the fixed end of the arc itself right at the start.
-  const shadowDeg = 5;
-  const shadowTail = {
+  // Soft round shadow cast by the moving end onto whatever lies just clockwise of it — the gray
+  // track mid-segment, or the fixed end of the arc itself right at the start. It's a blurred disc
+  // nudged ahead of the cap, so the part peeking out from under the cap is crescent-shaped.
+  const shadowDeg = 2;
+  const shadowCenter = {
     x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
     y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
   };
@@ -777,13 +778,19 @@ function PomodoroTimer() {
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
             <defs>
-              <linearGradient
-                id="ring-tip-shadow" gradientUnits="userSpaceOnUse"
-                x1={shadowTail.x} y1={shadowTail.y} x2={140 + radius} y2="140"
-              >
-                <stop offset="0%" stopColor="#0c161e" stopOpacity="0" />
-                <stop offset="100%" stopColor="#0c161e" stopOpacity="0.25" />
-              </linearGradient>
+              <radialGradient id="ring-tip-shadow">
+                <stop offset="0%" stopColor="#0c161e" stopOpacity="0.3" />
+                <stop offset="55%" stopColor="#0c161e" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#0c161e" stopOpacity="0" />
+              </radialGradient>
+              {/* keeps the shadow inside the ring's band */}
+              <clipPath id="ring-band">
+                <path
+                  clipRule="evenodd"
+                  d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
+                      M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`}
+                />
+              </clipPath>
             </defs>
             <circle cx="140" cy="140" r={radius} fill="none" stroke="#e6e7eb" strokeWidth="10" />
             <circle
@@ -801,9 +808,9 @@ function PomodoroTimer() {
                 display: secondsLeft > 0 ? undefined : "none",
               }}
             >
-              <path
-                d={`M ${140 + radius} 140 A ${radius} ${radius} 0 0 1 ${shadowTail.x} ${shadowTail.y}`}
-                fill="none" stroke="url(#ring-tip-shadow)" strokeWidth="10" strokeLinecap="round"
+              <circle
+                cx={shadowCenter.x} cy={shadowCenter.y} r="9"
+                fill="url(#ring-tip-shadow)" clipPath="url(#ring-band)"
               />
               <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
             </g>
