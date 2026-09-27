@@ -26,6 +26,13 @@
 <script src="vendor/react-dom.production.min.js"></script>
 <script src="vendor/babel.min.js"></script>
 <script src="vendor/tailwindcss-3.4.17.js"></script>
+<script>
+  // Without this, tapping a button on a touch device leaves its hover: styles (e.g. the
+  // darker background on the round control buttons) stuck on until something else is tapped,
+  // since there's no mouse to trigger a "leave". This scopes every hover: utility to devices
+  // that actually support hovering, matching how a real mouse/trackpad behaves.
+  tailwind.config = { future: { hoverOnlyWhenSupported: true } };
+</script>
 <!-- Discord Activity wrapper: runs only when the page is launched inside Discord (it adds frame_id to the URL);
      on the regular website nothing here loads -->
 <script type="module">
@@ -50,6 +57,19 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   }
 }
 </script>
+<style>
+  /* Tapping a button on mobile leaves the browser's default focus outline stuck on it until
+     something else is tapped. Keep the outline for real keyboard navigation (:focus-visible),
+     drop it after a touch/mouse click. */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+  /* Keyboard focus ring: leave the browser's own default outline (color/style/width) alone,
+     just push it 2px away from the button so there's a transparent gap first. */
+  button:focus-visible {
+    outline-offset: 2px;
+  }
+</style>
 </head>
 <body>
 <div id="root">
@@ -74,6 +94,11 @@ const LONG_BREAK_OPTIONS = [
   { value: 15, label: "15 min" },
   { value: 30, label: "30 min" },
   { value: null, label: "None" },
+];
+
+const START_WITH_OPTIONS = [
+  { value: true, label: "Break" },
+  { value: false, label: "Focus" },
 ];
 
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
@@ -161,6 +186,52 @@ const RotateCcwIcon = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9
 const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
 const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
 const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
+const MinusIcon = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+const PlusIcon = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+
+// A proper ARIA radiogroup: one tab stop for the whole group (only the checked option is in the
+// tab order), Left/Up and Right/Down move the checked option and keyboard focus together. Since
+// focus and selection always coincide here, the checked pill's own ring already shows where
+// focus is — no separate focus ring is drawn on top of it.
+function RadioGroup({ label, options, value, onChange, pillClassName }) {
+  function handleKeyDown(e) {
+    const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const idx = options.findIndex((o) => o.value === value);
+    const nextIdx = (idx + dir + options.length) % options.length;
+    onChange(options[nextIdx].value);
+    e.currentTarget.querySelectorAll('[role="radio"]')[nextIdx]?.focus();
+  }
+
+  return (
+    <div className="w-full flex flex-col items-start gap-2">
+      <div className="text-sm font-medium text-neutral-600">{label}</div>
+      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex gap-2">
+        {options.map((opt) => {
+          const selected = value === opt.value;
+          return (
+            <button
+              key={String(opt.value)}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onChange(opt.value)}
+              className={`${pillClassName} focus-visible:outline-none ${
+                selected
+                  ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
+                  : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function HistoryLog({ history }) {
   return (
@@ -180,9 +251,10 @@ function HistoryLog({ history }) {
   );
 }
 
-function Credit() {
+function Credit({ inert }) {
   return (
     <div
+      inert={inert ? "" : undefined}
       className="w-full flex items-center justify-center gap-1 py-4"
       style={{ fontSize: "10px", color: "#999999" }}
     >
@@ -221,6 +293,11 @@ function PomodoroTimer() {
   const [originalRoundsChoice, setOriginalRoundsChoice] = useState(null);
   const intervalRef = useRef(null);
   const segmentStartRef = useRef(null);
+  // How long the current segment has spent paused so far, plus when the current pause began
+  // (if any) — segmentStartRef must stay the true wall-clock start for the session log, so the
+  // real-time countdown recompute below subtracts this out instead.
+  const pausedMsRef = useRef(0);
+  const pauseStartedAtRef = useRef(null);
 
   const totalSeconds = segmentTotal;
   const progress = 1 - secondsLeft / totalSeconds;
@@ -270,6 +347,8 @@ function PomodoroTimer() {
         setSecondsLeft(nextTotal);
         setSegmentTotal(nextTotal);
         segmentStartRef.current = new Date();
+        pausedMsRef.current = 0;
+        pauseStartedAtRef.current = null;
         setIsRunning(true);
         setIsTransitioning(false);
       } else {
@@ -277,6 +356,8 @@ function PomodoroTimer() {
         setSecondsLeft(WORK_MIN * 60);
         setSegmentTotal(WORK_MIN * 60);
         segmentStartRef.current = new Date();
+        pausedMsRef.current = 0;
+        pauseStartedAtRef.current = null;
         setIsRunning(true);
         setIsTransitioning(false);
       }
@@ -287,14 +368,31 @@ function PomodoroTimer() {
   function switchToShortBreak() {
     const endTime = new Date();
     const startTime = segmentStartRef.current || endTime;
+    const label = isRunning ? "Pause" : secondsLeft === totalSeconds ? "Start" : "Resume";
+
+    setPreTransitionLabel(label);
+    playSound("breakEnd");
+    setIsRunning(false);
+    setIsTransitioning(true);
     logSegment("longBreak", startTime, endTime);
-    setMode("break");
-    setSecondsLeft(BREAK_MIN * 60);
-    setSegmentTotal(BREAK_MIN * 60);
-    segmentStartRef.current = new Date();
+
+    setTimeout(() => {
+      setMode("break");
+      setSecondsLeft(BREAK_MIN * 60);
+      setSegmentTotal(BREAK_MIN * 60);
+      segmentStartRef.current = new Date();
+      pausedMsRef.current = 0;
+      pauseStartedAtRef.current = null;
+      setIsRunning(true);
+      setIsTransitioning(false);
+    }, SOUND_DURATION_MS.breakEnd);
   }
 
-  function startLongBreak() {
+  // mins lets a one-off long break be started even when the auto-cycle's long break is set to
+  // "None" — it doesn't touch the longBreakMinutes setting, so the 4th-round rule stays as configured
+  function startLongBreak(mins) {
+    // falls back to 30 min when "Long break length" is set to None, so the manual button always works
+    const durationMinutes = mins ?? longBreakMinutes ?? 30;
     const endTime = new Date();
     const startTime = segmentStartRef.current || endTime;
     const endedMode = mode;
@@ -309,9 +407,11 @@ function PomodoroTimer() {
 
     setTimeout(() => {
       setMode("longBreak");
-      setSecondsLeft(longBreakMinutes * 60);
-      setSegmentTotal(longBreakMinutes * 60);
+      setSecondsLeft(durationMinutes * 60);
+      setSegmentTotal(durationMinutes * 60);
       segmentStartRef.current = new Date();
+      pausedMsRef.current = 0;
+      pauseStartedAtRef.current = null;
       setIsRunning(true);
       setIsTransitioning(false);
     }, SOUND_DURATION_MS[soundKind]);
@@ -324,22 +424,66 @@ function PomodoroTimer() {
     setSegmentTotal((t) => t + 5 * 60);
   }
 
+  // Recompute from the real start time (rather than just decrementing by 1 each tick) so a
+  // throttled or fully paused background tab still lands on the correct remaining time —
+  // and completes the round immediately — the moment the phone/tab is looked at again.
+  const syncSecondsLeft = useCallback(() => {
+    const start = segmentStartRef.current;
+    if (!start) return;
+    // still paused right now? count up to this instant instead of leaving a stale pause length
+    const pausedMs = pausedMsRef.current + (pauseStartedAtRef.current ? Date.now() - pauseStartedAtRef.current : 0);
+    const elapsed = Math.floor((Date.now() - start.getTime() - pausedMs) / 1000);
+    const remaining = Math.max(0, segmentTotal - elapsed);
+    setSecondsLeft(remaining);
+    if (remaining <= 0) handleAutoComplete();
+  }, [segmentTotal, handleAutoComplete]);
+
   useEffect(() => {
     if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            handleAutoComplete();
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
+      intervalRef.current = setInterval(syncSecondsLeft, 1000);
     } else {
       clearInterval(intervalRef.current);
     }
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, handleAutoComplete]);
+  }, [isRunning, syncSecondsLeft]);
+
+  // Mobile browsers pause/throttle JS timers while the tab is hidden (backgrounded, screen
+  // locked, another app in front) — there's no way for a web page to keep the countdown
+  // ticking through that, but re-checking the real elapsed time the instant the tab becomes
+  // visible again means it snaps to the correct value (or completes the round) right away
+  // instead of showing a stale number.
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden && isRunning) syncSecondsLeft();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isRunning, syncSecondsLeft]);
+
+  // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
+  // the tab is in view. Released automatically by the browser once the tab is hidden, and
+  // there's no API to keep a background tab's screen awake or to override the phone's own
+  // lock button — so this only helps while the timer is actually on screen.
+  useEffect(() => {
+    if (!("wakeLock" in navigator)) return;
+    let wakeLock = null;
+    async function acquire() {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+      } catch (err) {
+        // often rejects on low battery / when the tab isn't visible — not worth surfacing
+      }
+    }
+    async function onVisible() {
+      if (isRunning && !document.hidden && !wakeLock) await acquire();
+    }
+    if (isRunning) acquire();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      if (wakeLock) wakeLock.release().catch(() => {});
+    };
+  }, [isRunning]);
 
   useEffect(() => {
     document.title = isRunning
@@ -354,6 +498,8 @@ function PomodoroTimer() {
     setSecondsLeft(WORK_MIN * 60);
     setSegmentTotal(WORK_MIN * 60);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
@@ -370,14 +516,27 @@ function PomodoroTimer() {
     setSecondsLeft(nextTotal);
     setSegmentTotal(nextTotal);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
   function handleToggle() {
     setIsRunning((r) => {
       const newRunning = !r;
-      if (newRunning && !segmentStartRef.current) {
-        segmentStartRef.current = new Date();
+      if (newRunning) {
+        if (!segmentStartRef.current) {
+          segmentStartRef.current = new Date();
+          pausedMsRef.current = 0;
+          pauseStartedAtRef.current = null;
+        } else if (pauseStartedAtRef.current) {
+          // resuming: fold the just-finished pause into the running total so the real-time
+          // recompute doesn't count it as elapsed segment time
+          pausedMsRef.current += Date.now() - pauseStartedAtRef.current;
+          pauseStartedAtRef.current = null;
+        }
+      } else {
+        pauseStartedAtRef.current = Date.now();
       }
       return newRunning;
     });
@@ -388,6 +547,8 @@ function PomodoroTimer() {
     setSecondsLeft(baseTotal);
     setSegmentTotal(baseTotal);
     segmentStartRef.current = new Date();
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
     setIsRunning(true);
   }
 
@@ -408,7 +569,7 @@ function PomodoroTimer() {
     return (
       <div className="min-h-screen w-full flex flex-col bg-white">
         <div className="flex-1 w-full flex items-center justify-center p-6">
-        <div className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
+        <div inert={addRoundsModalOpen ? "" : undefined} className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
             <div className="text-xl font-bold text-neutral-800">{completionHeading}</div>
@@ -455,13 +616,13 @@ function PomodoroTimer() {
             <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
               <div className="w-full flex flex-col items-start gap-2">
                 <div className="text-sm font-medium text-neutral-600">How many more rounds?</div>
-                <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
+                <div className="flex items-stretch rounded-xl border border-neutral-200">
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}
                     disabled={addRoundsAmount === null}
-                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
-                    −
+                    <MinusIcon size={20} />
                   </button>
                   <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                     <span className="flex items-baseline gap-1.5 tabular-nums">
@@ -474,51 +635,26 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? 1 : Math.min(16, n + 1)))}
                     disabled={addRoundsAmount === 16}
-                    className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
-                    +
+                    <PlusIcon size={20} />
                   </button>
                 </div>
               </div>
-              <div className="w-full flex flex-col items-start gap-2">
-                <div className="text-sm font-medium text-neutral-600">Start with</div>
-                <div className="flex gap-3">
-                  {[
-                    { value: true, label: "Break" },
-                    { value: false, label: "Focus" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => setAddStartsWithBreak(opt.value)}
-                      className={`px-6 py-3 rounded-xl text-sm font-medium ${
-                        addStartsWithBreak === opt.value
-                          ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                          : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="w-full flex flex-col items-start gap-2">
-                <div className="text-sm font-medium text-neutral-600">Long break length</div>
-                <div className="flex gap-2">
-                  {LONG_BREAK_OPTIONS.map((opt) => (
-                    <button
-                      key={String(opt.value)}
-                      onClick={() => setLongBreakMinutes(opt.value)}
-                      className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap ${
-                        longBreakMinutes === opt.value
-                          ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                          : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <RadioGroup
+                label="Start with"
+                options={START_WITH_OPTIONS}
+                value={addStartsWithBreak}
+                onChange={setAddStartsWithBreak}
+                pillClassName="px-6 py-3 rounded-xl text-sm font-medium"
+              />
+              <RadioGroup
+                label="Long break length"
+                options={LONG_BREAK_OPTIONS}
+                value={longBreakMinutes}
+                onChange={setLongBreakMinutes}
+                pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
+              />
               <div className="w-full flex flex-col items-center gap-1">
                 <button
                   onClick={confirmAddRounds}
@@ -542,7 +678,7 @@ function PomodoroTimer() {
           </div>
         )}
         </div>
-        <Credit />
+        <Credit inert={addRoundsModalOpen} />
       </div>
     );
   }
@@ -566,13 +702,13 @@ function PomodoroTimer() {
 
             <div className="w-full flex flex-col items-start gap-2">
               <div className="text-sm font-medium text-neutral-600">Number of rounds</div>
-              <div className="flex items-stretch rounded-xl border border-neutral-200 overflow-hidden">
+              <div className="flex items-stretch rounded-xl border border-neutral-200">
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
-                  −
+                  <MinusIcon size={20} />
                 </button>
                 <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                   <span className="flex items-baseline gap-1.5 tabular-nums">
@@ -585,31 +721,20 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
-                  +
+                  <PlusIcon size={20} />
                 </button>
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-start gap-2">
-              <div className="text-sm font-medium text-neutral-600">Long break length</div>
-              <div className="flex gap-2">
-                {LONG_BREAK_OPTIONS.map((opt) => (
-                  <button
-                    key={String(opt.value)}
-                    onClick={() => setLongBreakMinutes(opt.value)}
-                    className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap ${
-                      longBreakMinutes === opt.value
-                        ? "ring-2 ring-inset ring-violet-500 bg-violet-50 text-violet-700"
-                        : "ring-1 ring-inset ring-neutral-200 text-neutral-500"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <RadioGroup
+              label="Long break length"
+              options={LONG_BREAK_OPTIONS}
+              value={longBreakMinutes}
+              onChange={setLongBreakMinutes}
+              pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
+            />
 
             <button
               onClick={startSession}
@@ -621,7 +746,7 @@ function PomodoroTimer() {
         </div>
       )}
 
-      <div className="w-full max-w-sm flex flex-col items-center">
+      <div inert={!setupComplete ? "" : undefined} className="w-full max-w-sm flex flex-col items-center">
         <div className="text-xl font-bold tracking-wide uppercase" style={{ color }}>
           {MODES[mode].label}
         </div>
@@ -733,16 +858,16 @@ function PomodoroTimer() {
               Add another 5 min
             </button>
           </div>
-        ) : longBreakMinutes !== null ? (
+        ) : (
           <button
-            onClick={startLongBreak}
+            onClick={() => startLongBreak()}
             disabled={isTransitioning}
             className="flex items-center justify-center px-4 rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ height: "44px", marginTop: "24px" }}
           >
-            Start long break
+            {mode === "break" ? "Switch to long break" : "Start long break"}
           </button>
-        ) : null}
+        )}
 
         <div className="w-full flex flex-col items-center gap-1" style={{ marginTop: "24px" }}>
           <button
@@ -769,7 +894,7 @@ function PomodoroTimer() {
         </div>
       </div>
       </div>
-      <Credit />
+      <Credit inert={!setupComplete} />
     </div>
   );
 }
