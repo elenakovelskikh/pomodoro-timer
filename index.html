@@ -573,7 +573,10 @@ function PomodoroTimer() {
   const color = MODES[mode].color;
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference * (1 - progress);
+  // the gray "remaining" ring starts as a full circle and shrinks away (its far edge retreats
+  // counterclockwise from the 12 o'clock anchor) as time passes, uncovering the colored track
+  // underneath — so the colored area always shows exactly how much of this segment is done
+  const dashoffset = circumference * progress;
 
   const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
 
@@ -765,9 +768,9 @@ function PomodoroTimer() {
 
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+            <circle cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10" />
             <circle
-              cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10"
+              cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
