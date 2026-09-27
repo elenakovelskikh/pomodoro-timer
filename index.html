@@ -104,9 +104,9 @@ const START_WITH_OPTIONS = [
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", emoji: "☕", bg: "#f0f9ff" },
-  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", shadowColor: "#006DA1", emoji: "☕", bg: "#f0f9ff" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#009C99", arcColor: "#ABDEDD", shadowColor: "#007371", emoji: "🌴", bg: "#ecfeff" },
 };
 
 function formatTime(s) {
@@ -571,9 +571,22 @@ function PomodoroTimer() {
   }
 
   const color = MODES[mode].color;
+  const shadowColor = MODES[mode].shadowColor;
+  const arcColor = MODES[mode].arcColor;
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference * (1 - progress);
+  // The colored arc is the time remaining: it starts full at 12 o'clock and its moving end
+  // retreats counter-clockwise as the segment runs.
+  const dashoffset = circumference * progress;
+  const tipDeg = (1 - progress) * 360;
+  // Soft round shadow cast by the moving end onto whatever lies just clockwise of it — the gray
+  // track mid-segment, or the fixed end of the arc itself right at the start. It's a blurred disc
+  // nudged ahead of the cap, so the part peeking out from under the cap is crescent-shaped.
+  const shadowDeg = 1.5;
+  const shadowCenter = {
+    x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
+    y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
+  };
 
   const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
 
@@ -671,6 +684,7 @@ function PomodoroTimer() {
                 <button
                   onClick={confirmAddRounds}
                   className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+                  style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
                 >
                   {addRoundsAmount === null
                     ? "Continue without a limit"
@@ -751,6 +765,7 @@ function PomodoroTimer() {
             <button
               onClick={startSession}
               className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+              style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
             >
               Start
             </button>
@@ -765,12 +780,43 @@ function PomodoroTimer() {
 
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+            <defs>
+              <radialGradient id="ring-tip-shadow">
+                <stop offset="0%" stopColor={shadowColor} stopOpacity="0.25" />
+                <stop offset="55%" stopColor={shadowColor} stopOpacity="0.05" />
+                <stop offset="100%" stopColor={shadowColor} stopOpacity="0" />
+              </radialGradient>
+              {/* keeps the shadow inside the ring's band */}
+              <clipPath id="ring-band">
+                <path
+                  clipRule="evenodd"
+                  d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
+                      M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`}
+                />
+              </clipPath>
+            </defs>
+            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e6e7eb" strokeWidth="10" />
             <circle
-              cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10"
+              cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
+            {/* Moving end: shadow patch plus a cap drawn on top of it, rotated as one piece so it
+                tracks the arc with the same 1s linear easing. */}
+            <g
+              style={{
+                transform: `rotate(${tipDeg}deg)`,
+                transformOrigin: "140px 140px",
+                transition: "transform 1s linear",
+                display: secondsLeft > 0 ? undefined : "none",
+              }}
+            >
+              <circle
+                cx={shadowCenter.x} cy={shadowCenter.y} r="8"
+                fill="url(#ring-tip-shadow)" clipPath="url(#ring-band)"
+              />
+              <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
+            </g>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
@@ -831,10 +877,14 @@ function PomodoroTimer() {
                 disabled={isTransitioning}
                 aria-label={buttonLabel}
                 title={buttonLabel}
-                className={`flex items-center justify-center rounded-full shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex items-center justify-center rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
                   looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
                 }`}
-                style={{ height: "56px", width: "56px", ...(looksActive ? {} : { backgroundColor: color }) }}
+                style={{
+                  height: "56px",
+                  width: "56px",
+                  ...(looksActive ? {} : { backgroundColor: color, boxShadow: `0 2px 8px -2px ${shadowColor}59` }),
+                }}
               >
                 {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
               </button>
