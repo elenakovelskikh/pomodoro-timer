@@ -781,8 +781,8 @@ function PomodoroTimer() {
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
             <defs>
               <radialGradient id="ring-tip-shadow">
-                <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-                <stop offset="55%" stopColor={color} stopOpacity="0.15" />
+                <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+                <stop offset="55%" stopColor={color} stopOpacity="0.05" />
                 <stop offset="100%" stopColor={color} stopOpacity="0" />
               </radialGradient>
               {/* keeps the shadow inside the ring's band */}
@@ -811,7 +811,7 @@ function PomodoroTimer() {
               }}
             >
               <circle
-                cx={shadowCenter.x} cy={shadowCenter.y} r="4"
+                cx={shadowCenter.x} cy={shadowCenter.y} r="9"
                 fill="url(#ring-tip-shadow)" clipPath="url(#ring-band)"
               />
               <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
