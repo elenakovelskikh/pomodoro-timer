@@ -104,9 +104,9 @@ const START_WITH_OPTIONS = [
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", emoji: "☕", bg: "#f0f9ff" },
-  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", emoji: "☕", bg: "#f0f9ff" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", arcColor: "#abcdd6", emoji: "🌴", bg: "#ecfeff" },
 };
 
 function formatTime(s) {
@@ -571,6 +571,7 @@ function PomodoroTimer() {
   }
 
   const color = MODES[mode].color;
+  const arcColor = MODES[mode].arcColor;
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
   // The colored arc is the time remaining: it starts full at 12 o'clock and its moving end
@@ -786,7 +787,7 @@ function PomodoroTimer() {
             </defs>
             <circle cx="140" cy="140" r={radius} fill="none" stroke="#e6e7eb" strokeWidth="10" />
             <circle
-              cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10"
+              cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
@@ -804,7 +805,7 @@ function PomodoroTimer() {
                 d={`M ${140 + radius} 140 A ${radius} ${radius} 0 0 1 ${shadowTail.x} ${shadowTail.y}`}
                 fill="none" stroke="url(#ring-tip-shadow)" strokeWidth="10" strokeLinecap="round"
               />
-              <circle cx={140 + radius} cy="140" r="5" fill={color} />
+              <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
             </g>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
