@@ -69,6 +69,17 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   button:focus-visible {
     outline-offset: 2px;
   }
+  /* Registering --progress as a <percentage> lets the browser tween it like any other
+     animatable property, so the conic-gradient ring redraws smoothly across the 1s
+     transition instead of jumping straight to the new angle every tick. */
+  @property --progress {
+    syntax: '<percentage>';
+    inherits: true;
+    initial-value: 0%;
+  }
+  .ring-conic {
+    transition: --progress 1s linear;
+  }
 </style>
 </head>
 <body>
@@ -579,18 +590,8 @@ function PomodoroTimer() {
   }
 
   const color = MODES[mode].color;
-  const radius = 120;
-  const circumference = 2 * Math.PI * radius;
-  // the gray "remaining" ring starts as a full circle and shrinks away (its far edge retreats
-  // counterclockwise from the 12 o'clock anchor) as time passes, uncovering the colored track
-  // underneath — so the colored area always shows exactly how much of this segment is done
-  const dashoffset = circumference * progress;
-  const grayEnd = darkenColor("#e5e7eb", 0.8);
-  // the contact-shadow dash now reaches SHADOW_OVERLAP px back under the gray arc's own edge
-  // (drawn after it, on top) so gray's opaque body covers that overlap and only the part
-  // spilling forward onto the just-revealed colored track peeks out — instead of the shadow
-  // sitting flush next to gray like a separate tile
-  const SHADOW_OVERLAP = 5;
+  const progressPct = progress * 100;
+  const grayDark = darkenColor("#e5e7eb", 0.8);
 
   const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
 
@@ -781,29 +782,15 @@ function PomodoroTimer() {
         </div>
 
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-            <defs>
-              <linearGradient id="grayGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#e5e7eb" />
-                <stop offset="100%" stopColor={grayEnd} />
-              </linearGradient>
-            </defs>
-            <circle cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10" />
-            {progress > 0.0005 && progress < 0.9995 && (
-              <circle
-                cx="140" cy="140" r={radius} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={`${8 + SHADOW_OVERLAP} ${circumference - 8 - SHADOW_OVERLAP}`}
-                strokeDashoffset={dashoffset + SHADOW_OVERLAP}
-                style={{ transition: "stroke-dashoffset 1s linear", filter: "blur(3px)" }}
-              />
-            )}
-            <circle
-              cx="140" cy="140" r={radius} fill="none" stroke="url(#grayGrad)" strokeWidth="10"
-              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
-              style={{ transition: "stroke-dashoffset 1s linear" }}
-            />
-          </svg>
+          <div
+            className="ring-conic w-full h-full rounded-full"
+            style={{
+              "--progress": `${progressPct}%`,
+              background: `conic-gradient(${color} 0%, ${color} var(--progress), #e5e7eb calc(var(--progress) + 0%), ${grayDark} calc(var(--progress) + 2%), #e5e7eb calc(var(--progress) + 8%), #e5e7eb 100%)`,
+              WebkitMaskImage: "radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))",
+              maskImage: "radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))",
+            }}
+          />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
               <>
