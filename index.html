@@ -785,16 +785,16 @@ function PomodoroTimer() {
               </mask>
             </defs>
             <circle cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10" />
-            <circle
-              cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10"
-              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
-              style={{ transition: "stroke-dashoffset 1s linear" }}
-            />
             {progress > 0.0005 && progress < 0.9995 && (
               <g mask="url(#ringMask)">
                 <circle cx={capX} cy={capY} r="5" fill="#e5e7eb" style={{ filter: "drop-shadow(0 0 1.5px rgba(0,0,0,0.55))" }} />
               </g>
             )}
+            <circle
+              cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10"
+              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
