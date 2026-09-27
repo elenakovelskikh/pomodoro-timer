@@ -777,8 +777,8 @@ function PomodoroTimer() {
             {progress > 0.0005 && progress < 0.9995 && (
               <circle
                 cx="140" cy="140" r={radius} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="10"
-                strokeDasharray={`8 ${circumference - 8}`} strokeDashoffset={dashoffset}
-                style={{ transition: "stroke-dashoffset 1s linear" }}
+                strokeLinecap="round" strokeDasharray={`8 ${circumference - 8}`} strokeDashoffset={dashoffset}
+                style={{ transition: "stroke-dashoffset 1s linear", filter: "blur(3px)" }}
               />
             )}
             <circle
