@@ -69,17 +69,6 @@ if (new URLSearchParams(location.search).has("frame_id")) {
   button:focus-visible {
     outline-offset: 2px;
   }
-  /* Registering --progress as a <percentage> lets the browser tween it like any other
-     animatable property, so the conic-gradient ring redraws smoothly across the 1s
-     transition instead of jumping straight to the new angle every tick. */
-  @property --progress {
-    syntax: '<percentage>';
-    inherits: true;
-    initial-value: 0%;
-  }
-  .ring-conic {
-    transition: --progress 1s linear;
-  }
 </style>
 </head>
 <body>
@@ -115,18 +104,10 @@ const START_WITH_OPTIONS = [
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", emoji: "☕", bg: "#f0f9ff" },
-  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", emoji: "🌴", bg: "#ecfeff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", emoji: "☕", bg: "#f0f9ff" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#0e7490", arcColor: "#abcdd6", emoji: "🌴", bg: "#ecfeff" },
 };
-
-function darkenColor(hex, factor) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 255) * factor);
-  const g = Math.round(((n >> 8) & 255) * factor);
-  const b = Math.round((n & 255) * factor);
-  return `rgb(${r}, ${g}, ${b})`;
-}
 
 function formatTime(s) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
@@ -590,8 +571,20 @@ function PomodoroTimer() {
   }
 
   const color = MODES[mode].color;
-  const progressPct = progress * 100;
-  const grayDark = darkenColor("#e5e7eb", 0.8);
+  const arcColor = MODES[mode].arcColor;
+  const radius = 120;
+  const circumference = 2 * Math.PI * radius;
+  // The colored arc is the time remaining: it starts full at 12 o'clock and its moving end
+  // retreats counter-clockwise as the segment runs.
+  const dashoffset = circumference * progress;
+  const tipDeg = (1 - progress) * 360;
+  // Short shadow patch cast by the moving end onto whatever lies just clockwise of it —
+  // the gray track mid-segment, or the fixed end of the arc itself right at the start.
+  const shadowDeg = 5;
+  const shadowTail = {
+    x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
+    y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
+  };
 
   const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
 
@@ -689,6 +682,7 @@ function PomodoroTimer() {
                 <button
                   onClick={confirmAddRounds}
                   className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+                  style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
                 >
                   {addRoundsAmount === null
                     ? "Continue without a limit"
@@ -769,6 +763,7 @@ function PomodoroTimer() {
             <button
               onClick={startSession}
               className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
+              style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
             >
               Start
             </button>
@@ -782,15 +777,39 @@ function PomodoroTimer() {
         </div>
 
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
-          <div
-            className="ring-conic w-full h-full rounded-full"
-            style={{
-              "--progress": `${progressPct}%`,
-              background: `conic-gradient(${color} 0%, ${color} var(--progress), #e5e7eb calc(var(--progress) + 0%), ${grayDark} calc(var(--progress) + 2%), #e5e7eb calc(var(--progress) + 8%), #e5e7eb 100%)`,
-              WebkitMaskImage: "radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))",
-              maskImage: "radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px))",
-            }}
-          />
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+            <defs>
+              <linearGradient
+                id="ring-tip-shadow" gradientUnits="userSpaceOnUse"
+                x1={shadowTail.x} y1={shadowTail.y} x2={140 + radius} y2="140"
+              >
+                <stop offset="0%" stopColor={color} stopOpacity="0" />
+                <stop offset="100%" stopColor={color} stopOpacity="0.35" />
+              </linearGradient>
+            </defs>
+            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e6e7eb" strokeWidth="10" />
+            <circle
+              cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
+              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+            {/* Moving end: shadow patch plus a cap drawn on top of it, rotated as one piece so it
+                tracks the arc with the same 1s linear easing. */}
+            <g
+              style={{
+                transform: `rotate(${tipDeg}deg)`,
+                transformOrigin: "140px 140px",
+                transition: "transform 1s linear",
+                display: secondsLeft > 0 ? undefined : "none",
+              }}
+            >
+              <path
+                d={`M ${140 + radius} 140 A ${radius} ${radius} 0 0 1 ${shadowTail.x} ${shadowTail.y}`}
+                fill="none" stroke="url(#ring-tip-shadow)" strokeWidth="10" strokeLinecap="round"
+              />
+              <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
+            </g>
+          </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {isTransitioning ? (
               <>
