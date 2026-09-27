@@ -491,6 +491,18 @@ function PomodoroTimer() {
       : "Violet Tomato – Automatic Pomodoro Focus Timer";
   }, [secondsLeft, mode, isRunning]);
 
+  // Lock background scroll while a popup covers the screen — otherwise the page behind it can
+  // still be scrolled (e.g. by touch drag), even though it's inert and visually dimmed.
+  useEffect(() => {
+    const modalOpen = !setupComplete || addRoundsModalOpen;
+    document.documentElement.style.overflow = modalOpen ? "hidden" : "";
+    document.body.style.overflow = modalOpen ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [setupComplete, addRoundsModalOpen]);
+
   function startSession() {
     setSetupComplete(true);
     setOriginalRoundsChoice(roundsLimit);
