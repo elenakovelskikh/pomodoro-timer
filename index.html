@@ -586,12 +586,12 @@ function PomodoroTimer() {
   // underneath — so the colored area always shows exactly how much of this segment is done
   const dashoffset = circumference * progress;
   // where the gray arc's moving end currently sits, in the ring's own (unrotated) coordinate
-  // space — the colored arc's gradient darkens toward this point, and the anchor (140+radius, 140)
-  // is the fixed end at 12 o'clock, which stays the plain mode color
+  // space — the gray arc's own gradient darkens toward this point, so its moving edge already
+  // reads as shaded, while the fixed end at the anchor (140+radius, 140) stays the plain track color
   const capAngle = (1 - progress) * 2 * Math.PI;
   const capX = 140 + radius * Math.cos(capAngle);
   const capY = 140 + radius * Math.sin(capAngle);
-  const colorEnd = darkenColor(color, 0.72);
+  const grayEnd = darkenColor("#e5e7eb", 0.82);
   // the contact-shadow dash now reaches SHADOW_OVERLAP px back under the gray arc's own edge
   // (drawn after it, on top) so gray's opaque body covers that overlap and only the part
   // spilling forward onto the just-revealed colored track peeks out — instead of the shadow
@@ -789,12 +789,12 @@ function PomodoroTimer() {
         <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`} style={{ marginTop: "24px" }}>
           <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
             <defs>
-              <linearGradient id="progressGrad" gradientUnits="userSpaceOnUse" x1={140 + radius} y1="140" x2={capX} y2={capY}>
-                <stop offset="0%" stopColor={color} />
-                <stop offset="100%" stopColor={colorEnd} />
+              <linearGradient id="grayGrad" gradientUnits="userSpaceOnUse" x1={140 + radius} y1="140" x2={capX} y2={capY}>
+                <stop offset="0%" stopColor="#e5e7eb" />
+                <stop offset="100%" stopColor={grayEnd} />
               </linearGradient>
             </defs>
-            <circle cx="140" cy="140" r={radius} fill="none" stroke="url(#progressGrad)" strokeWidth="10" />
+            <circle cx="140" cy="140" r={radius} fill="none" stroke={color} strokeWidth="10" />
             {progress > 0.0005 && progress < 0.9995 && (
               <circle
                 cx="140" cy="140" r={radius} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="10"
@@ -805,7 +805,7 @@ function PomodoroTimer() {
               />
             )}
             <circle
-              cx="140" cy="140" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10"
+              cx="140" cy="140" r={radius} fill="none" stroke="url(#grayGrad)" strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
