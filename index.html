@@ -179,6 +179,8 @@ const RotateCcwIcon = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9
 const SkipForwardIcon = (props) => <Icon {...props}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
 const ChevronDownIcon = (props) => <Icon {...props}><path d="m6 9 6 6 6-6" /></Icon>;
 const ChevronUpIcon = (props) => <Icon {...props}><path d="m18 15-6-6-6 6" /></Icon>;
+const MinusIcon = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+const PlusIcon = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
 
 // A proper ARIA radiogroup: one tab stop for the whole group (only the checked option is in the
 // tab order), Left/Up and Right/Down move the checked option and keyboard focus together. Since
@@ -611,9 +613,9 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}
                     disabled={addRoundsAmount === null}
-                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
-                    −
+                    <MinusIcon size={20} />
                   </button>
                   <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                     <span className="flex items-baseline gap-1.5 tabular-nums">
@@ -626,9 +628,9 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? 1 : Math.min(16, n + 1)))}
                     disabled={addRoundsAmount === 16}
-                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                   >
-                    +
+                    <PlusIcon size={20} />
                   </button>
                 </div>
               </div>
@@ -697,9 +699,9 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
-                  −
+                  <MinusIcon size={20} />
                 </button>
                 <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                   <span className="flex items-baseline gap-1.5 tabular-nums">
@@ -712,9 +714,9 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-neutral-100"
                 >
-                  +
+                  <PlusIcon size={20} />
                 </button>
               </div>
             </div>
