@@ -855,10 +855,14 @@ function PomodoroTimer() {
                 disabled={isTransitioning}
                 aria-label={buttonLabel}
                 title={buttonLabel}
-                className={`flex items-center justify-center rounded-full shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex items-center justify-center rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
                   looksActive ? "bg-neutral-200 text-neutral-600 hover:bg-neutral-300" : "text-white"
                 }`}
-                style={{ height: "56px", width: "56px", ...(looksActive ? {} : { backgroundColor: color }) }}
+                style={{
+                  height: "56px",
+                  width: "56px",
+                  ...(looksActive ? {} : { backgroundColor: color, boxShadow: `0 6px 16px -2px ${color}80` }),
+                }}
               >
                 {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
               </button>
