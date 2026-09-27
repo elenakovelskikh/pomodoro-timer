@@ -783,7 +783,7 @@ function PomodoroTimer() {
             <defs>
               <radialGradient id="ring-tip-shadow">
                 <stop offset="0%" stopColor={shadowColor} stopOpacity="0.25" />
-                <stop offset="55%" stopColor={shadowColor} stopOpacity="0.05" />
+                <stop offset="45%" stopColor={shadowColor} stopOpacity="0.1" />
                 <stop offset="100%" stopColor={shadowColor} stopOpacity="0" />
               </radialGradient>
               {/* keeps the shadow inside the ring's band */}
@@ -795,7 +795,7 @@ function PomodoroTimer() {
                 />
               </clipPath>
             </defs>
-            <circle cx="140" cy="140" r={radius} fill="none" stroke="#e6e7eb" strokeWidth="10" />
+            <circle cx="140" cy="140" r={radius} fill="none" stroke="#EBECF0" strokeWidth="10" />
             <circle
               cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
