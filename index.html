@@ -26,6 +26,13 @@
 <script src="vendor/react-dom.production.min.js"></script>
 <script src="vendor/babel.min.js"></script>
 <script src="vendor/tailwindcss-3.4.17.js"></script>
+<script>
+  // Without this, tapping a button on a touch device leaves its hover: styles (e.g. the
+  // darker background on the round control buttons) stuck on until something else is tapped,
+  // since there's no mouse to trigger a "leave". This scopes every hover: utility to devices
+  // that actually support hovering, matching how a real mouse/trackpad behaves.
+  tailwind.config = { future: { hoverOnlyWhenSupported: true } };
+</script>
 <!-- Discord Activity wrapper: runs only when the page is launched inside Discord (it adds frame_id to the URL);
      on the regular website nothing here loads -->
 <script type="module">
