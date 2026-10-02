@@ -531,7 +531,9 @@ function PomodoroTimer() {
   }
 
   function handleReset() {
-    const baseTotal = (mode === "longBreak" ? longBreakMinutes : MODES[mode].minutes) * 60;
+    // a manually started long break runs 30 min when "Long break length" is None (see
+    // startLongBreak) — restart it at that length too, rather than at zero
+    const baseTotal = (mode === "longBreak" ? longBreakMinutes ?? LONG_BREAK_MIN : MODES[mode].minutes) * 60;
     setSecondsLeft(baseTotal);
     setSegmentTotal(baseTotal);
     segmentStartRef.current = new Date();
