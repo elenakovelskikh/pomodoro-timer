@@ -1,0 +1,37 @@
+import { useArgs } from "storybook/preview-api";
+import { LogToggle } from "../components/LogToggle";
+import { HistoryLog } from "../components/HistoryLog";
+
+const at = (h, m) => new Date(2026, 9, 6, h, m);
+const sample = [
+  { type: "focus", round: 1, start: at(10, 0), end: at(10, 25) },
+  { type: "break", round: 1, start: at(10, 25), end: at(10, 30) },
+  { type: "focus", round: 2, start: at(10, 30), end: at(10, 55) },
+  { type: "longBreak", round: 2, start: at(10, 55), end: at(11, 25) },
+];
+
+export default {
+  title: "Components/Log",
+  component: LogToggle,
+  tags: ["autodocs"],
+  argTypes: {
+    count: { control: { type: "number", min: 0 }, description: "Completed focus rounds; at 0 there is no chevron", table: { type: { summary: "number" } } },
+    open: { control: "boolean", description: "Whether the log under the toggle is shown (chevron up)", table: { type: { summary: "boolean" } } },
+    onClick: { control: false, description: "Open/close the log", table: { type: { summary: "() => void" } } },
+  },
+  // the toggle plus the log it controls; clicking flips `open`
+  render: function Render(args) {
+    const [, updateArgs] = useArgs();
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <LogToggle {...args} onClick={() => args.count > 0 && updateArgs({ open: !args.open })} />
+        {args.open && args.count > 0 && <HistoryLog history={sample} />}
+      </div>
+    );
+  },
+  args: { count: 2, open: false },
+};
+
+export const Default = {};
+export const Open = { args: { open: true } };
+export const Empty = { args: { count: 0 }, parameters: { docs: { description: { story: "Nothing completed yet: no chevron, nothing to open." } } } };

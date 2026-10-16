@@ -16,9 +16,9 @@ export function RoundsStepper({ label = "Number of rounds", value = null, onChan
         </button>
         <span className="w-24 flex items-center justify-center border-x border-neutral-200">
           <span className="flex items-baseline gap-1.5 tabular-nums">
-            <span className="text-xl font-bold text-neutral-800 leading-none">{value === null ? "∞" : value}</span>
+            <span className="text-xl font-bold text-neutral-900 leading-none">{value === null ? "∞" : value}</span>
             {value !== null && (
-              <span className="text-sm text-neutral-800 leading-none">{value === 1 ? "round" : "rounds"}</span>
+              <span className="text-sm text-neutral-900 leading-none">{value === 1 ? "round" : "rounds"}</span>
             )}
           </span>
         </span>

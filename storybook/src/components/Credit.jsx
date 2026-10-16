@@ -4,7 +4,7 @@ export function Credit({ inert }) {
     <div
       inert={inert ? "" : undefined}
       className="w-full flex items-center justify-center gap-1 py-4"
-      style={{ fontSize: "10px", color: "#999999" }}
+      style={{ fontSize: "10px", color: "#a3a3a3" }}
     >
       <span>Made by Elena Kovelskikh</span>
       <span>·</span>

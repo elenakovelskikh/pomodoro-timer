@@ -13,7 +13,7 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
     <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
       {(title || description) && (
         <div className="w-full text-left">
-          {title && <div className="text-xl font-bold text-neutral-800">{title}</div>}
+          {title && <div className="text-xl font-bold text-neutral-900">{title}</div>}
           {description && <div className={`text-sm text-neutral-400 ${title ? "mt-3" : ""}`}>{description}</div>}
         </div>
       )}

@@ -87,9 +87,9 @@ const START_WITH_OPTIONS = [
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7738E4", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
-  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", shadowColor: "#006DA1", emoji: "☕", bg: "#f0f9ff" },
-  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#009C99", arcColor: "#ABDEDD", shadowColor: "#007371", emoji: "🌴", bg: "#ecfeff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7738E4", emoji: ["📚", "💻", "✍️"] },
+  break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", shadowColor: "#006DA1", emoji: "☕" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#009C99", arcColor: "#ABDEDD", shadowColor: "#007371", emoji: "🌴" },
 };
 
 function formatTime(s) {
@@ -222,7 +222,7 @@ function HistoryLog({ history }) {
       {history.map((entry, i) => {
         const label = entry.type === "focus" ? "focus" : entry.type === "break" ? "break" : "long break";
         return (
-          <div key={i} className="flex text-xs" style={{ color: "#666666" }}>
+          <div key={i} className="flex text-xs" style={{ color: "#737373" }}>
             <span className="inline-block" style={{ width: "80px" }}>{label}</span>
             <span className="font-mono">
               {formatClock(entry.start)} – {formatClock(entry.end)}
@@ -239,7 +239,7 @@ function Credit({ inert }) {
     <div
       inert={inert ? "" : undefined}
       className="w-full flex items-center justify-center gap-1 py-4"
-      style={{ fontSize: "10px", color: "#999999" }}
+      style={{ fontSize: "10px", color: "#a3a3a3" }}
     >
       <span>Made by Elena Kovelskikh</span>
       <span>·</span>
@@ -582,7 +582,7 @@ function PomodoroTimer() {
         <div inert={addRoundsModalOpen ? "" : undefined} className="w-full max-w-xs bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col items-center text-center">
           <div className="text-[30px]">🎉</div>
           <div className="w-full flex flex-col items-center" style={{ marginTop: "20px" }}>
-            <div className="text-xl font-bold text-neutral-800">{completionHeading}</div>
+            <div className="text-xl font-bold text-neutral-900">{completionHeading}</div>
             <button
               onClick={() => setSummaryLogOpen((o) => !o)}
               disabled={history.length === 0}
@@ -594,9 +594,9 @@ function PomodoroTimer() {
               </span>
               {history.length > 0 &&
                 (summaryLogOpen ? (
-                  <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+                  <ChevronUpIcon size={16} style={{ color: "#737373" }} />
                 ) : (
-                  <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+                  <ChevronDownIcon size={16} style={{ color: "#737373" }} />
                 ))}
             </button>
             {summaryLogOpen && history.length > 0 && (
@@ -636,9 +636,9 @@ function PomodoroTimer() {
                   </button>
                   <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                     <span className="flex items-baseline gap-1.5 tabular-nums">
-                      <span className="text-xl font-bold text-neutral-800 leading-none">{addRoundsAmount === null ? "∞" : addRoundsAmount}</span>
+                      <span className="text-xl font-bold text-neutral-900 leading-none">{addRoundsAmount === null ? "∞" : addRoundsAmount}</span>
                       {addRoundsAmount !== null && (
-                        <span className="text-sm text-neutral-800 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
+                        <span className="text-sm text-neutral-900 leading-none">{addRoundsAmount === 1 ? "round" : "rounds"}</span>
                       )}
                     </span>
                   </span>
@@ -704,7 +704,7 @@ function PomodoroTimer() {
         >
           <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
             <div className="w-full text-left">
-              <div className="text-xl font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
+              <div className="text-xl font-bold text-neutral-900">Automatic Pomodoro Focus Timer</div>
               <div className="text-sm text-neutral-400 mt-3">
                 Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, each
                 one is logged and ends with a sound alert. Every 4th round gets an optional longer break.
@@ -723,9 +723,9 @@ function PomodoroTimer() {
                 </button>
                 <span className="w-24 flex items-center justify-center border-x border-neutral-200">
                   <span className="flex items-baseline gap-1.5 tabular-nums">
-                    <span className="text-xl font-bold text-neutral-800 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
+                    <span className="text-xl font-bold text-neutral-900 leading-none">{roundsLimit === null ? "∞" : roundsLimit}</span>
                     {roundsLimit !== null && (
-                      <span className="text-sm text-neutral-800 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
+                      <span className="text-sm text-neutral-900 leading-none">{roundsLimit === 1 ? "round" : "rounds"}</span>
                     )}
                   </span>
                 </span>
@@ -825,7 +825,7 @@ function PomodoroTimer() {
                     <span style={{ fontSize: "30px", lineHeight: "30px" }}>{MODES[mode].emoji}</span>
                   )}
                 </div>
-                <div className="text-5xl font-bold tabular-nums text-neutral-800">{formatTime(secondsLeft)}</div>
+                <div className="text-5xl font-bold tabular-nums text-neutral-900">{formatTime(secondsLeft)}</div>
                 <div
                   className="flex items-center justify-center text-sm text-neutral-400"
                   style={{ height: "30px", marginTop: "12px" }}
@@ -928,9 +928,9 @@ function PomodoroTimer() {
               {completedCycles > 0 && (
                 <span className="self-end py-px">
                   {logOpen ? (
-                    <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+                    <ChevronUpIcon size={16} style={{ color: "#737373" }} />
                   ) : (
-                    <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+                    <ChevronDownIcon size={16} style={{ color: "#737373" }} />
                   )}
                 </span>
               )}

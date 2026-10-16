@@ -12,9 +12,9 @@ export function LogToggle({ count = 0, open = false, onClick }) {
         {count > 0 && (
           <span className="self-end py-px">
             {open ? (
-              <ChevronUpIcon size={16} style={{ color: "#808080" }} />
+              <ChevronUpIcon size={16} style={{ color: "#737373" }} />
             ) : (
-              <ChevronDownIcon size={16} style={{ color: "#808080" }} />
+              <ChevronDownIcon size={16} style={{ color: "#737373" }} />
             )}
           </span>
         )}

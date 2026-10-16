@@ -75,7 +75,7 @@ export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, 
                 <span style={{ fontSize: "30px", lineHeight: "30px" }}>{MODES[mode].emoji}</span>
               )}
             </div>
-            <div className="text-5xl font-bold tabular-nums text-neutral-800">{formatTime(secondsLeft)}</div>
+            <div className="text-5xl font-bold tabular-nums text-neutral-900">{formatTime(secondsLeft)}</div>
             <div className="flex items-center justify-center text-sm text-neutral-400" style={{ height: "30px", marginTop: "12px" }}>
               {centerLabel}
             </div>

@@ -1,24 +1,24 @@
 import { ControlRow } from "../components/ControlRow";
 
-const fn = (summary) => ({ table: { type: { summary: "() => void" } }, description: summary });
+const fn = (description) => ({ description, table: { type: { summary: "() => void" } } });
 
 export default {
   title: "Components/ControlRow",
   component: ControlRow,
   tags: ["autodocs"],
+  render: (args, { globals }) => <ControlRow {...args} mode={globals.mode} />,
   argTypes: {
-    mode: { control: "radio", options: ["work", "break", "longBreak"], description: "Colors the middle button (Start/Resume) and its shadow", table: { type: { summary: '"work" | "break" | "longBreak"' } } },
-    buttonLabel: { control: "radio", options: ["Start", "Resume", "Pause"], description: "State of the middle button: Pause is gray, Start/Resume are colored", table: { type: { summary: '"Start" | "Resume" | "Pause"' } } },
+    mode: { control: false, description: "Set from the Mode toolbar. Colors the middle button (Start/Resume) and its shadow", table: { type: { summary: '"work" | "break" | "longBreak"' } } },
+    buttonLabel: { control: "radio", options: ["Pause", "Resume", "Start"], description: "State of the middle button: Pause (gray) while running, Resume after a pause, Start before the segment has begun", table: { type: { summary: '"Pause" | "Resume" | "Start"' } } },
     disabled: { control: "boolean", description: "All three disabled (during the transition between segments)", table: { type: { summary: "boolean" } } },
     onReset: { action: "reset", ...fn("Restart the current segment") },
-    onToggle: { action: "toggle", ...fn("Start, pause or resume") },
+    onToggle: { action: "toggle", ...fn("Middle button: pause while running, resume/start otherwise") },
     onSkip: { action: "skip", ...fn("Finish the current segment now") },
   },
-  args: { mode: "work", buttonLabel: "Start", disabled: false },
+  args: { buttonLabel: "Pause", disabled: false },
 };
 
-export const Start = {};
-export const Pause = { args: { buttonLabel: "Pause" } };
-export const ResumeBreak = { args: { mode: "break", buttonLabel: "Resume" } };
-export const ResumeLongBreak = { args: { mode: "longBreak", buttonLabel: "Resume" } };
+export const Running = {};
+export const Paused = { args: { buttonLabel: "Resume" } };
+export const NotStarted = { args: { buttonLabel: "Start" } };
 export const Disabled = { args: { disabled: true } };
