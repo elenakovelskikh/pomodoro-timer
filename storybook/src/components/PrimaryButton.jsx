@@ -7,7 +7,7 @@ export function PrimaryButton({ children = "Button", onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full px-6 py-3 rounded-full text-on-color text-button bg-primary hover:bg-primary-hover"
+      className="w-full px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
       style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
     >
       {children}

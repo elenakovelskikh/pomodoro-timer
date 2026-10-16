@@ -3,10 +3,10 @@ import { LONG_BREAK_OPTIONS, START_WITH_OPTIONS } from "../tokens";
 import { RadioGroup } from "./RadioGroup";
 import { RoundsStepper } from "./RoundsStepper";
 import { PrimaryButton } from "./PrimaryButton";
-import { GhostButton } from "./GhostButton";
+import { SecondaryButton } from "./SecondaryButton";
 
 // Base popup: optional title, text and controls (children), a required primary button and an
-// optional secondary (ghost) one. `inline` renders just the card in normal flow (for Storybook);
+// optional secondary (gray) one. `inline` renders just the card in normal flow (for Storybook);
 // without it the card sits over the page on the white veil, like in the app.
 export function Popup({ title, description, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
   const card = (
@@ -21,7 +21,7 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
       {secondaryLabel ? (
         <div className="w-full flex flex-col items-center gap-1">
           <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
-          <GhostButton fullWidth onClick={onSecondary}>{secondaryLabel}</GhostButton>
+          <SecondaryButton onClick={onSecondary}>{secondaryLabel}</SecondaryButton>
         </div>
       ) : (
         <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>

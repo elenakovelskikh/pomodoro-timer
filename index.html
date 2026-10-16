@@ -671,7 +671,7 @@ function PomodoroTimer() {
               <div className="w-full flex flex-col items-center gap-1">
                 <button
                   onClick={confirmAddRounds}
-                  className="w-full px-6 py-3 rounded-full text-on-color text-button bg-primary hover:bg-primary-hover"
+                  className="w-full px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
                   style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
                 >
                   {addRoundsAmount === null
@@ -682,7 +682,7 @@ function PomodoroTimer() {
                 </button>
                 <button
                   onClick={() => setAddRoundsModalOpen(false)}
-                  className="w-full flex items-center justify-center rounded-full text-control text-secondary hover:text-secondary-hover h-11"
+                  className="w-full flex items-center justify-center rounded-xl bg-secondary-button text-control text-label hover:bg-secondary-button-hover h-11"
                 >
                   Cancel
                 </button>
@@ -749,7 +749,7 @@ function PomodoroTimer() {
 
             <button
               onClick={startSession}
-              className="w-full px-6 py-3 rounded-full text-on-color text-button bg-primary hover:bg-primary-hover"
+              className="w-full px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
               style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
             >
               Start
