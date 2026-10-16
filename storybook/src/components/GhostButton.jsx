@@ -1,13 +1,13 @@
 import React from "react";
 
-// The quiet gray text buttons used for secondary actions ("Switch to long break", "Cancel", ...).
-export function TextButton({ children, onClick, disabled = false, wide = false }) {
+// Quiet gray text button for secondary actions ("Switch to long break", "Add more rounds", "Cancel").
+export function GhostButton({ children = "Button", onClick, disabled = false, fullWidth = false }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed ${
-        wide ? "w-full" : "px-4"
+        fullWidth ? "w-full" : "px-4"
       }`}
       style={{ height: "44px" }}
     >

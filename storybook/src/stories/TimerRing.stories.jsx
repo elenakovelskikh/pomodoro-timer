@@ -5,13 +5,13 @@ export default {
   component: TimerRing,
   tags: ["autodocs"],
   argTypes: {
-    mode: { control: "radio", options: ["work", "break", "longBreak"] },
-    progress: { control: { type: "range", min: 0, max: 1, step: 0.01 } },
-    secondsLeft: { control: { type: "number" } },
-    completedCycles: { control: { type: "number", min: 0 } },
-    isTransitioning: { control: "boolean" },
+    mode: { control: "radio", options: ["work", "break", "longBreak"], description: "Which segment is running; picks the arc and shadow colors and the emoji", table: { type: { summary: '"work" | "break" | "longBreak"' } } },
+    progress: { control: { type: "range", min: 0, max: 1, step: 0.01 }, description: "Share of the segment already done, 0–1. The colored arc is what's left", table: { type: { summary: "number" } } },
+    secondsLeft: { control: { type: "number", min: 0 }, description: "Time shown in the middle; at 0 the moving cap and its shadow are hidden", table: { type: { summary: "number" } } },
+    round: { control: { type: "number", min: 1 }, description: '"Round N" caption under the time, Focus only', table: { type: { summary: "number" } } },
+    isTransitioning: { control: "boolean", description: "The moment between segments: pulses and shows the \"… complete\" message instead of the time", table: { type: { summary: "boolean" } } },
   },
-  args: { mode: "work", progress: 0.35, secondsLeft: 975, completedCycles: 0, isTransitioning: false },
+  args: { mode: "work", progress: 0.35, secondsLeft: 975, round: 1, isTransitioning: false },
 };
 
 export const Focus = {};

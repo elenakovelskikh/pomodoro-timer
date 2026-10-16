@@ -17,7 +17,7 @@ export const START_WITH_OPTIONS = [
 export const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 export const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7738E4", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
   break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", shadowColor: "#006DA1", emoji: "☕", bg: "#f0f9ff" },
   longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#009C99", arcColor: "#ABDEDD", shadowColor: "#007371", emoji: "🌴", bg: "#ecfeff" },
 };

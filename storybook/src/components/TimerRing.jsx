@@ -2,7 +2,8 @@ import React, { useId } from "react";
 import { MODES, formatTime } from "../tokens";
 
 // Pure view of the timer ring: everything it shows comes from props, no timers or state.
-export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, completedCycles = 0, isTransitioning = false }) {
+// `round` is the "Round N" caption under the time; it only shows in Focus.
+export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, round = 1, isTransitioning = false }) {
   // unique ids so several rings on one page (e.g. a docs page) don't share a gradient/clip
   const uid = useId().replace(/:/g, "");
   const shadowId = `ring-tip-shadow-${uid}`;
@@ -18,7 +19,7 @@ export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, 
     x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
     y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
   };
-  const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
+  const centerLabel = mode === "work" ? `Round ${round}` : "";
 
   return (
     <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`}>

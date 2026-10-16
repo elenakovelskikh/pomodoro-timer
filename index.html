@@ -87,7 +87,7 @@ const START_WITH_OPTIONS = [
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
 const MODES = {
-  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7c3aed", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
+  work: { label: "Focus", minutes: WORK_MIN, color: "#7c3aed", arcColor: "#d1baf6", shadowColor: "#7738E4", emoji: ["📚", "💻", "✍️"], bg: "#f5f3ff" },
   break: { label: "Break", minutes: BREAK_MIN, color: "#009AE2", arcColor: "#abdef5", shadowColor: "#006DA1", emoji: "☕", bg: "#f0f9ff" },
   longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, color: "#009C99", arcColor: "#ABDEDD", shadowColor: "#007371", emoji: "🌴", bg: "#ecfeff" },
 };
@@ -669,7 +669,7 @@ function PomodoroTimer() {
                 <button
                   onClick={confirmAddRounds}
                   className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
-                  style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
+                  style={{ boxShadow: "0 2px 8px -2px #7738E459" }}
                 >
                   {addRoundsAmount === null
                     ? "Continue without a limit"
@@ -750,7 +750,7 @@ function PomodoroTimer() {
             <button
               onClick={startSession}
               className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
-              style={{ boxShadow: "0 2px 8px -2px #7c3aed59" }}
+              style={{ boxShadow: "0 2px 8px -2px #7738E459" }}
             >
               Start
             </button>

@@ -3,14 +3,29 @@ import { LONG_BREAK_OPTIONS, START_WITH_OPTIONS } from "../tokens";
 import { RadioGroup } from "./RadioGroup";
 import { RoundsStepper } from "./RoundsStepper";
 import { PrimaryButton } from "./PrimaryButton";
-import { TextButton } from "./TextButton";
+import { GhostButton } from "./GhostButton";
 
-// `inline` renders the card in normal flow (for Storybook); without it the card covers the
-// screen with the white veil, like in the app.
-function PopupFrame({ children, inline }) {
+// Base popup: optional title, text and controls (children), a required primary button and an
+// optional secondary (ghost) one. `inline` renders just the card in normal flow (for Storybook);
+// without it the card sits over the page on the white veil, like in the app.
+export function Popup({ title, description, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
   const card = (
     <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+      {(title || description) && (
+        <div className="w-full text-left">
+          {title && <div className="text-xl font-bold text-neutral-800">{title}</div>}
+          {description && <div className={`text-sm text-neutral-400 ${title ? "mt-3" : ""}`}>{description}</div>}
+        </div>
+      )}
       {children}
+      {secondaryLabel ? (
+        <div className="w-full flex flex-col items-center gap-1">
+          <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
+          <GhostButton fullWidth onClick={onSecondary}>{secondaryLabel}</GhostButton>
+        </div>
+      ) : (
+        <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
+      )}
     </div>
   );
   if (inline) return card;
@@ -23,14 +38,18 @@ function PopupFrame({ children, inline }) {
 
 export function SetupPopup({ roundsLimit = null, onRoundsChange, longBreakMinutes = 30, onLongBreakChange, onStart, inline = false }) {
   return (
-    <PopupFrame inline={inline}>
-      <div className="w-full text-left">
-        <div className="text-xl font-bold text-neutral-800">Automatic Pomodoro Focus Timer</div>
-        <div className="text-sm text-neutral-400 mt-3">
+    <Popup
+      inline={inline}
+      title="Automatic Pomodoro Focus Timer"
+      description={
+        <>
           Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, each
           one is logged and ends with a sound alert. Every 4th round gets an optional longer break.
-        </div>
-      </div>
+        </>
+      }
+      primaryLabel="Start"
+      onPrimary={onStart}
+    >
       <RoundsStepper value={roundsLimit} onChange={onRoundsChange} />
       <RadioGroup
         label="Long break length"
@@ -39,8 +58,7 @@ export function SetupPopup({ roundsLimit = null, onRoundsChange, longBreakMinute
         onChange={onLongBreakChange}
         pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
       />
-      <PrimaryButton onClick={onStart}>Start</PrimaryButton>
-    </PopupFrame>
+    </Popup>
   );
 }
 
@@ -51,7 +69,13 @@ export function AddRoundsPopup({
   onConfirm, onCancel, inline = false,
 }) {
   return (
-    <PopupFrame inline={inline}>
+    <Popup
+      inline={inline}
+      primaryLabel={amount === null ? "Continue without a limit" : amount === 1 ? "Add 1 round" : `Add ${amount} rounds`}
+      onPrimary={onConfirm}
+      secondaryLabel="Cancel"
+      onSecondary={onCancel}
+    >
       <RoundsStepper label="How many more rounds?" value={amount} onChange={onAmountChange} />
       <RadioGroup
         label="Start with"
@@ -67,12 +91,6 @@ export function AddRoundsPopup({
         onChange={onLongBreakChange}
         pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
       />
-      <div className="w-full flex flex-col items-center gap-1">
-        <PrimaryButton onClick={onConfirm}>
-          {amount === null ? "Continue without a limit" : amount === 1 ? "Add 1 round" : `Add ${amount} rounds`}
-        </PrimaryButton>
-        <TextButton wide onClick={onCancel}>Cancel</TextButton>
-      </div>
-    </PopupFrame>
+    </Popup>
   );
 }
