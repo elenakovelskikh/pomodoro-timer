@@ -21,7 +21,7 @@ export const Default = {
     children: { control: false, description: "Optional controls between the text and the buttons", table: { type: { summary: "ReactNode" } } },
     primaryLabel: { control: "text", description: "Required primary (violet) button", table: { type: { summary: "string" } } },
     onPrimary: action("primary"),
-    secondaryLabel: { control: "text", description: "Optional secondary (gray) button under the primary one; leave empty to hide it", table: { type: { summary: "string" } } },
+    secondaryLabel: { control: "text", description: "Optional secondary (gray) button to the left of the primary one; leave empty to hide it", table: { type: { summary: "string" } } },
     onSecondary: action("secondary"),
     inline: { control: false, description: "Render just the card, without the fullscreen veil", table: { type: { summary: "boolean" } } },
   },

@@ -668,10 +668,17 @@ function PomodoroTimer() {
                 value={longBreakMinutes}
                 onChange={setLongBreakMinutes}
               />
-              <div className="w-full flex flex-col items-center gap-1">
+              {/* Cancel hugs its text and the CTA takes the rest, so even "Continue without a limit" fits on one line */}
+              <div className="w-full flex gap-2">
+                <button
+                  onClick={() => setAddRoundsModalOpen(false)}
+                  className="shrink-0 px-6 py-3 rounded-xl bg-secondary-button text-button text-label hover:bg-secondary-button-hover"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={confirmAddRounds}
-                  className="w-full px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
+                  className="flex-1 px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
                   style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
                 >
                   {addRoundsAmount === null
@@ -679,12 +686,6 @@ function PomodoroTimer() {
                     : addRoundsAmount === 1
                     ? "Add 1 round"
                     : `Add ${addRoundsAmount} rounds`}
-                </button>
-                <button
-                  onClick={() => setAddRoundsModalOpen(false)}
-                  className="w-full flex items-center justify-center rounded-xl bg-secondary-button text-control text-label hover:bg-secondary-button-hover h-11"
-                >
-                  Cancel
                 </button>
               </div>
             </div>

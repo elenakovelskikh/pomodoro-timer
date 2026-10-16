@@ -6,7 +6,7 @@ import { PrimaryButton } from "./PrimaryButton";
 import { SecondaryButton } from "./SecondaryButton";
 
 // Base popup: optional title, text and controls (children), a required primary button and an
-// optional secondary (gray) one. `inline` renders just the card in normal flow (for Storybook);
+// optional secondary (gray) one to its left. `inline` renders just the card in normal flow (for Storybook);
 // without it the card sits over the page on the white veil, like in the app.
 export function Popup({ title, description, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
   const card = (
@@ -19,9 +19,9 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
       )}
       {children}
       {secondaryLabel ? (
-        <div className="w-full flex flex-col items-center gap-1">
-          <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
+        <div className="w-full flex gap-2">
           <SecondaryButton onClick={onSecondary}>{secondaryLabel}</SecondaryButton>
+          <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
         </div>
       ) : (
         <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
