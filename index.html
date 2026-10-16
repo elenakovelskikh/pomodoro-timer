@@ -594,7 +594,7 @@ function PomodoroTimer() {
             <button
               onClick={() => setSummaryLogOpen((o) => !o)}
               disabled={history.length === 0}
-              className="w-full flex items-center justify-center gap-1 rounded-full text-control text-secondary hover:text-secondary-hover disabled:hover:text-secondary disabled:cursor-default h-11 mt-2"
+              className="w-full flex items-center justify-center gap-1 text-control text-secondary hover:text-secondary-hover disabled:hover:text-secondary disabled:cursor-default h-11 mt-2"
             >
               <span>
                 {completedCycles === 1 ? "You completed 1 round" : `You completed all ${completedCycles} rounds`}
@@ -618,7 +618,7 @@ function PomodoroTimer() {
               setAddStartsWithBreak(true);
               setAddRoundsModalOpen(true);
             }}
-            className="w-full flex items-center justify-center rounded-full text-control text-secondary hover:text-secondary-hover h-11 mt-1"
+            className="w-full flex items-center justify-center text-control text-secondary hover:text-secondary-hover h-11 mt-1"
           >
             Add more rounds
           </button>
@@ -668,17 +668,19 @@ function PomodoroTimer() {
                 value={longBreakMinutes}
                 onChange={setLongBreakMinutes}
               />
-              {/* Cancel hugs its text and the CTA takes the rest, so even "Continue without a limit" fits on one line */}
-              <div className="w-full flex gap-2">
+              {/* One row (Cancel hugging its text, CTA taking the rest) while both labels fit on one line;
+                  once they don't, the CTA wraps onto its own line and wrap-reverse puts it above Cancel,
+                  both full width. The 1 : 999 grow ratio keeps Cancel hugging in the one-row case. */}
+              <div className="w-full flex flex-wrap-reverse gap-2">
                 <button
                   onClick={() => setAddRoundsModalOpen(false)}
-                  className="shrink-0 px-6 py-3 rounded-xl bg-secondary-button text-button text-label hover:bg-secondary-button-hover"
+                  className="grow h-11 px-6 rounded-xl bg-secondary-button text-button text-label hover:bg-secondary-button-hover whitespace-nowrap"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmAddRounds}
-                  className="flex-1 px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
+                  className="grow-[999] h-11 px-6 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover whitespace-nowrap"
                   style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
                 >
                   {addRoundsAmount === null
@@ -750,7 +752,7 @@ function PomodoroTimer() {
 
             <button
               onClick={startSession}
-              className="w-full px-6 py-3 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
+              className="w-full h-11 px-6 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
               style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
             >
               Start
@@ -884,14 +886,14 @@ function PomodoroTimer() {
             <button
               onClick={switchToShortBreak}
               disabled={isTransitioning}
-              className="flex items-center justify-center px-4 rounded-full text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
+              className="flex items-center justify-center text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
             >
               Switch to 5 min break
             </button>
             <button
               onClick={addFiveMinutes}
               disabled={isTransitioning}
-              className="flex items-center justify-center px-4 rounded-full text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
+              className="flex items-center justify-center text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
             >
               Add another 5 min
             </button>
@@ -900,7 +902,7 @@ function PomodoroTimer() {
           <button
             onClick={() => startLongBreak()}
             disabled={isTransitioning}
-            className="flex items-center justify-center px-4 rounded-full text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 mt-6"
+            className="flex items-center justify-center text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 mt-6"
           >
             {mode === "break" ? "Switch to long break" : "Start long break"}
           </button>

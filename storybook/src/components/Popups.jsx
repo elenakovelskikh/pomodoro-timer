@@ -19,9 +19,12 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
       )}
       {children}
       {secondaryLabel ? (
-        <div className="w-full flex gap-2">
-          <SecondaryButton onClick={onSecondary}>{secondaryLabel}</SecondaryButton>
-          <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
+        // One row (secondary hugging its label, primary taking the rest) while both labels fit on
+        // one line; once they don't, the primary wraps onto its own line and wrap-reverse puts it
+        // above the secondary, both full width. The 1 : 999 grow ratio keeps the secondary hugging.
+        <div className="w-full flex flex-wrap-reverse gap-2">
+          <div className="grow"><SecondaryButton onClick={onSecondary}>{secondaryLabel}</SecondaryButton></div>
+          <div className="grow-[999]"><PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton></div>
         </div>
       ) : (
         <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
