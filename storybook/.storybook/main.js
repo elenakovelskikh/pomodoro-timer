@@ -1,5 +1,16 @@
+import { fileURLToPath } from "node:url";
+
+// the repo root, so stories can load ../design-tokens.js — the same file the site uses
+const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
+
 export default {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.jsx"],
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",
+  viteFinal: (config) => {
+    config.server ??= {};
+    config.server.fs ??= {};
+    config.server.fs.allow = [...(config.server.fs.allow ?? []), repoRoot];
+    return config;
+  },
 };

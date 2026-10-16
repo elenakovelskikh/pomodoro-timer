@@ -6,10 +6,9 @@ export function GhostButton({ children = "Button", onClick, disabled = false, fu
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center rounded-full text-sm font-medium text-neutral-500 hover:text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`flex items-center justify-center rounded-full text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 ${
         fullWidth ? "w-full" : "px-4"
       }`}
-      style={{ height: "44px" }}
     >
       {children}
     </button>

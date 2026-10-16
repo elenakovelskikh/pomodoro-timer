@@ -6,7 +6,7 @@ export default {
   tags: ["autodocs"],
   render: (args, { globals }) => <TimerRing {...args} mode={globals.mode} />,
   argTypes: {
-    mode: { control: false, description: "Set from the Mode toolbar. Picks the arc and shadow colors and the emoji", table: { type: { summary: '"work" | "break" | "longBreak"' } } },
+    mode: { control: false, description: "Set from the Mode toolbar. Picks the arc and shadow colors and the emoji", table: { type: { summary: '"focus" | "break" | "longBreak"' } } },
     progress: { control: { type: "range", min: 0, max: 1, step: 0.01 }, description: "Share of the segment already done, 0–1. The colored arc is what's left", table: { type: { summary: "number" } } },
     secondsLeft: { control: { type: "number", min: 0 }, description: "Time shown in the middle; at 0 the moving cap and its shadow are hidden", table: { type: { summary: "number" } } },
     round: { control: { type: "number", min: 1 }, description: '"Round N" caption under the time, Focus only', table: { type: { summary: "number" } } },

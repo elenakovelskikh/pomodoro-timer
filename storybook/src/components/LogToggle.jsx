@@ -5,17 +5,13 @@ import { ChevronDownIcon, ChevronUpIcon } from "./Icons";
 // once there is something to show.
 export function LogToggle({ count = 0, open = false, onClick }) {
   return (
-    <button onClick={onClick} className="flex items-center" style={{ minHeight: "44px" }}>
+    <button onClick={onClick} className="flex items-center min-h-11">
       <span className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold text-neutral-900 leading-none">{count}</span>
-        <span className="text-sm text-neutral-900 leading-none">completed</span>
+        <span className="text-number text-primary">{count}</span>
+        <span className="text-unit text-primary">completed</span>
         {count > 0 && (
           <span className="self-end py-px">
-            {open ? (
-              <ChevronUpIcon size={16} style={{ color: "#737373" }} />
-            ) : (
-              <ChevronDownIcon size={16} style={{ color: "#737373" }} />
-            )}
+            {open ? <ChevronUpIcon size={16} className="text-secondary" /> : <ChevronDownIcon size={16} className="text-secondary" />}
           </span>
         )}
       </span>

@@ -1,9 +1,9 @@
 import React, { useId } from "react";
-import { MODES, formatTime } from "../tokens";
+import { MODES, PALETTE, formatTime } from "../tokens";
 
 // Pure view of the timer ring: everything it shows comes from props, no timers or state.
 // `round` is the "Round N" caption under the time; it only shows in Focus.
-export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, round = 1, isTransitioning = false }) {
+export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60, round = 1, isTransitioning = false }) {
   // unique ids so several rings on one page (e.g. a docs page) don't share a gradient/clip
   const uid = useId().replace(/:/g, "");
   const shadowId = `ring-tip-shadow-${uid}`;
@@ -19,7 +19,6 @@ export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, 
     x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
     y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
   };
-  const centerLabel = mode === "work" ? `Round ${round}` : "";
 
   return (
     <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`}>
@@ -38,7 +37,7 @@ export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, 
             />
           </clipPath>
         </defs>
-        <circle cx="140" cy="140" r={radius} fill="none" stroke="#EBECF0" strokeWidth="10" />
+        <circle cx="140" cy="140" r={radius} fill="none" stroke={PALETTE.neutral[150]} strokeWidth="10" />
         <circle
           cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
           strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
@@ -59,25 +58,23 @@ export function TimerRing({ mode = "work", progress = 0, secondsLeft = 25 * 60, 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {isTransitioning ? (
           <>
-            <div style={{ fontSize: "30px", lineHeight: "34px" }}>{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
-            <div className="text-sm text-neutral-400 mt-1">
-              {mode === "work" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
+            <div className="text-emoji leading-[2.125rem]">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+            <div className="text-body text-muted mt-1">
+              {mode === "focus" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
             </div>
           </>
         ) : (
           <>
-            <div className="flex items-center justify-center gap-1" style={{ height: "30px", marginBottom: "12px" }}>
+            <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3">
               {Array.isArray(MODES[mode].emoji) ? (
-                MODES[mode].emoji.map((e, i) => (
-                  <span key={i} style={{ fontSize: "30px", lineHeight: "30px" }}>{e}</span>
-                ))
+                MODES[mode].emoji.map((e, i) => <span key={i} className="text-emoji">{e}</span>)
               ) : (
-                <span style={{ fontSize: "30px", lineHeight: "30px" }}>{MODES[mode].emoji}</span>
+                <span className="text-emoji">{MODES[mode].emoji}</span>
               )}
             </div>
-            <div className="text-5xl font-bold tabular-nums text-neutral-900">{formatTime(secondsLeft)}</div>
-            <div className="flex items-center justify-center text-sm text-neutral-400" style={{ height: "30px", marginTop: "12px" }}>
-              {centerLabel}
+            <div className="text-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
+            <div className="flex items-center justify-center text-body text-muted h-[1.875rem] mt-3">
+              {mode === "focus" ? `Round ${round}` : ""}
             </div>
           </>
         )}

@@ -1,8 +1,9 @@
 import "../src/index.css";
+import { MODES } from "../src/tokens";
 
 export default {
   // A toolbar switch for the timer mode. Stories of mode-dependent components read it from
-  // `globals.mode`, so one click recolors the ring, buttons, mode label, etc.
+  // `globals.mode`; the decorator also sets --mode-color, like the app's screen root does.
   globalTypes: {
     mode: {
       description: "Timer mode",
@@ -10,7 +11,7 @@ export default {
         title: "Mode",
         icon: "circlehollow",
         items: [
-          { value: "work", title: "Focus" },
+          { value: "focus", title: "Focus" },
           { value: "break", title: "Break" },
           { value: "longBreak", title: "Long break" },
         ],
@@ -18,7 +19,14 @@ export default {
       },
     },
   },
-  initialGlobals: { mode: "work", backgrounds: { value: "white" } },
+  initialGlobals: { mode: "focus", backgrounds: { value: "white" } },
+  decorators: [
+    (Story, { globals }) => (
+      <div style={{ "--mode-color": MODES[globals.mode ?? "focus"].color }}>
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     layout: "centered",
     backgrounds: { options: { white: { name: "white", value: "#ffffff" } } },

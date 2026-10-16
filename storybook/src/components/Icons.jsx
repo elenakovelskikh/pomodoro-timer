@@ -1,7 +1,13 @@
 import React from "react";
+
+// size is given in px at the default 16px root font size and rendered in rem, so icons scale with text
 export function Icon({ children, size = 18, className, style }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <svg
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className}
+      style={{ width: `${size / 16}rem`, height: `${size / 16}rem`, ...style }}
+    >
       {children}
     </svg>
   );

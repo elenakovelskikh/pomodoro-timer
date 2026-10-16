@@ -10,11 +10,11 @@ import { GhostButton } from "./GhostButton";
 // without it the card sits over the page on the white veil, like in the app.
 export function Popup({ title, description, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
   const card = (
-    <div className="w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-xl p-6 flex flex-col items-center gap-6">
+    <div className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6">
       {(title || description) && (
         <div className="w-full text-left">
-          {title && <div className="text-xl font-bold text-neutral-900">{title}</div>}
-          {description && <div className={`text-sm text-neutral-400 ${title ? "mt-3" : ""}`}>{description}</div>}
+          {title && <div className="text-heading text-primary">{title}</div>}
+          {description && <div className={`text-body text-muted ${title ? "mt-3" : ""}`}>{description}</div>}
         </div>
       )}
       {children}
@@ -30,7 +30,7 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
   );
   if (inline) return card;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ backgroundColor: "rgba(255,255,255,0.6)" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-overlay">
       {card}
     </div>
   );
@@ -56,7 +56,6 @@ export function SetupPopup({ roundsLimit = null, onRoundsChange, longBreakMinute
         options={LONG_BREAK_OPTIONS}
         value={longBreakMinutes}
         onChange={onLongBreakChange}
-        pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
       />
     </Popup>
   );
@@ -82,14 +81,12 @@ export function AddRoundsPopup({
         options={START_WITH_OPTIONS}
         value={startsWithBreak}
         onChange={onStartsWithBreakChange}
-        pillClassName="px-6 py-3 rounded-xl text-sm font-medium"
       />
       <RadioGroup
         label="Long break length"
         options={LONG_BREAK_OPTIONS}
         value={longBreakMinutes}
         onChange={onLongBreakChange}
-        pillClassName="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap"
       />
     </Popup>
   );

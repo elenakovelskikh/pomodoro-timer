@@ -1,14 +1,14 @@
 import React from "react";
-import { MODES } from "../tokens";
+import { MODE_COLORS } from "../tokens";
 
-// The violet call-to-action used in popups. Its color is the Focus color (violet-600 = #7c3aed),
-// its shadow is the Focus shadow color.
+// The violet call-to-action used in popups: bg-primary (same value as the Focus color) and the
+// Focus shadow color.
 export function PrimaryButton({ children = "Button", onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full px-6 py-3 rounded-full text-white font-medium bg-violet-600 hover:bg-violet-700"
-      style={{ boxShadow: `0 2px 8px -2px ${MODES.work.shadowColor}59` }}
+      className="w-full px-6 py-3 rounded-full text-on-color text-button bg-primary hover:bg-primary-hover"
+      style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
     >
       {children}
     </button>
