@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.jsx"],
+  stories: ["../src/**/*.stories.jsx"],
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",
   viteFinal: (config) => {
