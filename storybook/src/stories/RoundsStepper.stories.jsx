@@ -1,10 +1,10 @@
-import { useArgs } from "storybook/preview-api";
+import { useLiveArg } from "./liveArg";
 import { RoundsStepper } from "../components/RoundsStepper";
 import { roundsArg, keyForRounds } from "./argHelpers";
 
 function render(args) {
-  const [, updateArgs] = useArgs();
-  return <RoundsStepper {...args} onChange={(v) => updateArgs({ value: keyForRounds(v) })} />;
+  const [value, setValue] = useLiveArg(args, "value", keyForRounds);
+  return <RoundsStepper {...args} value={value} onChange={setValue} />;
 }
 
 export default {

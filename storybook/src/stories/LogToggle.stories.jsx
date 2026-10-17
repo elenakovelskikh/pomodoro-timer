@@ -1,4 +1,4 @@
-import { useArgs } from "storybook/preview-api";
+import { useLiveArg } from "./liveArg";
 import { LogToggle } from "../components/LogToggle";
 import { HistoryLog } from "../components/HistoryLog";
 
@@ -22,11 +22,11 @@ export default {
   },
   // the toggle plus the log it controls; clicking flips `open`
   render: function Render(args) {
-    const [, updateArgs] = useArgs();
+    const [open, setOpen] = useLiveArg(args, "open");
     return (
       <div className="flex flex-col items-center gap-1">
-        <LogToggle {...args} onClick={() => args.count > 0 && updateArgs({ open: !args.open })} />
-        {args.open && args.count > 0 && <HistoryLog history={sample} />}
+        <LogToggle {...args} open={open} onClick={() => args.count > 0 && setOpen(!open)} />
+        {open && args.count > 0 && <HistoryLog history={sample} />}
       </div>
     );
   },

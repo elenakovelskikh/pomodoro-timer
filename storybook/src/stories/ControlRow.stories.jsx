@@ -1,4 +1,4 @@
-import { useArgs } from "storybook/preview-api";
+import { useLiveArg } from "./liveArg";
 import { ControlRow } from "../components/ControlRow";
 import { modeArg } from "./argHelpers";
 
@@ -11,13 +11,14 @@ export default {
   tags: ["autodocs"],
   // clicking the middle button switches Pause <-> Resume, like in the app
   render: function Render(args) {
-    const [, updateArgs] = useArgs();
+    const [buttonLabel, setButtonLabel] = useLiveArg(args, "buttonLabel");
     return (
       <ControlRow
         {...args}
+        buttonLabel={buttonLabel}
         onPlayPause={() => {
           args.onPlayPause?.();
-          updateArgs({ buttonLabel: args.buttonLabel === "Pause" ? "Resume" : "Pause" });
+          setButtonLabel(buttonLabel === "Pause" ? "Resume" : "Pause");
         }}
       />
     );
