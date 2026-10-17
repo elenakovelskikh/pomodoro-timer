@@ -79,7 +79,7 @@ export function AddRoundsPopup({
       secondaryLabel="Cancel"
       onSecondary={onCancel}
     >
-      <RoundsStepper label="How many more rounds?" value={amount} onChange={onAmountChange} />
+      <RoundsStepper label="Number of rounds" value={amount} onChange={onAmountChange} />
       <RadioGroup
         label="Start with"
         options={START_WITH_OPTIONS}

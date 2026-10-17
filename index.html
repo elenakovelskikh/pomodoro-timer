@@ -213,7 +213,7 @@ function RadioGroup({ label, options, value, onChange }) {
               className={`px-6 py-3 rounded-xl text-control whitespace-nowrap focus-visible:outline-none ${
                 selected
                   ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
-                  : "ring-1 ring-inset ring-radio text-radio hover:text-radio-hover"
+                  : "ring-1 ring-inset ring-radio text-button-tertiary hover:text-button-tertiary-hover"
               }`}
             >
               {opt.label}
@@ -633,7 +633,7 @@ function PomodoroTimer() {
                 <div className="text-heading text-primary">Add more rounds</div>
               </div>
               <div className="w-full flex flex-col items-start gap-2">
-                <div className="text-control text-label">How many more rounds?</div>
+                <div className="text-control text-label">Number of rounds</div>
                 <div className="flex items-stretch rounded-xl border border-subtle">
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}

@@ -41,11 +41,10 @@
       secondary: P.neutral[500],
       muted: P.neutral[400],
       // tertiary buttons: text-only actions ("Start long break", "Add more rounds", log toggles)
+      // and the text of unselected radio pills
       "button-tertiary": P.neutral[500],
       "button-tertiary-hover": P.neutral[600],
-      // unselected / selected radio pills
-      radio: P.neutral[500],
-      "radio-hover": P.neutral[600],
+      // selected radio pill (unselected pills use the tertiary button colors)
       "radio-selected": P.violet[500],
       "on-color": P.neutral[0],
       // secondary buttons: icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)
