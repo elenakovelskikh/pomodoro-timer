@@ -1,6 +1,6 @@
 import React from "react";
 import { PALETTE } from "../tokens";
-import { Swatch, Section, Page } from "./foundations";
+import { Swatch, Section, Page, PAGE_PARAMETERS } from "./foundations";
 
 function Palette() {
   const hues = Object.entries(PALETTE).filter(([, v]) => typeof v === "object");
@@ -20,5 +20,5 @@ function Palette() {
   );
 }
 
-export default { title: "Foundations/Colors/Palette", component: Palette, parameters: { layout: "padded" } };
+export default { title: "Foundations/Colors/Palette", component: Palette, tags: ["autodocs", "!dev"], parameters: PAGE_PARAMETERS };
 export const Default = { name: "Palette" };

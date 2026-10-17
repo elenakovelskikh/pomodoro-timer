@@ -22,3 +22,11 @@ export function roundsArg(description) {
   };
 }
 export const keyForRounds = (value) => (value === null ? "∞" : String(value));
+
+// Timer mode as a regular control; the preview decorator turns it into the mode CSS variables.
+export const modeArg = {
+  control: { type: "inline-radio", labels: { focus: "Focus", break: "Break", longBreak: "Long break" } },
+  options: ["focus", "break", "longBreak"],
+  description: "Timer mode",
+  table: { type: { summary: '"focus" | "break" | "longBreak"' }, defaultValue: { summary: '"focus"' } },
+};

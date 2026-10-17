@@ -1,6 +1,6 @@
 import React from "react";
 import { THEME } from "../tokens";
-import { Swatch, Section, Page, primitiveName } from "./foundations";
+import { Swatch, Section, Page, primitiveName, PAGE_PARAMETERS } from "./foundations";
 
 const T = THEME.textColor, B = THEME.backgroundColor, R = THEME.ringColor;
 const hover = (name, value) => [name, value, "On hover"];
@@ -101,5 +101,5 @@ function Tokens() {
   );
 }
 
-export default { title: "Foundations/Colors/Tokens", component: Tokens, parameters: { layout: "padded" } };
+export default { title: "Foundations/Colors/Tokens", component: Tokens, tags: ["autodocs", "!dev"], parameters: PAGE_PARAMETERS };
 export const Default = { name: "Tokens" };

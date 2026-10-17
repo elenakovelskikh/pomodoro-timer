@@ -5,13 +5,13 @@ import { LONG_BREAK_OPTIONS, START_WITH_OPTIONS } from "../tokens";
 import { optionsArg, keyForOption, roundsArg, keyForRounds } from "./argHelpers";
 
 export default {
-  title: "Components/Popups",
+  title: "Components/Popup",
   component: Popup,
   tags: ["autodocs"],
   parameters: { layout: "padded" },
 };
 
-const action = (name) => ({ action: name, control: false, table: { type: { summary: "() => void" } } });
+const action = (name, description) => ({ action: name, control: false, description, table: { type: { summary: "() => void" } } });
 
 export const Default = {
   args: { title: "Title", description: "Text", primaryLabel: "Button", secondaryLabel: "Button", inline: true },
@@ -20,9 +20,9 @@ export const Default = {
     description: { control: "text", description: "Optional text", table: { type: { summary: "ReactNode" } } },
     children: { control: false, description: "Optional content", table: { type: { summary: "ReactNode" } } },
     primaryLabel: { control: "text", description: "Primary button (required)", table: { type: { summary: "string" } } },
-    onPrimary: action("primary"),
+    onPrimary: action("primary", "Primary button click"),
     secondaryLabel: { control: "text", description: "Optional secondary button", table: { type: { summary: "string" } } },
-    onSecondary: action("secondary"),
+    onSecondary: action("secondary", "Secondary button click"),
     inline: { control: false, description: "Show without the backdrop (preview only)", table: { type: { summary: "boolean" } } },
   },
   render: (args) => (

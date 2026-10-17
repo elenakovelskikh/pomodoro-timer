@@ -1,6 +1,6 @@
 import React from "react";
 import { MODES } from "../tokens";
-import { Page, primitiveName } from "./foundations";
+import { Page, primitiveName, PAGE_PARAMETERS } from "./foundations";
 
 // Every mode has the same four roles, filled from its own hue: step 500 for the accent,
 // 700 for its hover and the shadows, 200 for the progress arc.
@@ -40,5 +40,5 @@ function Modes() {
   );
 }
 
-export default { title: "Foundations/Colors/Modes", component: Modes, parameters: { layout: "padded" } };
+export default { title: "Foundations/Colors/Modes", component: Modes, tags: ["autodocs", "!dev"], parameters: PAGE_PARAMETERS };
 export const Default = { name: "Modes" };

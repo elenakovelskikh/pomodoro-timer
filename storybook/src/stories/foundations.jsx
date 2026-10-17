@@ -1,7 +1,13 @@
 import React from "react";
+import { Story } from "@storybook/addon-docs/blocks";
 import { PALETTE } from "../tokens";
 
 // helpers shared by the Foundations pages
+
+// Foundations pages are plain documentation: each one is shown as a docs page that renders just
+// its single story, with no addon panel or toolbar. Each page also sets tags: ["autodocs", "!dev"]
+// (written inline: Storybook reads tags statically).
+export const PAGE_PARAMETERS = { layout: "padded", docs: { page: () => <Story /> } };
 
 // "neutral-900" for a value that is one of the primitives
 const byValue = {};

@@ -1,6 +1,6 @@
 import React from "react";
 import { TYPE } from "../tokens";
-import { Section, Page, toPx } from "./foundations";
+import { Section, Page, toPx, PAGE_PARAMETERS } from "./foundations";
 
 const textStyles = Object.entries(TYPE).filter(([name]) => name !== "emoji").map(([, css]) => css);
 const sizes = [...new Set(textStyles.map((s) => s.fontSize))].sort((a, b) => parseFloat(b) - parseFloat(a));
@@ -20,10 +20,9 @@ const Row = ({ label, sub, children }) => (
 function Primitives() {
   return (
     <Page title="Type primitives" intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting.">
-      <Section title="Families">
+      <Section title="Family">
         <div>
           <Row label="Sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer</span></Row>
-          <Row label="Mono" sub="System monospace"><span className="font-mono">10:00 – 10:25</span></Row>
         </div>
       </Section>
       <Section title="Sizes">
@@ -36,5 +35,5 @@ function Primitives() {
   );
 }
 
-export default { title: "Foundations/Typography/Primitives", component: Primitives, parameters: { layout: "padded" } };
+export default { title: "Foundations/Typography/Primitives", component: Primitives, tags: ["autodocs", "!dev"], parameters: PAGE_PARAMETERS };
 export const Default = { name: "Primitives" };

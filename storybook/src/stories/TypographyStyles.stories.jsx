@@ -1,6 +1,6 @@
 import React from "react";
 import { TYPE } from "../tokens";
-import { Page } from "./foundations";
+import { Page, PAGE_PARAMETERS } from "./foundations";
 
 // Class names are written out in full so Tailwind can find them. All samples share one color:
 // color is set separately from the text style.
@@ -24,10 +24,10 @@ const spec = (key) => {
 
 function TextStyles() {
   return (
-    <Page title="Text styles" intro="Largest first. Each class sets size, line height and weight; color is set separately. Line height is 125% for headings and 145% for running text, rounded down to whole pixels.">
+    <Page title="Text styles" intro="Size, line height and weight in one class; color is set separately. Values are in px; in code they are rem.">
       <div className="flex flex-col">
         {styles.map(([cls, key, sample]) => (
-          <div key={key} className="grid grid-cols-[10rem_1fr] items-baseline gap-6 border-b border-subtle py-4">
+          <div key={key} className="grid grid-cols-[13rem_1fr] items-baseline gap-6 border-b border-subtle py-4">
             <div>
               <div className="type-control text-primary">type-{key}</div>
               <div className="type-caption text-secondary font-mono">{spec(key)}</div>
@@ -40,5 +40,5 @@ function TextStyles() {
   );
 }
 
-export default { title: "Foundations/Typography/Text styles", component: TextStyles, parameters: { layout: "padded" } };
+export default { title: "Foundations/Typography/Text styles", component: TextStyles, tags: ["autodocs", "!dev"], parameters: PAGE_PARAMETERS };
 export const Default = { name: "Text styles" };
