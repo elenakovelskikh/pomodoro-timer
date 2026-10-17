@@ -54,6 +54,11 @@
   button:focus-visible, a:focus-visible {
     outline-offset: 2px;
   }
+  /* Focus the page moved by itself after a tap or click (see moveFocus): no ring until the
+     keyboard is used. */
+  [data-quiet-focus]:focus-visible {
+    outline: none;
+  }
   /* "Reduce motion" in the system settings: the ring jumps instead of gliding and doesn't pulse
      between rounds. */
   @media (prefers-reduced-motion: reduce) {
@@ -273,6 +278,25 @@ function Credit({ inert }) {
   );
 }
 
+// The page moves focus itself in a few places (into a popup, back out, to Play/Pause), which
+// screen readers rely on. Browsers then show the keyboard focus ring even after a tap or click,
+// so when the last input was a pointer, the element is marked to hide the ring until a key
+// is pressed or focus leaves it.
+let lastInputWasPointer = false;
+document.addEventListener("pointerdown", () => { lastInputWasPointer = true; }, true);
+document.addEventListener("keydown", () => {
+  lastInputWasPointer = false;
+  delete document.activeElement?.dataset?.quietFocus;
+}, true);
+function moveFocus(el) {
+  if (!el?.focus) return;
+  if (lastInputWasPointer) {
+    el.dataset.quietFocus = "";
+    el.addEventListener("blur", () => delete el.dataset.quietFocus, { once: true });
+  }
+  el.focus();
+}
+
 // Rounds picker: − / value / +. value is a number of rounds or null for "no limit" (∞).
 // At an end of the range its button is disabled and out of the Tab order, with one exception:
 // if that button was just pressed to reach the limit, it stays focusable (aria-disabled) until
@@ -350,8 +374,8 @@ function Dialog({ title, description, enterHint, children, onSubmit, onClose }) 
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
-    ref.current?.focus();
-    return () => previous?.focus?.();
+    moveFocus(ref.current);
+    return () => moveFocus(previous);
   }, []);
   return (
     // The veil scrolls when the popup is taller than the screen (phone in landscape, 200% zoom);
@@ -632,10 +656,10 @@ function PomodoroTimer() {
   // adding rounds) puts focus on Play/Pause, the completion screen on its heading.
   const timerScreen = setupComplete && !sessionComplete;
   useEffect(() => {
-    if (timerScreen) playPauseRef.current?.focus();
+    if (timerScreen) moveFocus(playPauseRef.current);
   }, [timerScreen]);
   useEffect(() => {
-    if (sessionComplete) completionHeadingRef.current?.focus();
+    if (sessionComplete) moveFocus(completionHeadingRef.current);
   }, [sessionComplete]);
 
   function startSession() {
