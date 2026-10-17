@@ -3,7 +3,7 @@ import { MinusIcon, PlusIcon } from "./Icons";
 
 // value: a number of rounds, or null for "no limit" (shown as the infinity sign).
 export function RoundsStepper({ label = "Number of rounds", value = null, onChange = () => {} }) {
-  const step = "w-11 h-11 flex items-center justify-center bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-control disabled:hover:text-on-control";
+  const step = "w-11 h-11 flex items-center justify-center bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary";
   return (
     <div className="w-full flex flex-col items-start gap-2">
       <div className="text-control text-label">{label}</div>

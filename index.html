@@ -199,7 +199,7 @@ function RadioGroup({ label, options, value, onChange }) {
   return (
     <div className="w-full flex flex-col items-start gap-2">
       <div className="text-control text-label">{label}</div>
-      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex gap-2">
+      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = value === opt.value;
           return (
@@ -594,16 +594,16 @@ function PomodoroTimer() {
             <button
               onClick={() => setSummaryLogOpen((o) => !o)}
               disabled={history.length === 0}
-              className="w-full flex items-center justify-center gap-1 text-control text-ghost hover:text-ghost-hover disabled:hover:text-ghost disabled:cursor-default h-11 mt-2"
+              className="w-full flex items-center justify-center gap-1 text-control text-button-tertiary hover:text-button-tertiary-hover disabled:hover:text-button-tertiary disabled:cursor-default h-11 mt-2"
             >
               <span>
                 {completedCycles === 1 ? "You completed 1 round" : `You completed all ${completedCycles} rounds`}
               </span>
               {history.length > 0 &&
                 (summaryLogOpen ? (
-                  <ChevronUpIcon size={16} className="text-secondary" />
+                  <ChevronUpIcon size={16} />
                 ) : (
-                  <ChevronDownIcon size={16} className="text-secondary" />
+                  <ChevronDownIcon size={16} />
                 ))}
             </button>
             {summaryLogOpen && history.length > 0 && (
@@ -618,7 +618,7 @@ function PomodoroTimer() {
               setAddStartsWithBreak(true);
               setAddRoundsModalOpen(true);
             }}
-            className="w-full flex items-center justify-center text-control text-ghost hover:text-ghost-hover h-11 mt-1"
+            className="w-full flex items-center justify-center text-control text-button-tertiary hover:text-button-tertiary-hover h-11 mt-1"
           >
             Add more rounds
           </button>
@@ -629,13 +629,16 @@ function PomodoroTimer() {
             className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-overlay"
           >
             <div className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6">
+              <div className="w-full text-left">
+                <div className="text-heading text-primary">Add more rounds</div>
+              </div>
               <div className="w-full flex flex-col items-start gap-2">
                 <div className="text-control text-label">How many more rounds?</div>
                 <div className="flex items-stretch rounded-xl border border-subtle">
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}
                     disabled={addRoundsAmount === null}
-                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-control disabled:hover:text-on-control"
+                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary"
                   >
                     <MinusIcon size={20} />
                   </button>
@@ -650,7 +653,7 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? 1 : Math.min(16, n + 1)))}
                     disabled={addRoundsAmount === 16}
-                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-control disabled:hover:text-on-control"
+                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary"
                   >
                     <PlusIcon size={20} />
                   </button>
@@ -674,13 +677,13 @@ function PomodoroTimer() {
               <div className="w-full flex flex-wrap-reverse gap-2">
                 <button
                   onClick={() => setAddRoundsModalOpen(false)}
-                  className="grow h-11 px-6 rounded-xl bg-control text-button text-on-control hover:text-on-control-hover hover:bg-control-hover whitespace-nowrap"
+                  className="grow h-11 px-6 rounded-xl bg-button-secondary text-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmAddRounds}
-                  className="grow-[999] h-11 px-6 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover whitespace-nowrap"
+                  className="grow-[999] h-11 px-6 rounded-xl text-on-color text-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
                   style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
                 >
                   {addRoundsAmount === null
@@ -721,7 +724,7 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-control disabled:hover:text-on-control"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary"
                 >
                   <MinusIcon size={20} />
                 </button>
@@ -736,7 +739,7 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-control disabled:hover:text-on-control"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary"
                 >
                   <PlusIcon size={20} />
                 </button>
@@ -752,7 +755,7 @@ function PomodoroTimer() {
 
             <button
               onClick={startSession}
-              className="w-full h-11 px-6 rounded-xl text-on-color text-button bg-primary hover:bg-primary-hover"
+              className="w-full h-11 px-6 rounded-xl text-on-color text-button bg-button-primary hover:bg-button-primary-hover"
               style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
             >
               Start
@@ -842,7 +845,7 @@ function PomodoroTimer() {
           <button
             onClick={handleReset}
             disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
+            className="flex items-center justify-center rounded-full bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
             title="Reset current round"
           >
             <RotateCcwIcon size={20} />
@@ -863,7 +866,7 @@ function PomodoroTimer() {
                 aria-label={buttonLabel}
                 title={buttonLabel}
                 className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-                  looksActive ? "bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover" : "bg-mode hover:bg-mode-hover text-on-color"
+                  looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-mode hover:bg-mode-hover text-on-color"
                 }`}
                 style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
               >
@@ -874,7 +877,7 @@ function PomodoroTimer() {
           <button
             onClick={handleSkip}
             disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
+            className="flex items-center justify-center rounded-full bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
             title="Skip"
           >
             <SkipForwardIcon size={20} />
@@ -886,14 +889,14 @@ function PomodoroTimer() {
             <button
               onClick={switchToShortBreak}
               disabled={isTransitioning}
-              className="flex items-center justify-center text-control text-ghost hover:text-ghost-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
+              className="flex items-center justify-center text-control text-button-tertiary hover:text-button-tertiary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
             >
               Switch to 5 min break
             </button>
             <button
               onClick={addFiveMinutes}
               disabled={isTransitioning}
-              className="flex items-center justify-center text-control text-ghost hover:text-ghost-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
+              className="flex items-center justify-center text-control text-button-tertiary hover:text-button-tertiary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11"
             >
               Add another 5 min
             </button>
@@ -902,7 +905,7 @@ function PomodoroTimer() {
           <button
             onClick={() => startLongBreak()}
             disabled={isTransitioning}
-            className="flex items-center justify-center text-control text-ghost hover:text-ghost-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 mt-6"
+            className="flex items-center justify-center text-control text-button-tertiary hover:text-button-tertiary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 mt-6"
           >
             {mode === "break" ? "Switch to long break" : "Start long break"}
           </button>
@@ -911,7 +914,7 @@ function PomodoroTimer() {
         <div className="w-full flex flex-col items-center gap-1 mt-6">
           <button
             onClick={() => setLogOpen((o) => !o)}
-            className="flex items-center min-h-11"
+            className="flex items-center min-h-11 text-button-tertiary hover:text-button-tertiary-hover"
           >
             <span className="flex items-baseline gap-1.5">
               <span className="text-number text-primary">{completedCycles}</span>
@@ -919,9 +922,9 @@ function PomodoroTimer() {
               {completedCycles > 0 && (
                 <span className="self-end py-px">
                   {logOpen ? (
-                    <ChevronUpIcon size={16} className="text-secondary" />
+                    <ChevronUpIcon size={16} />
                   ) : (
-                    <ChevronDownIcon size={16} className="text-secondary" />
+                    <ChevronDownIcon size={16} />
                   )}
                 </span>
               )}

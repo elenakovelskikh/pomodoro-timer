@@ -4,7 +4,7 @@
 // PALETTE: primitives — raw values named by hue and step. Nothing in the UI should use them directly.
 // MODE_COLORS: per-mode semantic colors, also read by the SVG ring and the colored shadows.
 // THEME: semantic tokens plugged into Tailwind, so markup uses class names like
-//   text-secondary, bg-control, ring-radio-selected, text-heading.
+//   text-secondary, bg-button-secondary, ring-radio-selected, text-heading.
 // Tailwind's own color palette and font-size scale are replaced, not extended, so classes
 // like text-neutral-500 or text-sm no longer exist and only these tokens can be used.
 (function (root) {
@@ -40,33 +40,34 @@
       label: P.neutral[600],
       secondary: P.neutral[500],
       muted: P.neutral[400],
-      // ghost buttons (text-only actions)
-      ghost: P.neutral[500],
-      "ghost-hover": P.neutral[600],
+      // tertiary buttons: text-only actions ("Start long break", "Add more rounds", log toggles)
+      "button-tertiary": P.neutral[500],
+      "button-tertiary-hover": P.neutral[600],
       // unselected / selected radio pills
       radio: P.neutral[500],
       "radio-hover": P.neutral[600],
-      "radio-selected": P.violet[700],
+      "radio-selected": P.violet[500],
       "on-color": P.neutral[0],
-      // icons and text on the gray control buttons (stepper, Reset, Skip, Pause, Cancel)
-      "on-control": P.neutral[600],
-      "on-control-hover": P.neutral[700],
+      // secondary buttons: icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)
+      "button-secondary": P.neutral[600],
+      "button-secondary-hover": P.neutral[700],
       mode: "var(--mode-color)",
     },
     backgroundColor: {
       page: P.neutral[0],
       overlay: "rgb(255 255 255 / 0.6)",
-      primary: P.violet[500],
-      "primary-hover": P.violet[700],
-      // the gray control buttons: stepper, Reset, Skip, Pause, Cancel
-      control: P.neutral[100],
-      "control-hover": P.neutral[200],
+      // primary buttons: the violet popup CTA
+      "button-primary": P.violet[500],
+      "button-primary-hover": P.violet[700],
+      // secondary buttons: the gray ones (stepper, Reset, Skip, Pause, Cancel)
+      "button-secondary": P.neutral[100],
+      "button-secondary-hover": P.neutral[200],
       "radio-selected": P.violet[50],
       mode: "var(--mode-color)",
       "mode-hover": "var(--mode-color-hover)",
     },
     borderColor: { subtle: P.neutral[200] },
-    ringColor: { "radio-selected": P.violet[500], radio: P.neutral[200] },
+    ringColor: { "radio-selected": P.violet[500], radio: P.neutral[400] },
     // SVG strokes
     stroke: { "ring-track": P.neutral[100] },
     // text styles: size / line-height / weight (and tracking) in one class

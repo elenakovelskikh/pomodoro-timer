@@ -10,7 +10,7 @@ const styles = [
   ["mode-label", "text-mode-label uppercase text-mode", "Focus", "Mode label (uppercase, mode color)"],
   ["number", "text-number tabular-nums text-primary", "4", "Stepper value, completed counter"],
   ["button", "text-button text-primary", "Add 4 rounds", "Primary button"],
-  ["control", "text-control text-ghost", "Switch to long break", "Ghost buttons, radio pills, field labels"],
+  ["control", "text-control text-button-tertiary", "Switch to long break", "Ghost buttons, radio pills, field labels"],
   ["body", "text-body text-secondary", "Start once: 25-minute focus rounds and 5-minute breaks switch automatically.", "Popup text, \"Round N\", \"… complete\""],
   ["unit", "text-unit text-primary", "rounds", "\"rounds\", \"completed\""],
   ["caption", "text-caption text-secondary", null, "Log lines (time in mono)"],

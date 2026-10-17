@@ -6,25 +6,25 @@ const notes = {
   text: {
     primary: "Timer digits, headings, numbers, counter",
     label: "Field labels",
-    secondary: 'Popup body, "Round N", "… complete", log, chevrons',
+    secondary: 'Popup body, "Round N", "… complete", log',
     muted: "Credit line",
-    ghost: "Ghost buttons",
-    "ghost-hover": "Ghost buttons on hover",
+    "button-tertiary": "Tertiary buttons: text-only actions, both log toggles and their chevrons",
+    "button-tertiary-hover": "The same on hover",
+    "button-secondary": "Icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)",
+    "button-secondary-hover": "The same on hover",
     radio: "Unselected pill text",
     "radio-hover": "Unselected pill text on hover",
     "radio-selected": "Selected pill text",
     "on-color": "Text and icons on colored buttons",
-    "on-control": "Icons and text on gray control buttons (stepper, Reset, Skip, Pause, Cancel)",
-    "on-control-hover": "The same on hover",
     mode: "Mode label",
   },
   bg: {
     page: "Page, popup and completion cards",
     overlay: "Veil behind an open popup",
-    primary: "Popup CTA (same value as the Focus mode color)",
-    "primary-hover": "Popup CTA on hover",
-    control: "Gray control buttons: stepper − / +, Reset, Skip, Pause, Cancel",
-    "control-hover": "Gray control buttons on hover",
+    "button-primary": "Primary button: popup CTA (same value as the Focus mode color)",
+    "button-primary-hover": "The same on hover",
+    "button-secondary": "Secondary (gray) buttons: stepper − / +, Reset, Skip, Pause, Cancel",
+    "button-secondary-hover": "The same on hover",
     "radio-selected": "Selected pill",
     mode: "Start / Resume",
     "mode-hover": "Start / Resume on hover",
@@ -54,7 +54,7 @@ function Tokens({ mode }) {
   return (
     <Page
       title="Tokens"
-      intro="Semantic tokens: what a color is for. Each one is a Tailwind class (text-secondary, bg-control, …) pointing at a palette primitive. Mode tokens change with the Mode toolbar."
+      intro="Semantic tokens: what a color is for. Each one is a Tailwind class (text-secondary, bg-button-secondary, …) pointing at a palette primitive. Mode tokens change with the Mode toolbar."
     >
       <Section title={`Mode · ${m.label}`}>
         <div className="grid grid-cols-2 gap-3">

@@ -7,7 +7,7 @@ export function SecondaryButton({ children = "Button", onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full h-11 px-6 rounded-xl bg-control text-button text-on-control hover:text-on-control-hover hover:bg-control-hover whitespace-nowrap"
+      className="w-full h-11 px-6 rounded-xl bg-button-secondary text-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap"
     >
       {children}
     </button>

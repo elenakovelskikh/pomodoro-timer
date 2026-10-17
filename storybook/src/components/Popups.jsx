@@ -73,6 +73,7 @@ export function AddRoundsPopup({
   return (
     <Popup
       inline={inline}
+      title="Add more rounds"
       primaryLabel={amount === null ? "Continue without a limit" : amount === 1 ? "Add 1 round" : `Add ${amount} rounds`}
       onPrimary={onConfirm}
       secondaryLabel="Cancel"

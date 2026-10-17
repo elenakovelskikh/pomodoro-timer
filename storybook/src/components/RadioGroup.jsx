@@ -18,7 +18,7 @@ export function RadioGroup({ label, options, value, onChange }) {
   return (
     <div className="w-full flex flex-col items-start gap-2">
       <div className="text-control text-label">{label}</div>
-      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex gap-2">
+      <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = value === opt.value;
           return (
