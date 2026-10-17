@@ -4,17 +4,27 @@ import { Button } from "./Button";
 // Popup: optional title and text, controls (children), a required primary button and an optional
 // secondary (gray) one to its left. It's a modal dialog named by its title and described by its text. `inline` renders just
 // the card in normal flow (for Storybook); without it the card sits over the page on the white veil.
-export function Popup({ title, description, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
+// While focus is on the card itself (as right after it opens in the app), Enter runs onPrimary;
+// enterHint is read by screen readers to tell about it.
+export function Popup({ title, description, enterHint, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
   const titleId = useId();
   const descriptionId = useId();
+  const hintId = useId();
   const card = (
     <div
       role="dialog"
       aria-modal={inline ? undefined : "true"}
       aria-labelledby={title ? titleId : undefined}
-      aria-describedby={description ? descriptionId : undefined}
-      className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6"
+      aria-describedby={[description && descriptionId, enterHint && hintId].filter(Boolean).join(" ") || undefined}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" || e.target !== e.currentTarget) return;
+        e.preventDefault();
+        onPrimary?.();
+      }}
+      className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
     >
+      {enterHint && <p id={hintId} className="sr-only">{enterHint}</p>}
       {(title || description) && (
         <div className="w-full text-left">
           {title && <h2 id={titleId} className="type-heading text-primary">{title}</h2>}

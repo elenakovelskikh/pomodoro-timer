@@ -329,12 +329,16 @@ function RoundsStepper({ label, value, onChange }) {
 }
 
 // Popup over the page: a modal dialog named by its title, with its text as the description, so
-// screen readers read both when it opens. Focus moves into it when it opens and
+// screen readers read both when it opens. While focus is on the dialog itself (right after it
+// opens), Enter runs onSubmit — the primary button with the current settings; once focus is on a
+// control, Enter presses that control as usual. enterHint tells screen reader users about it.
+// Focus moves into it when it opens and
 // goes back to whatever had it before when it closes; Escape closes it if onClose is given.
 // The page behind it is made inert by the caller, so Tab can't leave the dialog.
-function Dialog({ title, description, children, onClose }) {
+function Dialog({ title, description, enterHint, children, onSubmit, onClose }) {
   const titleId = useId();
   const descriptionId = useId();
+  const hintId = useId();
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -351,13 +355,24 @@ function Dialog({ title, description, children, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
+        aria-describedby={[description && descriptionId, enterHint && hintId].filter(Boolean).join(" ") || undefined}
         tabIndex={-1}
+        onKeyDown={
+          onSubmit
+            ? (e) => {
+                if (e.key !== "Enter" || e.target !== e.currentTarget) return;
+                // otherwise the same keypress also clicks whatever button gets focus next
+                e.preventDefault();
+                onSubmit();
+              }
+            : undefined
+        }
         className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
       >
         <div className="w-full text-left">
           <h2 id={titleId} className="type-heading text-primary">{title}</h2>
           {description && <p id={descriptionId} className="type-body text-secondary mt-3">{description}</p>}
+          {enterHint && <p id={hintId} className="sr-only">{enterHint}</p>}
         </div>
         {children}
       </div>
@@ -759,7 +774,12 @@ function PomodoroTimer() {
         </div>
 
         {addRoundsModalOpen && (
-          <Dialog title="Add more rounds" onClose={() => setAddRoundsModalOpen(false)}>
+          <Dialog
+            title="Add more rounds"
+            enterHint="Press Enter to add the rounds, or Escape to cancel."
+            onSubmit={confirmAddRounds}
+            onClose={() => setAddRoundsModalOpen(false)}
+          >
             <RoundsStepper label="Number of rounds" value={addRoundsAmount} onChange={setAddRoundsAmount} />
             <RadioGroup
               label="Start with"
@@ -810,6 +830,8 @@ function PomodoroTimer() {
       {!setupComplete && (
         <Dialog
           title="Automatic Pomodoro Focus Timer"
+          enterHint="Press Enter to start with these settings."
+          onSubmit={startSession}
           description={
             <>
               Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, each

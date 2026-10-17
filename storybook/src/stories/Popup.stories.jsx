@@ -15,10 +15,11 @@ const ctaLabel = (n) => (n === null ? "Continue without a limit" : n === 1 ? "Ad
 const action = (name, description) => ({ action: name, control: false, description, table: { type: { summary: "() => void" } } });
 
 export const Default = {
-  args: { title: "Add more rounds", description: "", primaryLabel: "Add 4 rounds", secondaryLabel: "Cancel", inline: true, rounds: 4 },
+  args: { title: "Add more rounds", description: "", primaryLabel: "Add 4 rounds", secondaryLabel: "Cancel", enterHint: "Press Enter to add the rounds.", inline: true, rounds: 4 },
   argTypes: {
     title: { control: "text", description: "Heading (optional)", table: { type: { summary: "string" } } },
     description: { control: "text", description: "Text under the heading (optional)", table: { type: { summary: "ReactNode" } } },
+    enterHint: { control: "text", description: "Screen reader hint: Enter runs the primary button (optional)", table: { type: { summary: "string" } } },
     children: { control: false, description: "Controls inside the popup", table: { type: { summary: "ReactNode" } } },
     primaryLabel: { control: "text", description: "Primary button text", table: { type: { summary: "string" } } },
     onPrimary: action("primary", "Primary button click"),
