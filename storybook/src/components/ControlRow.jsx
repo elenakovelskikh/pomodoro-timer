@@ -7,7 +7,7 @@ import { PlayIcon, PauseIcon, RotateCcwIcon, SkipForwardIcon } from "./Icons";
 export function ControlRow({ mode = "focus", buttonLabel = "Pause", disabled = false, onReset, onPlayPause, onSkip }) {
   const { shadowColor } = MODES[mode];
   const looksActive = buttonLabel === "Pause";
-  const secondary = "flex items-center justify-center rounded-full bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11";
+  const secondary = "flex items-center justify-center rounded-full bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11";
   return (
     <div className="flex items-center gap-5">
       <button onClick={onReset} disabled={disabled} className={secondary} title="Reset current round">
@@ -19,7 +19,7 @@ export function ControlRow({ mode = "focus", buttonLabel = "Pause", disabled = f
         aria-label={buttonLabel}
         title={buttonLabel}
         className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-          looksActive ? "bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover" : "bg-mode hover:bg-mode-hover text-on-color"
+          looksActive ? "bg-control text-on-control hover:text-on-control-hover hover:bg-control-hover" : "bg-mode hover:bg-mode-hover text-on-color"
         }`}
         style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
       >

@@ -6,13 +6,16 @@ const notes = {
   text: {
     primary: "Timer digits, headings, numbers, counter",
     label: "Field labels",
-    secondary: "Ghost buttons, unselected pills, log, chevrons",
-    "secondary-hover": "Ghost buttons on hover",
-    muted: 'Popup body, "Round N", "… complete", credit',
-    "on-color": "Text and icons on colored buttons",
-    "on-secondary": "Icons and text on gray buttons (stepper, Reset, Skip, Pause, Cancel)",
-    "on-secondary-hover": "The same on hover",
+    secondary: 'Popup body, "Round N", "… complete", log, chevrons',
+    muted: "Credit line",
+    ghost: "Ghost buttons",
+    "ghost-hover": "Ghost buttons on hover",
+    radio: "Unselected pill text",
+    "radio-hover": "Unselected pill text on hover",
     "radio-selected": "Selected pill text",
+    "on-color": "Text and icons on colored buttons",
+    "on-control": "Icons and text on gray control buttons (stepper, Reset, Skip, Pause, Cancel)",
+    "on-control-hover": "The same on hover",
     mode: "Mode label",
   },
   bg: {
@@ -20,8 +23,8 @@ const notes = {
     overlay: "Veil behind an open popup",
     primary: "Popup CTA (same value as the Focus mode color)",
     "primary-hover": "Popup CTA on hover",
-    "secondary-button": "Gray buttons: stepper − / +, Reset, Skip, Pause, Cancel",
-    "secondary-button-hover": "Gray buttons on hover",
+    control: "Gray control buttons: stepper − / +, Reset, Skip, Pause, Cancel",
+    "control-hover": "Gray control buttons on hover",
     "radio-selected": "Selected pill",
     mode: "Start / Resume",
     "mode-hover": "Start / Resume on hover",
@@ -51,7 +54,7 @@ function Tokens({ mode }) {
   return (
     <Page
       title="Tokens"
-      intro="Semantic tokens: what a color is for. Each one is a Tailwind class (text-secondary, bg-secondary-button, …) pointing at a palette primitive. Mode tokens change with the Mode toolbar."
+      intro="Semantic tokens: what a color is for. Each one is a Tailwind class (text-secondary, bg-control, …) pointing at a palette primitive. Mode tokens change with the Mode toolbar."
     >
       <Section title={`Mode · ${m.label}`}>
         <div className="grid grid-cols-2 gap-3">

@@ -14,7 +14,7 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
       {(title || description) && (
         <div className="w-full text-left">
           {title && <div className="text-heading text-primary">{title}</div>}
-          {description && <div className={`text-body text-muted ${title ? "mt-3" : ""}`}>{description}</div>}
+          {description && <div className={`text-body text-secondary ${title ? "mt-3" : ""}`}>{description}</div>}
         </div>
       )}
       {children}

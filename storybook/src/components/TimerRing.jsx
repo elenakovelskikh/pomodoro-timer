@@ -59,7 +59,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
         {isTransitioning ? (
           <>
             <div className="text-emoji leading-[2.125rem]">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
-            <div className="text-body text-muted mt-1">
+            <div className="text-body text-secondary mt-1">
               {mode === "focus" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
             </div>
           </>
@@ -73,7 +73,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
               )}
             </div>
             <div className="text-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
-            <div className="flex items-center justify-center text-body text-muted h-[1.875rem] mt-3">
+            <div className="flex items-center justify-center text-body text-secondary h-[1.875rem] mt-3">
               {mode === "focus" ? `Round ${round}` : ""}
             </div>
           </>

@@ -32,7 +32,7 @@ export function RadioGroup({ label, options, value, onChange }) {
               className={`px-6 py-3 rounded-xl text-control whitespace-nowrap focus-visible:outline-none ${
                 selected
                   ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
-                  : "ring-1 ring-inset ring-radio text-secondary"
+                  : "ring-1 ring-inset ring-radio text-radio hover:text-radio-hover"
               }`}
             >
               {opt.label}

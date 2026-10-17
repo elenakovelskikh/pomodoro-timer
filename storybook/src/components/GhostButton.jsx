@@ -7,7 +7,7 @@ export function GhostButton({ children = "Button", onClick, disabled = false, fu
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center text-control text-secondary hover:text-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 ${
+      className={`flex items-center justify-center text-control text-ghost hover:text-ghost-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 ${
         fullWidth ? "w-full" : ""
       }`}
     >
