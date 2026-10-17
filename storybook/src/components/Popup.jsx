@@ -47,5 +47,10 @@ export function Popup({ title, description, enterHint, children, primaryLabel = 
     </div>
   );
   if (inline) return card;
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-overlay">{card}</div>;
+  // the veil scrolls when the popup is taller than the screen
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-overlay">
+      <div className="min-h-full flex items-center justify-center p-6">{card}</div>
+    </div>
+  );
 }

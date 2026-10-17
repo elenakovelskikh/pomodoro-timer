@@ -54,6 +54,14 @@
   button:focus-visible, a:focus-visible {
     outline-offset: 2px;
   }
+  /* "Reduce motion" in the system settings: the ring jumps instead of gliding and doesn't pulse
+     between rounds. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -346,10 +354,13 @@ function Dialog({ title, description, enterHint, children, onSubmit, onClose }) 
     return () => previous?.focus?.();
   }, []);
   return (
+    // The veil scrolls when the popup is taller than the screen (phone in landscape, 200% zoom);
+    // otherwise the popup sits in the middle.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-overlay"
+      className="fixed inset-0 z-50 overflow-y-auto bg-overlay"
       onKeyDown={onClose ? (e) => e.key === "Escape" && onClose() : undefined}
     >
+      <div className="min-h-full flex items-center justify-center p-6">
       <div
         ref={ref}
         role="dialog"
@@ -377,6 +388,7 @@ function Dialog({ title, description, enterHint, children, onSubmit, onClose }) 
           {enterHint && <p id={hintId} hidden>{enterHint}</p>}
         </div>
         {children}
+      </div>
       </div>
     </div>
   );

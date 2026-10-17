@@ -10,3 +10,10 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
 button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
+/* "Reduce motion", as on the site */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
