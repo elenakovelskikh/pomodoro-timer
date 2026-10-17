@@ -266,15 +266,22 @@ function Credit({ inert }) {
 }
 
 // Rounds picker: − / value / +. value is a number of rounds or null for "no limit" (∞).
-// The buttons use aria-disabled instead of disabled at the ends of the range, so keyboard focus
-// stays on them instead of being dropped when the limit is reached. The value is a polite live
-// region, so screen readers announce it after each press.
+// At an end of the range its button is disabled and out of the Tab order, with one exception:
+// if that button was just pressed to reach the limit, it stays focusable (aria-disabled) until
+// focus leaves it, so keyboard focus isn't dropped. The value is a polite live region, read out
+// after each press.
 function RoundsStepper({ label, value, onChange }) {
   const labelId = useId();
   const atMin = value === null;
   const atMax = value === 16;
+  // "min" or "max": the end the user just reached with that button, while it still has focus
+  const [held, setHeld] = useState(null);
   const step =
-    "w-11 h-11 flex items-center justify-center bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-button-secondary aria-disabled:hover:text-button-secondary";
+    "w-11 h-11 flex items-center justify-center bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary aria-disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-button-secondary aria-disabled:hover:text-button-secondary";
+  const press = (next, end) => {
+    if (next === null || next === 16) setHeld(end);
+    onChange(next);
+  };
   return (
     <div role="group" aria-labelledby={labelId} className="w-full flex flex-col items-start gap-2">
       <div id={labelId} className="type-control text-label">{label}</div>
@@ -282,8 +289,10 @@ function RoundsStepper({ label, value, onChange }) {
         <button
           type="button"
           aria-label="Fewer rounds"
-          aria-disabled={atMin || undefined}
-          onClick={() => !atMin && onChange(value === 1 ? null : value - 1)}
+          disabled={atMin && held !== "min"}
+          aria-disabled={(atMin && held === "min") || undefined}
+          onClick={() => !atMin && press(value === 1 ? null : value - 1, "min")}
+          onBlur={() => held === "min" && setHeld(null)}
           className={`${step} rounded-l-xl`}
         >
           <MinusIcon size={20} />
@@ -306,8 +315,10 @@ function RoundsStepper({ label, value, onChange }) {
         <button
           type="button"
           aria-label="More rounds"
-          aria-disabled={atMax || undefined}
-          onClick={() => !atMax && onChange(atMin ? 1 : value + 1)}
+          disabled={atMax && held !== "max"}
+          aria-disabled={(atMax && held === "max") || undefined}
+          onClick={() => !atMax && press(atMin ? 1 : value + 1, "max")}
+          onBlur={() => held === "max" && setHeld(null)}
           className={`${step} rounded-r-xl`}
         >
           <PlusIcon size={20} />
@@ -317,11 +328,13 @@ function RoundsStepper({ label, value, onChange }) {
   );
 }
 
-// Popup over the page: a modal dialog named by its title. Focus moves into it when it opens and
+// Popup over the page: a modal dialog named by its title, with its text as the description, so
+// screen readers read both when it opens. Focus moves into it when it opens and
 // goes back to whatever had it before when it closes; Escape closes it if onClose is given.
 // The page behind it is made inert by the caller, so Tab can't leave the dialog.
 function Dialog({ title, description, children, onClose }) {
   const titleId = useId();
+  const descriptionId = useId();
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -338,12 +351,13 @@ function Dialog({ title, description, children, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
       >
         <div className="w-full text-left">
           <h2 id={titleId} className="type-heading text-primary">{title}</h2>
-          {description && <p className="type-body text-secondary mt-3">{description}</p>}
+          {description && <p id={descriptionId} className="type-body text-secondary mt-3">{description}</p>}
         </div>
         {children}
       </div>
