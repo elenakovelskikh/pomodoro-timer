@@ -1,33 +1,24 @@
 import React from "react";
-import { MODES } from "../tokens";
 import { PlayIcon, PauseIcon, RotateCcwIcon, SkipForwardIcon } from "./Icons";
+import { IconButton } from "./IconButton";
 
-// Reset / play-pause / skip. buttonLabel is "Pause", "Resume" or "Start"; Pause gets the gray
-// look, the other two the mode color (bg-button-mode / bg-button-mode-hover, from CSS variables) and its shadow.
+// Reset / play-pause / skip. buttonLabel is "Pause", "Resume" or "Start": Pause is gray,
+// Start and Resume are in the mode color.
 export function ControlRow({ mode = "focus", buttonLabel = "Pause", disabled = false, onReset, onPlayPause, onSkip }) {
-  const { shadowColor } = MODES[mode];
-  const looksActive = buttonLabel === "Pause";
-  const secondary = "flex items-center justify-center rounded-full bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11";
+  const running = buttonLabel === "Pause";
   return (
     <div className="flex items-center gap-5">
-      <button onClick={onReset} disabled={disabled} className={secondary} title="Reset current round">
-        <RotateCcwIcon size={20} />
-      </button>
-      <button
-        onClick={onPlayPause}
+      <IconButton icon={<RotateCcwIcon size={20} />} label="Reset current round" disabled={disabled} onClick={onReset} />
+      <IconButton
+        icon={running ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
+        label={buttonLabel}
+        variant={running ? "secondary" : "mode"}
+        size="lg"
+        mode={mode}
         disabled={disabled}
-        aria-label={buttonLabel}
-        title={buttonLabel}
-        className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-          looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-button-mode hover:bg-button-mode-hover text-button-primary"
-        }`}
-        style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
-      >
-        {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
-      </button>
-      <button onClick={onSkip} disabled={disabled} className={secondary} title="Skip">
-        <SkipForwardIcon size={20} />
-      </button>
+        onClick={onPlayPause}
+      />
+      <IconButton icon={<SkipForwardIcon size={20} />} label="Skip" disabled={disabled} onClick={onSkip} />
     </div>
   );
 }

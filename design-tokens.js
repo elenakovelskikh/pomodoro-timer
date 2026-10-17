@@ -3,8 +3,9 @@
 //
 // PALETTE: primitives — raw values named by hue and step. Nothing in the UI should use them directly.
 // MODE_COLORS: per-mode semantic colors, also read by the SVG ring and the colored shadows.
-// THEME: semantic tokens plugged into Tailwind, so markup uses class names like
-//   text-secondary, bg-button-secondary, ring-radio-selected, text-heading.
+// THEME: semantic color tokens plugged into Tailwind, so markup uses class names like
+//   text-secondary, bg-button-secondary, ring-radio-selected.
+// TYPE / typePlugin: text styles as type-* classes (type-heading, type-body, ...).
 // Tailwind's own color palette and font-size scale are replaced, not extended, so classes
 // like text-neutral-500 or text-sm no longer exist and only these tokens can be used.
 (function (root) {
@@ -25,12 +26,12 @@
   };
   const P = PALETTE;
 
-  // color: mode label and Start/Resume; hoverColor: Start/Resume on hover;
-  // arcColor: progress arc and its cap; shadowColor: ring tip shadow and the colored button shadows
+  // accent: mode label and Start/Resume; accentHover: Start/Resume on hover;
+  // arc: progress arc and its cap; shadow: ring tip shadow and the colored button shadows
   const MODE_COLORS = {
-    focus: { color: P.violet[500], hoverColor: P.violet[700], arcColor: P.violet[200], shadowColor: P.violet[700] },
-    break: { color: P.blue[500], hoverColor: P.blue[700], arcColor: P.blue[200], shadowColor: P.blue[700] },
-    longBreak: { color: P.teal[500], hoverColor: P.teal[700], arcColor: P.teal[200], shadowColor: P.teal[700] },
+    focus: { accent: P.violet[500], accentHover: P.violet[700], arc: P.violet[200], shadow: P.violet[700] },
+    break: { accent: P.blue[500], accentHover: P.blue[700], arc: P.blue[200], shadow: P.blue[700] },
+    longBreak: { accent: P.teal[500], accentHover: P.teal[700], arc: P.teal[200], shadow: P.teal[700] },
   };
 
   const THEME = {
@@ -51,7 +52,7 @@
       // secondary buttons: icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)
       "button-secondary": P.neutral[600],
       "button-secondary-hover": P.neutral[700],
-      mode: "var(--mode-color)",
+      mode: "var(--mode-accent)",
     },
     backgroundColor: {
       page: P.neutral[0],
@@ -64,30 +65,40 @@
       "button-secondary-hover": P.neutral[200],
       "radio-selected": P.violet[50],
       // Start/Resume: a primary-level button in the current mode color
-      "button-mode": "var(--mode-color)",
-      "button-mode-hover": "var(--mode-color-hover)",
+      "button-mode": "var(--mode-accent)",
+      "button-mode-hover": "var(--mode-accent-hover)",
     },
     borderColor: { subtle: P.neutral[200] },
     ringColor: { "radio-selected": P.violet[500], radio: P.neutral[200], "radio-hover": P.neutral[400] },
     // SVG strokes
     stroke: { "ring-track": P.neutral[100] },
-    // text styles: size / line-height / weight (and tracking) in one class
-    fontSize: {
-      display: ["3rem", { lineHeight: "1", fontWeight: "700" }],
-      emoji: ["1.875rem", { lineHeight: "1.875rem" }],
-      heading: ["1.25rem", { lineHeight: "1.75rem", fontWeight: "700" }],
-      "mode-label": ["1.25rem", { lineHeight: "1.75rem", fontWeight: "700", letterSpacing: "0.025em" }],
-      number: ["1.25rem", { lineHeight: "1", fontWeight: "700" }],
-      button: ["1rem", { lineHeight: "1.5rem", fontWeight: "500" }],
-      control: ["0.875rem", { lineHeight: "1.25rem", fontWeight: "500" }],
-      body: ["0.875rem", { lineHeight: "1.25rem" }],
-      unit: ["0.875rem", { lineHeight: "1" }],
-      caption: ["0.75rem", { lineHeight: "1rem" }],
-      credit: ["0.625rem", { lineHeight: "0.9375rem" }],
-    },
+    // Tailwind's font-size scale is switched off: text sizes only come from the type-* styles below,
+    // so text-* classes always mean a color.
+    fontSize: {},
   };
 
-  const TOKENS = { PALETTE, MODE_COLORS, THEME };
+  // Text styles: size, line height and weight (and tracking) in one class, named type-<name>.
+  // Line height: 125% for headings, 145% for running text, rounded down to whole pixels
+  // (16 / 23, 14 / 20, 12 / 17, 10 / 14) and kept in rem so it scales with the text.
+  const TYPE = {
+    display: { fontSize: "3rem", lineHeight: "1.25", fontWeight: "700" },
+    heading: { fontSize: "1.25rem", lineHeight: "1.25", fontWeight: "700" },
+    "mode-label": { fontSize: "1.25rem", lineHeight: "1.25", fontWeight: "700", letterSpacing: "0.025em" },
+    button: { fontSize: "1rem", lineHeight: "1.4375rem", fontWeight: "500" },
+    control: { fontSize: "0.875rem", lineHeight: "1.25rem", fontWeight: "500" },
+    body: { fontSize: "0.875rem", lineHeight: "1.25rem", fontWeight: "400" },
+    caption: { fontSize: "0.75rem", lineHeight: "1.0625rem", fontWeight: "400" },
+    credit: { fontSize: "0.625rem", lineHeight: "0.875rem", fontWeight: "400" },
+    // not a text style: the size of emoji used as icons
+    emoji: { fontSize: "1.875rem", lineHeight: "1" },
+  };
+
+  // Tailwind plugin that turns TYPE into .type-* classes. They go in the components layer, so a
+  // leading-* utility on the same element can still override the line height.
+  const typePlugin = ({ addComponents }) =>
+    addComponents(Object.fromEntries(Object.entries(TYPE).map(([name, css]) => [`.type-${name}`, css])));
+
+  const TOKENS = { PALETTE, MODE_COLORS, THEME, TYPE, typePlugin };
   if (typeof module === "object" && module.exports) module.exports = TOKENS;
   else root.DESIGN_TOKENS = TOKENS;
 })(typeof globalThis !== "undefined" ? globalThis : this);

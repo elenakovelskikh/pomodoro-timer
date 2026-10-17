@@ -2,8 +2,7 @@ import React from "react";
 import { LONG_BREAK_OPTIONS, START_WITH_OPTIONS } from "../tokens";
 import { RadioGroup } from "./RadioGroup";
 import { RoundsStepper } from "./RoundsStepper";
-import { PrimaryButton } from "./PrimaryButton";
-import { SecondaryButton } from "./SecondaryButton";
+import { Button } from "./Button";
 
 // Base popup: optional title, text and controls (children), a required primary button and an
 // optional secondary (gray) one to its left. `inline` renders just the card in normal flow (for Storybook);
@@ -13,8 +12,8 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
     <div className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6">
       {(title || description) && (
         <div className="w-full text-left">
-          {title && <div className="text-heading text-primary">{title}</div>}
-          {description && <div className={`text-body text-secondary ${title ? "mt-3" : ""}`}>{description}</div>}
+          {title && <div className="type-heading text-primary">{title}</div>}
+          {description && <div className={`type-body text-secondary ${title ? "mt-3" : ""}`}>{description}</div>}
         </div>
       )}
       {children}
@@ -23,11 +22,11 @@ export function Popup({ title, description, children, primaryLabel = "Button", o
         // one line; once they don't, the primary wraps onto its own line and wrap-reverse puts it
         // above the secondary, both full width. The 1 : 999 grow ratio keeps the secondary hugging.
         <div className="w-full flex flex-wrap-reverse gap-2">
-          <div className="grow"><SecondaryButton onClick={onSecondary}>{secondaryLabel}</SecondaryButton></div>
-          <div className="grow-[999]"><PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton></div>
+          <div className="grow"><Button variant="secondary" fullWidth onClick={onSecondary}>{secondaryLabel}</Button></div>
+          <div className="grow-[999]"><Button variant="primary" fullWidth onClick={onPrimary}>{primaryLabel}</Button></div>
         </div>
       ) : (
-        <PrimaryButton onClick={onPrimary}>{primaryLabel}</PrimaryButton>
+        <Button variant="primary" fullWidth onClick={onPrimary}>{primaryLabel}</Button>
       )}
     </div>
   );
@@ -53,7 +52,7 @@ export function SetupPopup({ roundsLimit = null, onRoundsChange, longBreakMinute
       primaryLabel="Start"
       onPrimary={onStart}
     >
-      <RoundsStepper value={roundsLimit} onChange={onRoundsChange} />
+      <RoundsStepper label="Number of rounds" value={roundsLimit} onChange={onRoundsChange} />
       <RadioGroup
         label="Long break length"
         options={LONG_BREAK_OPTIONS}

@@ -1,18 +1,17 @@
 import React from "react";
-import { THEME } from "../tokens";
+import { TYPE } from "../tokens";
 import { Section, Page, toPx } from "./foundations";
 
-const styles = Object.values(THEME.fontSize);
-const uniq = (xs) => [...new Set(xs)];
-const sizes = uniq(styles.map(([size]) => size)).sort((a, b) => parseFloat(b) - parseFloat(a));
-const lineHeights = uniq(styles.map(([, o]) => o.lineHeight).filter(Boolean));
-const tracking = uniq(styles.map(([, o]) => o.letterSpacing).filter(Boolean));
+const textStyles = Object.entries(TYPE).filter(([name]) => name !== "emoji").map(([, css]) => css);
+const sizes = [...new Set(textStyles.map((s) => s.fontSize))].sort((a, b) => parseFloat(b) - parseFloat(a));
+const WEIGHT_NAMES = { 400: "Regular", 500: "Medium", 700: "Bold" };
+const weights = [...new Set(textStyles.map((s) => s.fontWeight))].sort();
 
 const Row = ({ label, sub, children }) => (
   <div className="flex items-baseline gap-6 border-b border-subtle py-3">
     <div className="w-40 shrink-0">
-      <div className="text-control text-primary">{label}</div>
-      {sub && <div className="text-caption text-muted font-mono">{sub}</div>}
+      <div className="type-control text-primary">{label}</div>
+      {sub && <div className="type-caption text-secondary font-mono">{sub}</div>}
     </div>
     <div className="text-primary">{children}</div>
   </div>
@@ -20,35 +19,22 @@ const Row = ({ label, sub, children }) => (
 
 function Primitives() {
   return (
-    <Page
-      title="Type primitives"
-      intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting."
-    >
+    <Page title="Type primitives" intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting.">
       <Section title="Families">
         <div>
-          <Row label="sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer 0123456789</span></Row>
-          <Row label="mono" sub="System monospace"><span className="font-mono">10:00 – 10:25</span></Row>
+          <Row label="Sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer</span></Row>
+          <Row label="Mono" sub="System monospace"><span className="font-mono">10:00 – 10:25</span></Row>
         </div>
       </Section>
       <Section title="Sizes">
-        <div>{sizes.map((s) => <Row key={s} label={s} sub={toPx(s)}><span style={{ fontSize: s, lineHeight: 1.2 }}>Focus</span></Row>)}</div>
+        <div>{sizes.map((s) => <Row key={s} label={toPx(s)} sub={s}><span style={{ fontSize: s, lineHeight: 1.25 }}>Focus</span></Row>)}</div>
       </Section>
       <Section title="Weights">
-        <div>
-          <Row label="400" sub="regular"><span style={{ fontWeight: 400 }}>Focus</span></Row>
-          <Row label="500" sub="medium"><span style={{ fontWeight: 500 }}>Focus</span></Row>
-          <Row label="700" sub="bold"><span style={{ fontWeight: 700 }}>Focus</span></Row>
-        </div>
-      </Section>
-      <Section title="Line heights">
-        <div className="text-body text-secondary font-mono">{lineHeights.map((l) => `${l}${l.endsWith("rem") ? ` (${toPx(l)})` : " (× size)"}`).join("  ·  ")}</div>
-      </Section>
-      <Section title="Letter spacing">
-        <div className="text-body text-secondary font-mono">{tracking.join("  ·  ")}</div>
+        <div>{weights.map((w) => <Row key={w} label={WEIGHT_NAMES[w]} sub={w}><span style={{ fontWeight: w }}>Focus</span></Row>)}</div>
       </Section>
     </Page>
   );
 }
 
 export default { title: "Foundations/Typography/Primitives", component: Primitives, parameters: { layout: "padded" } };
-export const Default = {};
+export const Default = { name: "Primitives" };

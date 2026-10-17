@@ -1,45 +1,38 @@
 import React from "react";
-import { THEME } from "../tokens";
-import { Page, toPx } from "./foundations";
+import { TYPE } from "../tokens";
+import { Page } from "./foundations";
 
-// Class names are written out in full (not built from the token name) so Tailwind can find them.
+// Class names are written out in full so Tailwind can find them. All samples share one color:
+// color is set separately from the text style.
 const styles = [
-  ["display", "text-display tabular-nums text-primary", "24:59", "Timer"],
-  ["emoji", "text-emoji", "📚💻✍️", "Emoji"],
-  ["heading", "text-heading text-primary", "Automatic Pomodoro Focus Timer", "Headings"],
-  ["mode-label", "text-mode-label uppercase text-mode", "Focus", "Mode label"],
-  ["number", "text-number tabular-nums text-primary", "4", "Numbers"],
-  ["button", "text-button text-primary", "Add 4 rounds", "Buttons"],
-  ["control", "text-control text-button-tertiary", "Switch to long break", "Labels and small controls"],
-  ["body", "text-body text-secondary", "Start once: 25-minute focus rounds and 5-minute breaks switch automatically.", "Body text"],
-  ["unit", "text-unit text-primary", "rounds", "Units next to numbers"],
-  ["caption", "text-caption text-secondary", null, "Captions"],
-  ["credit", "text-credit text-muted", "Made by Elena Kovelskikh", "Footer"],
+  ["type-display", "display", "24:59"],
+  ["type-heading", "heading", "Add more rounds"],
+  ["type-mode-label uppercase", "mode-label", "Focus"],
+  ["type-button", "button", "Add 4 rounds"],
+  ["type-control", "control", "Number of rounds"],
+  ["type-body", "body", "Start once: 25-minute focus rounds and 5-minute breaks switch automatically."],
+  ["type-caption", "caption", "focus  10:00 – 10:25"],
+  ["type-credit", "credit", "Made by Elena Kovelskikh"],
 ];
 
+const WEIGHT_NAMES = { 400: "Regular", 500: "Medium", 700: "Bold" };
 const spec = (key) => {
-  const [size, o] = THEME.fontSize[key];
-  const lh = o.lineHeight.endsWith("rem") ? `${o.lineHeight} (${toPx(o.lineHeight)})` : `× ${o.lineHeight}`;
-  return [`${size} (${toPx(size)})`, `line ${lh}`, `weight ${o.fontWeight ?? 400}`, o.letterSpacing && `tracking ${o.letterSpacing}`].filter(Boolean).join(" · ");
+  const s = TYPE[key];
+  const size = parseFloat(s.fontSize) * 16;
+  return [`${size} / ${s.lineHeight.endsWith("rem") ? parseFloat(s.lineHeight) * 16 : size * parseFloat(s.lineHeight)}`, WEIGHT_NAMES[s.fontWeight], s.letterSpacing && `+${s.letterSpacing}`].filter(Boolean).join(" · ");
 };
 
 function TextStyles() {
   return (
-    <Page title="Text styles" intro="Text styles, largest first. Each class sets size, line height and weight together; color is set separately.">
+    <Page title="Text styles" intro="Largest first. Each class sets size, line height and weight; color is set separately. Line height is 125% for headings and 145% for running text, rounded down to whole pixels.">
       <div className="flex flex-col">
-        {styles.map(([key, cls, sample, use]) => (
-          <div key={key} className="flex flex-col gap-1 border-b border-subtle py-4">
-            <div className="text-caption text-muted">
-              <span className="text-control text-label">text-{key}</span> · {use} · <span className="font-mono">{spec(key)}</span>
+        {styles.map(([cls, key, sample]) => (
+          <div key={key} className="grid grid-cols-[10rem_1fr] items-baseline gap-6 border-b border-subtle py-4">
+            <div>
+              <div className="type-control text-primary">type-{key}</div>
+              <div className="type-caption text-secondary font-mono">{spec(key)}</div>
             </div>
-            <div className={cls}>
-              {sample ?? (
-                <span className="flex">
-                  <span className="inline-block w-20">focus</span>
-                  <span className="font-mono">10:00 – 10:25</span>
-                </span>
-              )}
-            </div>
+            <div className={`${cls} text-primary`}>{sample}</div>
           </div>
         ))}
       </div>
@@ -48,4 +41,4 @@ function TextStyles() {
 }
 
 export default { title: "Foundations/Typography/Text styles", component: TextStyles, parameters: { layout: "padded" } };
-export const Default = {};
+export const Default = { name: "Text styles" };

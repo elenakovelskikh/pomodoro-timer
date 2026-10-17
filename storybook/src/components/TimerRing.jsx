@@ -9,7 +9,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
   const shadowId = `ring-tip-shadow-${uid}`;
   const bandId = `ring-band-${uid}`;
 
-  const { shadowColor, arcColor } = MODES[mode];
+  const { shadow: shadowColor, arc: arcColor } = MODES[mode];
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
   const dashoffset = circumference * progress;
@@ -58,8 +58,8 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {isTransitioning ? (
           <>
-            <div className="text-emoji leading-[2.125rem]">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
-            <div className="text-body text-secondary mt-1">
+            <div className="type-emoji leading-[2.125rem]">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+            <div className="type-body text-secondary mt-1">
               {mode === "focus" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
             </div>
           </>
@@ -67,13 +67,13 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
           <>
             <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3">
               {Array.isArray(MODES[mode].emoji) ? (
-                MODES[mode].emoji.map((e, i) => <span key={i} className="text-emoji">{e}</span>)
+                MODES[mode].emoji.map((e, i) => <span key={i} className="type-emoji">{e}</span>)
               ) : (
-                <span className="text-emoji">{MODES[mode].emoji}</span>
+                <span className="type-emoji">{MODES[mode].emoji}</span>
               )}
             </div>
-            <div className="text-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
-            <div className="flex items-center justify-center text-body text-secondary h-[1.875rem] mt-3">
+            <div className="type-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
+            <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">
               {mode === "focus" ? `Round ${round}` : ""}
             </div>
           </>

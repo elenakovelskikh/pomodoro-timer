@@ -17,7 +17,7 @@ export function RadioGroup({ label, options, value, onChange }) {
 
   return (
     <div className="w-full flex flex-col items-start gap-2">
-      <div className="text-control text-label">{label}</div>
+      <div className="type-control text-label">{label}</div>
       <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = value === opt.value;
@@ -29,7 +29,7 @@ export function RadioGroup({ label, options, value, onChange }) {
               aria-checked={selected}
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(opt.value)}
-              className={`px-6 py-3 rounded-xl text-control whitespace-nowrap focus-visible:outline-none ${
+              className={`px-6 py-3 rounded-xl type-control whitespace-nowrap focus-visible:outline-none ${
                 selected
                   ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
                   : "ring-1 ring-inset ring-radio hover:ring-radio-hover text-button-tertiary hover:text-button-tertiary-hover"

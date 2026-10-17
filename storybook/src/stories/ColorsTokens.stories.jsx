@@ -1,5 +1,5 @@
 import React from "react";
-import { THEME, MODES } from "../tokens";
+import { THEME } from "../tokens";
 import { Swatch, Section, Page, primitiveName } from "./foundations";
 
 const T = THEME.textColor, B = THEME.backgroundColor, R = THEME.ringColor;
@@ -71,8 +71,8 @@ const groups = [
 ];
 
 const ref = (value) =>
-  value === "var(--mode-color)" ? "→ mode color"
-  : value === "var(--mode-color-hover)" ? "→ mode hover color"
+  value === "var(--mode-accent)" ? "→ accent of the current mode"
+  : value === "var(--mode-accent-hover)" ? "→ accentHover of the current mode"
   : primitiveName(value) ? `→ ${primitiveName(value)} · ${value}` : value;
 
 const Rows = ({ rows }) => (
@@ -84,24 +84,14 @@ const Rows = ({ rows }) => (
   </div>
 );
 
-function Tokens({ mode }) {
-  const m = MODES[mode];
+function Tokens() {
   return (
-    <Page title="Tokens" intro="What each color is for. Each token is a class whose value comes from the palette. Mode colors follow the Mode switch in the toolbar.">
-      <Section title={`Mode · ${m.label}`}>
-        <Rows
-          rows={[
-            [["color", m.color, "Mode label and mode button"], hover("hoverColor", m.hoverColor)],
-            [["arcColor", m.arcColor, "Progress arc"]],
-            [["shadowColor", m.shadowColor, "Shadows"]],
-          ]}
-        />
-      </Section>
+    <Page title="Tokens" intro="What each color is for. Each token is a class whose value comes from the palette. Mode tokens take their color from the current mode (see Modes).">
       {groups.map((g) => (
         <Section key={g.title} title={g.title}>
           {g.subgroups.map((sg, i) => (
             <div key={i} className={`flex flex-col gap-3 ${i ? "mt-3" : ""}`}>
-              {sg.title && <div className="text-button text-primary">{sg.title}</div>}
+              {sg.title && <div className="type-button text-primary">{sg.title}</div>}
               <Rows rows={sg.rows} />
             </div>
           ))}
@@ -112,4 +102,4 @@ function Tokens({ mode }) {
 }
 
 export default { title: "Foundations/Colors/Tokens", component: Tokens, parameters: { layout: "padded" } };
-export const Default = { render: (_, { globals }) => <Tokens mode={globals.mode} /> };
+export const Default = { name: "Tokens" };

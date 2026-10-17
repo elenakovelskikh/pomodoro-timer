@@ -21,4 +21,4 @@ function Palette() {
 }
 
 export default { title: "Foundations/Colors/Palette", component: Palette, parameters: { layout: "padded" } };
-export const Default = {};
+export const Default = { name: "Palette" };

@@ -17,7 +17,7 @@ export default {
     value: roundsArg("Number of rounds, or ∞ for no limit"),
     onChange: { control: false, description: "Called with the new value", table: { type: { summary: "(value: number | null) => void" } } },
   },
-  args: { label: "Number of rounds", value: "∞" },
+  args: { label: "Label", value: "∞" },
 };
 
 // The three edge states the stepper has to handle:

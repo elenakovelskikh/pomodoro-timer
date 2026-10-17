@@ -7,8 +7,8 @@ export function LogToggle({ count = 0, open = false, onClick }) {
   return (
     <button onClick={onClick} className="flex items-center min-h-11 text-button-tertiary hover:text-button-tertiary-hover">
       <span className="flex items-baseline gap-1.5">
-        <span className="text-number text-primary">{count}</span>
-        <span className="text-unit text-primary">completed</span>
+        <span className="type-heading text-primary">{count}</span>
+        <span className="type-body text-primary">completed</span>
         {count > 0 && (
           <span className="self-end py-px">
             {open ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}

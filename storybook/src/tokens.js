@@ -2,7 +2,7 @@
 // the same file the site loads, so they can't drift apart.
 import "../../design-tokens.js";
 
-export const { PALETTE, MODE_COLORS, THEME } = globalThis.DESIGN_TOKENS;
+export const { PALETTE, MODE_COLORS, THEME, TYPE } = globalThis.DESIGN_TOKENS;
 
 export const FOCUS_MIN = 25;
 export const BREAK_MIN = 5;

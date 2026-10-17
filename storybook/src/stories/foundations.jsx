@@ -16,17 +16,17 @@ export const toPx = (rem) => (String(rem).endsWith("rem") ? `${parseFloat(rem) *
 export const Swatch = ({ name, value, sub, note }) => (
   <div className="flex items-center gap-3">
     <div className="w-12 h-12 shrink-0 rounded-xl border border-subtle" style={{ background: value }} />
-    <div className="text-body">
-      <div className="text-control text-primary">{name}</div>
+    <div className="type-body">
+      <div className="type-control text-primary">{name}</div>
       <div className="font-mono text-secondary">{sub ?? value}</div>
-      {note && <div className="text-caption text-muted">{note}</div>}
+      {note && <div className="type-caption text-muted">{note}</div>}
     </div>
   </div>
 );
 
 export const Section = ({ title, children }) => (
   <div className="flex flex-col gap-3">
-    <div className="text-heading text-primary">{title}</div>
+    <div className="type-heading text-primary">{title}</div>
     {children}
   </div>
 );
@@ -34,8 +34,8 @@ export const Section = ({ title, children }) => (
 export const Page = ({ title, intro, children }) => (
   <div className="flex flex-col gap-8 max-w-3xl">
     <div className="flex flex-col gap-2">
-      <div className="text-display text-primary" style={{ fontSize: "2rem", lineHeight: "2.5rem" }}>{title}</div>
-      {intro && <div className="text-body text-secondary max-w-xl">{intro}</div>}
+      <div className="type-display text-primary" style={{ fontSize: "2rem", lineHeight: "2.5rem" }}>{title}</div>
+      {intro && <div className="type-body text-secondary max-w-xl">{intro}</div>}
     </div>
     {children}
   </div>
