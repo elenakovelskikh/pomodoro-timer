@@ -24,7 +24,8 @@ export function Popup({ title, description, enterHint, children, primaryLabel = 
       }}
       className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
     >
-      {enterHint && <p id={hintId} className="sr-only">{enterHint}</p>}
+      {/* hidden: read only as part of the description, the VoiceOver cursor doesn't stop on it */}
+      {enterHint && <p id={hintId} hidden>{enterHint}</p>}
       {(title || description) && (
         <div className="w-full text-left">
           {title && <h2 id={titleId} className="type-heading text-primary">{title}</h2>}

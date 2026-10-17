@@ -372,7 +372,9 @@ function Dialog({ title, description, enterHint, children, onSubmit, onClose }) 
         <div className="w-full text-left">
           <h2 id={titleId} className="type-heading text-primary">{title}</h2>
           {description && <p id={descriptionId} className="type-body text-secondary mt-3">{description}</p>}
-          {enterHint && <p id={hintId} className="sr-only">{enterHint}</p>}
+          {/* hidden: read only as part of the dialog's description when it opens, so the VoiceOver
+              cursor doesn't stop on it (it would frame the whole popup for an invisible element) */}
+          {enterHint && <p id={hintId} hidden>{enterHint}</p>}
         </div>
         {children}
       </div>
