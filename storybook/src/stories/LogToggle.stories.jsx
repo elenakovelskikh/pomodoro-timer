@@ -1,4 +1,4 @@
-import { useLiveArg } from "./liveArg";
+import { Live } from "./Live";
 import { LogToggle } from "../components/LogToggle";
 import { HistoryLog } from "../components/HistoryLog";
 
@@ -21,15 +21,16 @@ export default {
     onClick: { control: false, description: "Toggle the log", table: { type: { summary: "() => void" } } },
   },
   // the toggle plus the log it controls; clicking flips `open`
-  render: function Render(args) {
-    const [open, setOpen] = useLiveArg(args, "open");
-    return (
-      <div className="flex flex-col items-center gap-1">
-        <LogToggle {...args} open={open} onClick={() => args.count > 0 && setOpen(!open)} />
-        {open && args.count > 0 && <HistoryLog history={sample} />}
-      </div>
-    );
-  },
+  render: (args) => (
+    <Live value={args.open}>
+      {(open, setOpen) => (
+        <div className="flex flex-col items-center gap-1">
+          <LogToggle {...args} open={open} onClick={() => args.count > 0 && setOpen(!open)} />
+          {open && args.count > 0 && <HistoryLog history={sample} />}
+        </div>
+      )}
+    </Live>
+  ),
   args: { count: 2, open: false },
 };
 

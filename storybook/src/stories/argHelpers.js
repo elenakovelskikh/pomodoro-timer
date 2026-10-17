@@ -10,7 +10,6 @@ export function roundsArg(description) {
     table: { type: { summary: "number | null" } },
   };
 }
-export const keyForRounds = (value) => (value === null ? "∞" : String(value));
 
 // Timer mode as a regular control; the preview decorator turns it into the mode CSS variables.
 export const modeArg = {

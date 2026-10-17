@@ -1,4 +1,4 @@
-import { useLiveArg } from "./liveArg";
+import { Live } from "./Live";
 import { RadioGroup } from "../components/RadioGroup";
 
 // One generic story with placeholder options. optionCount is a story-only control — the
@@ -18,10 +18,11 @@ export default {
     onChange: { control: false, description: "Called with the new value", table: { type: { summary: "(value) => void" } } },
   },
   args: { label: "Label", optionCount: 3, value: 1 },
-  render: function Render({ optionCount, ...args }) {
-    const [value, setValue] = useLiveArg(args, "value");
-    return <RadioGroup {...args} value={value} options={makeOptions(optionCount)} onChange={setValue} />;
-  },
+  render: ({ optionCount, ...args }) => (
+    <Live value={args.value}>
+      {(value, setValue) => <RadioGroup {...args} value={value} options={makeOptions(optionCount)} onChange={setValue} />}
+    </Live>
+  ),
 };
 
 export const Default = {};

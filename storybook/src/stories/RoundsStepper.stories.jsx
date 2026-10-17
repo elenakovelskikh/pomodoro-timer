@@ -1,11 +1,10 @@
-import { useLiveArg } from "./liveArg";
+import { Live } from "./Live";
 import { RoundsStepper } from "../components/RoundsStepper";
-import { roundsArg, keyForRounds } from "./argHelpers";
+import { roundsArg } from "./argHelpers";
 
-function render(args) {
-  const [value, setValue] = useLiveArg(args, "value", keyForRounds);
-  return <RoundsStepper {...args} value={value} onChange={setValue} />;
-}
+const render = (args) => (
+  <Live value={args.value}>{(value, setValue) => <RoundsStepper {...args} value={value} onChange={setValue} />}</Live>
+);
 
 export default {
   title: "Components/RoundsStepper",
