@@ -1,0 +1,58 @@
+# Publishes the site and its Storybook to GitHub Pages on every push to main:
+#   /            the site (the repo's tracked files, without storybook/ and .github/)
+#   /storybook/  the built Storybook
+# Needs Settings → Pages → Source set to "GitHub Actions".
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# one deploy at a time; a newer push waits instead of cancelling a deploy in progress
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: storybook/package-lock.json
+
+      - name: Copy the site
+        run: |
+          mkdir _site
+          git ls-files | grep -v -e '^storybook/' -e '^\.github/' | xargs -I{} cp --parents {} _site/
+
+      - name: Build Storybook
+        working-directory: storybook
+        run: |
+          npm ci
+          npx storybook build -o ../_site/storybook --quiet
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

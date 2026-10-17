@@ -1,0 +1,56 @@
+import React, { useId } from "react";
+import { Button } from "./Button";
+
+// Popup: optional title and text, controls (children), a required primary button and an optional
+// secondary (gray) one to its left. It's a modal dialog named by its title and described by its text. `inline` renders just
+// the card in normal flow (for Storybook); without it the card sits over the page on the white veil.
+// While focus is on the card itself (as right after it opens in the app), Enter runs onPrimary;
+// enterHint is read by screen readers to tell about it.
+export function Popup({ title, description, enterHint, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const hintId = useId();
+  const card = (
+    <div
+      role="dialog"
+      aria-modal={inline ? undefined : "true"}
+      aria-labelledby={title ? titleId : undefined}
+      aria-describedby={[description && descriptionId, enterHint && hintId].filter(Boolean).join(" ") || undefined}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" || e.target !== e.currentTarget) return;
+        e.preventDefault();
+        onPrimary?.();
+      }}
+      className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
+    >
+      {/* hidden: read only as part of the description, the VoiceOver cursor doesn't stop on it */}
+      {enterHint && <p id={hintId} hidden>{enterHint}</p>}
+      {(title || description) && (
+        <div className="w-full text-left">
+          {title && <h2 id={titleId} className="type-heading text-primary">{title}</h2>}
+          {description && <p id={descriptionId} className={`type-body text-secondary ${title ? "mt-3" : ""}`}>{description}</p>}
+        </div>
+      )}
+      {children}
+      {secondaryLabel ? (
+        // One row (secondary hugging its label, primary taking the rest) while both labels fit on
+        // one line; once they don't, the primary wraps onto its own line and wrap-reverse puts it
+        // above the secondary, both full width. The 1 : 999 grow ratio keeps the secondary hugging.
+        <div className="w-full flex flex-wrap-reverse gap-2">
+          <div className="grow"><Button variant="secondary" onClick={onSecondary}>{secondaryLabel}</Button></div>
+          <div className="grow-[999]"><Button variant="primary" onClick={onPrimary}>{primaryLabel}</Button></div>
+        </div>
+      ) : (
+        <Button variant="primary" onClick={onPrimary}>{primaryLabel}</Button>
+      )}
+    </div>
+  );
+  if (inline) return card;
+  // the veil scrolls when the popup is taller than the screen
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-overlay">
+      <div className="min-h-full flex items-center justify-center p-6">{card}</div>
+    </div>
+  );
+}
