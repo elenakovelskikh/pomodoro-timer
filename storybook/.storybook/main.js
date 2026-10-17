@@ -7,7 +7,7 @@ export default {
   stories: ["../src/**/*.stories.jsx"],
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",
-  // the site's own icon, served next to Storybook for the browser tab and the sidebar header
+  // the site's own icon, served next to Storybook for the sidebar header
   staticDirs: [{ from: "../../favicon-48.png", to: "/brand-icon.png" }],
   viteFinal: (config) => {
     config.server ??= {};
