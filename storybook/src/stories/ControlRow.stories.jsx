@@ -1,4 +1,4 @@
-import { useLiveArg } from "./liveArg";
+import { Live } from "./Live";
 import { ControlRow } from "../components/ControlRow";
 import { modeArg } from "./argHelpers";
 
@@ -10,19 +10,20 @@ export default {
   component: ControlRow,
   tags: ["autodocs"],
   // clicking the middle button switches Pause <-> Resume, like in the app
-  render: function Render(args) {
-    const [buttonLabel, setButtonLabel] = useLiveArg(args, "buttonLabel");
-    return (
-      <ControlRow
-        {...args}
-        buttonLabel={buttonLabel}
-        onPlayPause={() => {
-          args.onPlayPause?.();
-          setButtonLabel(buttonLabel === "Pause" ? "Resume" : "Pause");
-        }}
-      />
-    );
-  },
+  render: (args) => (
+    <Live value={args.buttonLabel}>
+      {(buttonLabel, setButtonLabel) => (
+        <ControlRow
+          {...args}
+          buttonLabel={buttonLabel}
+          onPlayPause={() => {
+            args.onPlayPause?.();
+            setButtonLabel(buttonLabel === "Pause" ? "Resume" : "Pause");
+          }}
+        />
+      )}
+    </Live>
+  ),
   argTypes: {
     mode: modeArg,
     buttonLabel: { control: "radio", options: ["Pause", "Resume", "Start"], description: "State of the middle button", table: { type: { summary: '"Pause" | "Resume" | "Start"' } } },
