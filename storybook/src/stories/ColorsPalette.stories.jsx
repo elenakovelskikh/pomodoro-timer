@@ -7,7 +7,7 @@ function Palette() {
   return (
     <Page
       title="Palette"
-      intro="Primitives: every raw color value, named by hue and lightness step (higher = darker). Components never use these directly — they use the semantic tokens, which point here."
+      intro="All raw color values, named by hue and lightness (higher is darker). Components use them only through tokens."
     >
       {hues.map(([hue, steps]) => (
         <Section key={hue} title={hue[0].toUpperCase() + hue.slice(1)}>

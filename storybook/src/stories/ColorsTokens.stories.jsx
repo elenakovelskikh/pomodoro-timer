@@ -3,31 +3,30 @@ import { THEME, MODES } from "../tokens";
 import { Swatch, Section, Page, primitiveName } from "./foundations";
 
 const T = THEME.textColor, B = THEME.backgroundColor, R = THEME.ringColor;
+const hover = (name, value) => [name, value, "On hover"];
 
-// Each group lists [class, value, where it's used]. Values come straight from design-tokens.js.
+// Each row is [default, hover?]: defaults on the left, their hover state on the right.
 const groups = [
   {
     title: "Text",
     subgroups: [
       {
         title: "Content",
-        items: [
-          ["text-primary", T.primary, 'Timer, headings, the number in the rounds stepper, the "2 completed" count'],
-          ["text-secondary", T.secondary, 'Popup body text, "Round N", "… complete", log lines'],
-          ["text-muted", T.muted, "Credit line"],
-          ["text-label", T.label, 'Labels above controls: "Number of rounds", "Start with", "Long break length"'],
-          ["text-mode", T.mode, "Mode label (FOCUS / BREAK / LONG BREAK)"],
+        rows: [
+          [["text-primary", T.primary, "Main text"]],
+          [["text-secondary", T.secondary, "Secondary text"]],
+          [["text-muted", T.muted, "Least important text"]],
+          [["text-label", T.label, "Control labels"]],
+          [["text-mode", T.mode, "Mode label"]],
         ],
       },
       {
         title: "Clickable elements",
-        items: [
-          ["text-button-primary", T["button-primary"], "Text and icons on the popup CTA and on Start/Resume"],
-          ["text-button-secondary", T["button-secondary"], "Icons and text on gray buttons: stepper, Reset, Skip, Pause, Cancel"],
-          ["text-button-secondary-hover", T["button-secondary-hover"], "The same on hover"],
-          ["text-button-tertiary", T["button-tertiary"], "Text-only actions, both log toggles and their chevrons, unselected pills"],
-          ["text-button-tertiary-hover", T["button-tertiary-hover"], "The same on hover"],
-          ["text-radio-selected", T["radio-selected"], "Selected pill"],
+        rows: [
+          [["text-button-primary", T["button-primary"], "Primary and mode buttons"]],
+          [["text-button-secondary", T["button-secondary"], "Secondary buttons"], hover("text-button-secondary-hover", T["button-secondary-hover"])],
+          [["text-button-tertiary", T["button-tertiary"], "Tertiary buttons and radio options"], hover("text-button-tertiary-hover", T["button-tertiary-hover"])],
+          [["text-radio-selected", T["radio-selected"], "Selected radio option"]],
         ],
       },
     ],
@@ -37,74 +36,73 @@ const groups = [
     subgroups: [
       {
         title: "General",
-        items: [
-          ["bg-page", B.page, "Page, popup and completion cards"],
-          ["bg-overlay", B.overlay, "Veil behind an open popup"],
+        rows: [
+          [["bg-page", B.page, "Page and cards"]],
+          [["bg-overlay", B.overlay, "Behind popups"]],
         ],
       },
       {
         title: "Buttons",
-        items: [
-          ["bg-button-primary", B["button-primary"], "Popup CTA (same value as the Focus mode color)"],
-          ["bg-button-primary-hover", B["button-primary-hover"], "The same on hover"],
-          ["bg-button-mode", B["button-mode"], "Start/Resume, in the current mode color"],
-          ["bg-button-mode-hover", B["button-mode-hover"], "The same on hover"],
-          ["bg-button-secondary", B["button-secondary"], "Gray buttons: stepper, Reset, Skip, Pause, Cancel"],
-          ["bg-button-secondary-hover", B["button-secondary-hover"], "The same on hover"],
-          ["bg-radio-selected", B["radio-selected"], "Selected pill"],
+        rows: [
+          [["bg-button-primary", B["button-primary"], "Primary button"], hover("bg-button-primary-hover", B["button-primary-hover"])],
+          [["bg-button-mode", B["button-mode"], "Mode button"], hover("bg-button-mode-hover", B["button-mode-hover"])],
+          [["bg-button-secondary", B["button-secondary"], "Secondary buttons"], hover("bg-button-secondary-hover", B["button-secondary-hover"])],
+          [["bg-radio-selected", B["radio-selected"], "Selected radio option"]],
         ],
       },
     ],
   },
   {
     title: "Borders and outlines",
-    intro: "Rings are outlines drawn with box-shadow instead of a border (so they don't change the element's size), but they play the same role.",
     subgroups: [
       {
-        items: [
-          ["border-subtle", THEME.borderColor.subtle, "Popup and completion cards, stepper outline and dividers"],
-          ["ring-radio", R.radio, "Unselected pill"],
-          ["ring-radio-hover", R["radio-hover"], "Unselected pill on hover"],
-          ["ring-radio-selected", R["radio-selected"], "Selected pill"],
+        rows: [
+          [["border-subtle", THEME.borderColor.subtle, "Cards and control outlines"]],
+          [["ring-radio", R.radio, "Radio option"], hover("ring-radio-hover", R["radio-hover"])],
+          [["ring-radio-selected", R["radio-selected"], "Selected radio option"]],
         ],
       },
     ],
   },
   {
-    title: "Strokes (SVG)",
-    subgroups: [{ items: [["stroke-ring-track", THEME.stroke["ring-track"], "Gray track under the progress arc"]] }],
+    title: "Strokes",
+    subgroups: [{ rows: [[["stroke-ring-track", THEME.stroke["ring-track"], "Timer ring track"]]] }],
   },
 ];
 
 const ref = (value) =>
-  value === "var(--mode-color)" ? "→ mode color (Mode toolbar)"
-  : value === "var(--mode-color-hover)" ? "→ mode hover color (Mode toolbar)"
+  value === "var(--mode-color)" ? "→ mode color"
+  : value === "var(--mode-color-hover)" ? "→ mode hover color"
   : primitiveName(value) ? `→ ${primitiveName(value)} · ${value}` : value;
+
+const Rows = ({ rows }) => (
+  <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+    {rows.flatMap((row, i) => [
+      <Swatch key={`${i}a`} name={row[0][0]} value={row[0][1]} sub={ref(row[0][1])} note={row[0][2]} />,
+      row[1] ? <Swatch key={`${i}b`} name={row[1][0]} value={row[1][1]} sub={ref(row[1][1])} note={row[1][2]} /> : <div key={`${i}b`} />,
+    ])}
+  </div>
+);
 
 function Tokens({ mode }) {
   const m = MODES[mode];
   return (
-    <Page
-      title="Tokens"
-      intro="Semantic tokens: what a color is for. Each one is a Tailwind class pointing at a palette primitive. Mode tokens change with the Mode toolbar."
-    >
+    <Page title="Tokens" intro="What each color is for. Each token is a class whose value comes from the palette. Mode colors follow the Mode switch in the toolbar.">
       <Section title={`Mode · ${m.label}`}>
-        <div className="grid grid-cols-2 gap-3">
-          <Swatch name="color" value={m.color} sub={ref(m.color)} note="Mode label, Start/Resume (via --mode-color)" />
-          <Swatch name="hoverColor" value={m.hoverColor} sub={ref(m.hoverColor)} note="Start/Resume on hover (via --mode-color-hover)" />
-          <Swatch name="arcColor" value={m.arcColor} sub={ref(m.arcColor)} note="Progress arc and its cap" />
-          <Swatch name="shadowColor" value={m.shadowColor} sub={ref(m.shadowColor)} note="Ring tip shadow, colored button shadows" />
-        </div>
+        <Rows
+          rows={[
+            [["color", m.color, "Mode label and mode button"], hover("hoverColor", m.hoverColor)],
+            [["arcColor", m.arcColor, "Progress arc"]],
+            [["shadowColor", m.shadowColor, "Shadows"]],
+          ]}
+        />
       </Section>
       {groups.map((g) => (
         <Section key={g.title} title={g.title}>
-          {g.intro && <div className="text-body text-secondary max-w-xl">{g.intro}</div>}
           {g.subgroups.map((sg, i) => (
-            <div key={i} className="flex flex-col gap-3">
-              {sg.title && <div className="text-control text-label">{sg.title}</div>}
-              <div className="grid grid-cols-2 gap-3">
-                {sg.items.map(([name, value, note]) => <Swatch key={name} name={name} value={value} sub={ref(value)} note={note} />)}
-              </div>
+            <div key={i} className={`flex flex-col gap-3 ${i ? "mt-3" : ""}`}>
+              {sg.title && <div className="text-button text-primary">{sg.title}</div>}
+              <Rows rows={sg.rows} />
             </div>
           ))}
         </Section>

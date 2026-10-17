@@ -13,14 +13,14 @@ export default {
   tags: ["autodocs"],
   render,
   argTypes: {
-    label: { control: "text", description: "Text above the stepper", table: { type: { summary: "string" } } },
-    value: roundsArg("Number of rounds 1–16, or ∞ (null) for no limit"),
-    onChange: { control: false, description: "Called with the new value. Minus from 1 goes to ∞, plus from ∞ goes to 1", table: { type: { summary: "(value: number | null) => void" } } },
+    label: { control: "text", description: "Label", table: { type: { summary: "string" } } },
+    value: roundsArg("Number of rounds, or ∞ for no limit"),
+    onChange: { control: false, description: "Called with the new value", table: { type: { summary: "(value: number | null) => void" } } },
   },
   args: { label: "Number of rounds", value: "∞" },
 };
 
 // The three edge states the stepper has to handle:
-export const Unlimited = { parameters: { docs: { description: { story: "∞, no unit label, minus disabled." } } } };
-export const SingleRound = { args: { value: "1" }, parameters: { docs: { description: { story: 'Singular "round"; minus goes back to ∞.' } } } };
-export const Maximum = { args: { value: "16" }, parameters: { docs: { description: { story: "16 is the cap, plus disabled." } } } };
+export const Unlimited = { parameters: { docs: { description: { story: "No limit; minus is disabled." } } } };
+export const SingleRound = { args: { value: "1" }, parameters: { docs: { description: { story: "One round." } } } };
+export const Maximum = { args: { value: "16" }, parameters: { docs: { description: { story: "Upper limit; plus is disabled." } } } };

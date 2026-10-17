@@ -17,13 +17,13 @@ export const Default = {
   args: { title: "Title", description: "Text", primaryLabel: "Button", secondaryLabel: "Button", inline: true },
   argTypes: {
     title: { control: "text", description: "Optional heading", table: { type: { summary: "string" } } },
-    description: { control: "text", description: "Optional text under the heading", table: { type: { summary: "ReactNode" } } },
-    children: { control: false, description: "Optional controls between the text and the buttons", table: { type: { summary: "ReactNode" } } },
-    primaryLabel: { control: "text", description: "Required primary (violet) button", table: { type: { summary: "string" } } },
+    description: { control: "text", description: "Optional text", table: { type: { summary: "ReactNode" } } },
+    children: { control: false, description: "Optional content", table: { type: { summary: "ReactNode" } } },
+    primaryLabel: { control: "text", description: "Primary button (required)", table: { type: { summary: "string" } } },
     onPrimary: action("primary"),
-    secondaryLabel: { control: "text", description: "Optional secondary (gray) button to the left of the primary one; leave empty to hide it", table: { type: { summary: "string" } } },
+    secondaryLabel: { control: "text", description: "Optional secondary button", table: { type: { summary: "string" } } },
     onSecondary: action("secondary"),
-    inline: { control: false, description: "Render just the card, without the fullscreen veil", table: { type: { summary: "boolean" } } },
+    inline: { control: false, description: "Show without the backdrop (preview only)", table: { type: { summary: "boolean" } } },
   },
   render: (args) => (
     <Popup {...args}>
@@ -55,7 +55,7 @@ export const Setup = {
 export const AddRounds = {
   args: { amount: "4", startsWithBreak: "Break", longBreakMinutes: "30 min", inline: true },
   argTypes: {
-    amount: roundsArg("How many more rounds; ∞ continues without a limit"),
+    amount: roundsArg("Rounds to add, or ∞ for no limit"),
     startsWithBreak: optionsArg(START_WITH_OPTIONS, "What comes first", "boolean"),
     longBreakMinutes: optionsArg(LONG_BREAK_OPTIONS, "Long break length", "15 | 30 | null"),
     onConfirm: action("confirm"),

@@ -10,11 +10,11 @@ export default {
   component: RadioGroup,
   tags: ["autodocs"],
   argTypes: {
-    label: { control: "text", description: "Text above the pills; also the group's accessible name", table: { type: { summary: "string" } } },
-    optionCount: { control: { type: "range", min: 2, max: 5, step: 1 }, description: "Story only: how many pills to show", table: { category: "Story" } },
-    value: { control: { type: "number", min: 1, max: 5 }, description: "Value of the selected pill", table: { type: { summary: "any" } } },
-    options: { control: false, description: "The pills: `{ value, label }[]`", table: { type: { summary: "{ value: any, label: string }[]" } } },
-    onChange: { control: false, description: "Called with the new value (click or arrow keys)", table: { type: { summary: "(value) => void" } } },
+    label: { control: "text", description: "Group label", table: { type: { summary: "string" } } },
+    optionCount: { control: { type: "range", min: 2, max: 5, step: 1 }, description: "Number of options (preview only)", table: { category: "Story" } },
+    value: { control: { type: "number", min: 1, max: 5 }, description: "Selected option", table: { type: { summary: "any" } } },
+    options: { control: false, description: "Options", table: { type: { summary: "{ value: any, label: string }[]" } } },
+    onChange: { control: false, description: "Called with the new value", table: { type: { summary: "(value) => void" } } },
   },
   args: { label: "Label", optionCount: 3, value: 1 },
   render: function Render({ optionCount, ...args }) {

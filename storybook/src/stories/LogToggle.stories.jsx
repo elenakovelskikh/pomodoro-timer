@@ -15,9 +15,9 @@ export default {
   component: LogToggle,
   tags: ["autodocs"],
   argTypes: {
-    count: { control: { type: "number", min: 0 }, description: "Completed focus rounds; at 0 there is no chevron", table: { type: { summary: "number" } } },
-    open: { control: "boolean", description: "Whether the log under the toggle is shown (chevron up)", table: { type: { summary: "boolean" } } },
-    onClick: { control: false, description: "Open/close the log", table: { type: { summary: "() => void" } } },
+    count: { control: { type: "number", min: 0 }, description: "Completed rounds", table: { type: { summary: "number" } } },
+    open: { control: "boolean", description: "Log is open", table: { type: { summary: "boolean" } } },
+    onClick: { control: false, description: "Toggle the log", table: { type: { summary: "() => void" } } },
   },
   // the toggle plus the log it controls; clicking flips `open`
   render: function Render(args) {
@@ -34,4 +34,4 @@ export default {
 
 export const Default = {};
 export const Open = { args: { open: true } };
-export const Empty = { args: { count: 0 }, parameters: { docs: { description: { story: "Nothing completed yet: no chevron, nothing to open." } } } };
+export const Empty = { args: { count: 0 }, parameters: { docs: { description: { story: "Nothing completed yet." } } } };

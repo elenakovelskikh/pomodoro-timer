@@ -22,12 +22,12 @@ function Primitives() {
   return (
     <Page
       title="Type primitives"
-      intro="The raw ingredients. Text styles combine them; components use only the text styles. All sizes are in rem (px shown at the default 16px), so text follows the browser's font-size setting."
+      intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting."
     >
       <Section title="Families">
         <div>
-          <Row label="sans" sub="Tailwind default (system UI font)"><span className="font-sans">Automatic Pomodoro Focus Timer 0123456789</span></Row>
-          <Row label="mono" sub="Tailwind default monospace"><span className="font-mono">10:00 – 10:25</span></Row>
+          <Row label="sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer 0123456789</span></Row>
+          <Row label="mono" sub="System monospace"><span className="font-mono">10:00 – 10:25</span></Row>
         </div>
       </Section>
       <Section title="Sizes">
@@ -44,7 +44,7 @@ function Primitives() {
         <div className="text-body text-secondary font-mono">{lineHeights.map((l) => `${l}${l.endsWith("rem") ? ` (${toPx(l)})` : " (× size)"}`).join("  ·  ")}</div>
       </Section>
       <Section title="Letter spacing">
-        <div className="text-body text-secondary font-mono">{tracking.join("  ·  ")} — mode label only</div>
+        <div className="text-body text-secondary font-mono">{tracking.join("  ·  ")}</div>
       </Section>
     </Page>
   );
