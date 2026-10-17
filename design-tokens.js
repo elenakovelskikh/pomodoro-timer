@@ -99,6 +99,8 @@
     addComponents(Object.fromEntries(Object.entries(TYPE).map(([name, css]) => [`.type-${name}`, css])));
 
   const TOKENS = { PALETTE, MODE_COLORS, THEME, TYPE, typePlugin };
+  // Always set the global: Storybook's production build bundles this file as a CommonJS module,
+  // where `module` exists too, and its stories read the global.
+  root.DESIGN_TOKENS = TOKENS;
   if (typeof module === "object" && module.exports) module.exports = TOKENS;
-  else root.DESIGN_TOKENS = TOKENS;
 })(typeof globalThis !== "undefined" ? globalThis : this);
