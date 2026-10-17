@@ -726,9 +726,16 @@ function PomodoroTimer() {
     : mode === "focus"
     ? `Focus, round ${completedCycles + 1}`
     : MODES[mode].label;
+  // The live region gets the text a moment later: the same click or Enter also moves focus (e.g.
+  // Start → Pause), and VoiceOver drops a live update that lands together with a focus change.
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setAnnouncement(status), 700);
+    return () => clearTimeout(t);
+  }, [status]);
   // First child of both screens' root, so React keeps the same element when the screen switches
   // and the change is announced.
-  const announcer = <div className="sr-only" role="status">{status}</div>;
+  const announcer = <div className="sr-only" role="status">{announcement}</div>;
 
   if (sessionComplete) {
     return (
