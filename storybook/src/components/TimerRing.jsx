@@ -1,5 +1,5 @@
 import React, { useId } from "react";
-import { MODES, PALETTE, formatTime } from "../tokens";
+import { MODES, formatTime } from "../tokens";
 
 // Pure view of the timer ring: everything it shows comes from props, no timers or state.
 // `round` is the "Round N" caption under the time; it only shows in Focus.
@@ -37,7 +37,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
             />
           </clipPath>
         </defs>
-        <circle cx="140" cy="140" r={radius} fill="none" stroke={PALETTE.neutral[150]} strokeWidth="10" />
+        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
         <circle
           cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
           strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}

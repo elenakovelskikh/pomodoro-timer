@@ -88,7 +88,7 @@ const START_WITH_OPTIONS = [
 
 const COMPLETION_HEADINGS = ["Great job!", "Nice work!", "You crushed it!", "Well done!", "Way to go!", "Amazing focus!"];
 
-const { MODE_COLORS, PALETTE } = window.DESIGN_TOKENS;
+const { MODE_COLORS } = window.DESIGN_TOKENS;
 
 const MODES = {
   focus: { label: "Focus", minutes: FOCUS_MIN, ...MODE_COLORS.focus, emoji: ["📚", "💻", "✍️"] },
@@ -635,7 +635,7 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? null : n === 1 ? null : n - 1))}
                     disabled={addRoundsAmount === null}
-                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-stepper-button text-label hover:bg-stepper-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-stepper-button"
+                    className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-secondary-button disabled:hover:text-on-secondary"
                   >
                     <MinusIcon size={20} />
                   </button>
@@ -650,7 +650,7 @@ function PomodoroTimer() {
                   <button
                     onClick={() => setAddRoundsAmount((n) => (n === null ? 1 : Math.min(16, n + 1)))}
                     disabled={addRoundsAmount === 16}
-                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-stepper-button text-label hover:bg-stepper-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-stepper-button"
+                    className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-secondary-button disabled:hover:text-on-secondary"
                   >
                     <PlusIcon size={20} />
                   </button>
@@ -674,7 +674,7 @@ function PomodoroTimer() {
               <div className="w-full flex flex-wrap-reverse gap-2">
                 <button
                   onClick={() => setAddRoundsModalOpen(false)}
-                  className="grow h-11 px-6 rounded-xl bg-secondary-button text-button text-label hover:bg-secondary-button-hover whitespace-nowrap"
+                  className="grow h-11 px-6 rounded-xl bg-secondary-button text-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover whitespace-nowrap"
                 >
                   Cancel
                 </button>
@@ -700,7 +700,7 @@ function PomodoroTimer() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-page" style={{ "--mode-color": color }}>
+    <div className="min-h-screen w-full flex flex-col bg-page" style={{ "--mode-color": color, "--mode-color-hover": MODES[mode].hoverColor }}>
       <div className="flex-1 w-full flex items-start justify-center p-6 pt-16">
       {!setupComplete && (
         <div
@@ -721,7 +721,7 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? null : r === 1 ? null : r - 1))}
                   disabled={roundsLimit === null}
-                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-stepper-button text-label hover:bg-stepper-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-stepper-button"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-secondary-button disabled:hover:text-on-secondary"
                 >
                   <MinusIcon size={20} />
                 </button>
@@ -736,7 +736,7 @@ function PomodoroTimer() {
                 <button
                   onClick={() => setRoundsLimit((r) => (r === null ? 1 : Math.min(16, r + 1)))}
                   disabled={roundsLimit === 16}
-                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-stepper-button text-label hover:bg-stepper-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-stepper-button"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-secondary-button disabled:hover:text-on-secondary"
                 >
                   <PlusIcon size={20} />
                 </button>
@@ -783,7 +783,7 @@ function PomodoroTimer() {
                 />
               </clipPath>
             </defs>
-            <circle cx="140" cy="140" r={radius} fill="none" stroke={PALETTE.neutral[150]} strokeWidth="10" />
+            <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
             <circle
               cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
               strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
@@ -842,7 +842,7 @@ function PomodoroTimer() {
           <button
             onClick={handleReset}
             disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-secondary-button text-label hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
+            className="flex items-center justify-center rounded-full bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
             title="Reset current round"
           >
             <RotateCcwIcon size={20} />
@@ -863,7 +863,7 @@ function PomodoroTimer() {
                 aria-label={buttonLabel}
                 title={buttonLabel}
                 className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-                  looksActive ? "bg-secondary-button text-label hover:bg-secondary-button-hover" : "bg-mode text-on-color"
+                  looksActive ? "bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover" : "bg-mode hover:bg-mode-hover text-on-color"
                 }`}
                 style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
               >
@@ -874,7 +874,7 @@ function PomodoroTimer() {
           <button
             onClick={handleSkip}
             disabled={isTransitioning}
-            className="flex items-center justify-center rounded-full bg-secondary-button text-label hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
+            className="flex items-center justify-center rounded-full bg-secondary-button text-on-secondary hover:text-on-secondary-hover hover:bg-secondary-button-hover disabled:opacity-40 disabled:cursor-not-allowed h-11 w-11"
             title="Skip"
           >
             <SkipForwardIcon size={20} />

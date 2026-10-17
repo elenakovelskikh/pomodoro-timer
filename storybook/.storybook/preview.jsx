@@ -3,7 +3,7 @@ import { MODES } from "../src/tokens";
 
 export default {
   // A toolbar switch for the timer mode. Stories of mode-dependent components read it from
-  // `globals.mode`; the decorator also sets --mode-color, like the app's screen root does.
+  // `globals.mode`; the decorator also sets --mode-color / --mode-color-hover, like the app's screen root does.
   globalTypes: {
     mode: {
       description: "Timer mode",
@@ -22,7 +22,7 @@ export default {
   initialGlobals: { mode: "focus", backgrounds: { value: "white" } },
   decorators: [
     (Story, { globals }) => (
-      <div style={{ "--mode-color": MODES[globals.mode ?? "focus"].color }}>
+      <div style={{ "--mode-color": MODES[globals.mode ?? "focus"].color, "--mode-color-hover": MODES[globals.mode ?? "focus"].hoverColor }}>
         <Story />
       </div>
     ),

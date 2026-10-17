@@ -9,9 +9,6 @@ function Palette() {
       title="Palette"
       intro="Primitives: every raw color value, named by hue and lightness step (higher = darker). Components never use these directly — they use the semantic tokens, which point here."
     >
-      <Section title="Base">
-        <div className="grid grid-cols-3 gap-3"><Swatch name="white" value={PALETTE.white} /></div>
-      </Section>
       {hues.map(([hue, steps]) => (
         <Section key={hue} title={hue[0].toUpperCase() + hue.slice(1)}>
           <div className="grid grid-cols-3 gap-3">
