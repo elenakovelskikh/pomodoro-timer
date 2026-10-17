@@ -20,11 +20,6 @@ const Row = ({ label, sub, children }) => (
 function Primitives() {
   return (
     <Page title="Type primitives" intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting.">
-      <Section title="Family">
-        <div>
-          <Row label="Sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer</span></Row>
-        </div>
-      </Section>
       <Section title="Sizes">
         <div>{sizes.map((s) => <Row key={s} label={toPx(s)} sub={s}><span style={{ fontSize: s, lineHeight: 1.25 }}>Focus</span></Row>)}</div>
       </Section>

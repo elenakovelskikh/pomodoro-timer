@@ -10,7 +10,7 @@ export default {
   tags: ["autodocs"],
   argTypes: {
     variant: { control: "radio", options: ["secondary", "mode"], description: "Gray, or in the mode color", table: { type: { summary: '"secondary" | "mode"' }, defaultValue: { summary: '"secondary"' } } },
-    size: { control: "radio", options: ["md", "lg"], description: "44 or 56 px", table: { type: { summary: '"md" | "lg"' }, defaultValue: { summary: '"md"' } } },
+    size: { control: "radio", options: ["md", "lg"], description: "md (44 px): Reset and Skip; lg (56 px): Play/Pause", table: { type: { summary: '"md" | "lg"' }, defaultValue: { summary: '"md"' } } },
     icon: { control: "select", options: Object.keys(ICONS), mapping: ICONS, description: "Icon", table: { type: { summary: "ReactNode" } } },
     label: { control: "text", description: "Accessible name and tooltip", table: { type: { summary: "string" } } },
     mode: modeArg,
@@ -20,5 +20,6 @@ export default {
   args: { variant: "secondary", size: "md", mode: "focus", icon: "Skip", label: "Skip", disabled: false },
 };
 
-export const Secondary = {};
-export const Mode = { args: { variant: "mode", size: "lg", icon: "Play", label: "Start" } };
+export const ResetAndSkip = { name: "Reset and Skip" };
+export const Start = { name: "Start / Resume", args: { variant: "mode", size: "lg", icon: "Play", label: "Start" } };
+export const Pause = { args: { size: "lg", icon: "Pause", label: "Pause" } };

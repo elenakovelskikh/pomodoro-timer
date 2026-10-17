@@ -1,16 +1,5 @@
-// Storybook controls can't hold `null` or arbitrary objects in a select, so pickers use readable
-// keys ("∞", "30 min", "Break") and `mapping` turns each key into the real value for the component.
-export function optionsArg(options, description, summary) {
-  return {
-    control: "select",
-    options: options.map((o) => o.label),
-    mapping: Object.fromEntries(options.map((o) => [o.label, o.value])),
-    description,
-    table: { type: { summary } },
-  };
-}
-export const keyForOption = (options, value) => options.find((o) => o.value === value)?.label;
-
+// Storybook controls can't hold `null` in a select, so the rounds picker uses readable keys
+// ("∞", "1" … "16") and `mapping` turns each key into the real value for the component.
 export const ROUND_KEYS = ["∞", ...Array.from({ length: 16 }, (_, i) => String(i + 1))];
 export function roundsArg(description) {
   return {

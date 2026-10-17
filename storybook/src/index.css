@@ -1,3 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Keyboard focus ring, as on the site: the browser's default outline on every button, radio pill
+   and link, 2px away from the element; no ring after a mouse or touch click. */
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
+  outline: none;
+}
+button:focus-visible, a:focus-visible {
+  outline-offset: 2px;
+}

@@ -5,6 +5,7 @@ export function Icon({ children, size = 18, className, style }) {
   return (
     <svg
       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true" focusable="false"
       className={className}
       style={{ width: `${size / 16}rem`, height: `${size / 16}rem`, ...style }}
     >

@@ -8,14 +8,16 @@ const VARIANTS = {
 };
 
 // Round button with an icon: gray (secondary) or in the current mode color (mode).
+// In the app, md is Reset and Skip, lg is the Play/Pause button between them.
+// Disabled is aria-disabled, so a button keeps keyboard focus while it's briefly unavailable.
 export function IconButton({ icon, label, variant = "secondary", size = "md", mode = "focus", disabled = false, onClick }) {
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled || undefined}
       aria-label={label}
       title={label}
-      className={`flex items-center justify-center rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${SIZES[size]} ${VARIANTS[variant]}`}
+      className={`flex items-center justify-center rounded-full aria-disabled:opacity-40 aria-disabled:cursor-not-allowed ${SIZES[size]} ${VARIANTS[variant]}`}
       style={variant === "mode" ? { boxShadow: `0 2px 8px -2px ${MODES[mode].shadow}59` } : undefined}
     >
       {icon}

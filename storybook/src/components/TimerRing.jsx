@@ -22,7 +22,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
 
   return (
     <div className={`relative w-72 h-72 ${isTransitioning ? "animate-pulse" : ""}`}>
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
         <defs>
           <radialGradient id={shadowId}>
             <stop offset="0%" stopColor={shadowColor} stopOpacity="0.25" />
@@ -58,14 +58,14 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {isTransitioning ? (
           <>
-            <div className="type-emoji leading-[2.125rem]">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+            <div className="type-emoji leading-[2.125rem]" aria-hidden="true">{mode === "focus" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
             <div className="type-body text-secondary mt-1">
               {mode === "focus" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete"}
             </div>
           </>
         ) : (
           <>
-            <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3">
+            <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3" aria-hidden="true">
               {Array.isArray(MODES[mode].emoji) ? (
                 MODES[mode].emoji.map((e, i) => <span key={i} className="type-emoji">{e}</span>)
               ) : (

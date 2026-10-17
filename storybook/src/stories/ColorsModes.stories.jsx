@@ -14,7 +14,7 @@ const ROLES = [
 function Modes() {
   const modes = Object.values(MODES);
   return (
-    <Page title="Modes" intro="Each timer mode has its own hue. The roles are the same in every mode, so switching modes only changes the hue.">
+    <Page title="Modes" intro="Each timer mode has its own color family: violet, blue or teal. The roles and steps are the same in every mode; switching modes swaps the family.">
       <div className="grid grid-cols-[minmax(8rem,1fr)_repeat(3,minmax(0,1fr))] gap-x-4 gap-y-5 items-center">
         <div />
         {modes.map((m) => (
