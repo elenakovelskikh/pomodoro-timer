@@ -3,7 +3,7 @@ import { MODES } from "../tokens";
 import { PlayIcon, PauseIcon, RotateCcwIcon, SkipForwardIcon } from "./Icons";
 
 // Reset / play-pause / skip. buttonLabel is "Pause", "Resume" or "Start"; Pause gets the gray
-// look, the other two the mode color (bg-mode / bg-mode-hover, from CSS variables) and its shadow.
+// look, the other two the mode color (bg-button-mode / bg-button-mode-hover, from CSS variables) and its shadow.
 export function ControlRow({ mode = "focus", buttonLabel = "Pause", disabled = false, onReset, onPlayPause, onSkip }) {
   const { shadowColor } = MODES[mode];
   const looksActive = buttonLabel === "Pause";
@@ -19,7 +19,7 @@ export function ControlRow({ mode = "focus", buttonLabel = "Pause", disabled = f
         aria-label={buttonLabel}
         title={buttonLabel}
         className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-          looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-mode hover:bg-mode-hover text-on-color"
+          looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-button-mode hover:bg-button-mode-hover text-button-primary"
         }`}
         style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
       >

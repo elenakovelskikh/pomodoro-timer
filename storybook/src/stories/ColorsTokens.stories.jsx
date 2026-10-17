@@ -2,57 +2,91 @@ import React from "react";
 import { THEME, MODES } from "../tokens";
 import { Swatch, Section, Page, primitiveName } from "./foundations";
 
-const notes = {
-  text: {
-    primary: "Timer digits, headings, numbers, counter",
-    label: "Field labels",
-    secondary: 'Popup body, "Round N", "… complete", log',
-    muted: "Credit line",
-    "button-tertiary": "Tertiary buttons: text-only actions, both log toggles and their chevrons; unselected pill text",
-    "button-tertiary-hover": "The same on hover",
-    "button-secondary": "Icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)",
-    "button-secondary-hover": "The same on hover",
-    "radio-selected": "Selected pill text",
-    "on-color": "Text and icons on colored buttons",
-    mode: "Mode label",
+const T = THEME.textColor, B = THEME.backgroundColor, R = THEME.ringColor;
+
+// Each group lists [class, value, where it's used]. Values come straight from design-tokens.js.
+const groups = [
+  {
+    title: "Text",
+    subgroups: [
+      {
+        title: "Content",
+        items: [
+          ["text-primary", T.primary, 'Timer, headings, the number in the rounds stepper, the "2 completed" count'],
+          ["text-secondary", T.secondary, 'Popup body text, "Round N", "… complete", log lines'],
+          ["text-muted", T.muted, "Credit line"],
+          ["text-label", T.label, 'Labels above controls: "Number of rounds", "Start with", "Long break length"'],
+          ["text-mode", T.mode, "Mode label (FOCUS / BREAK / LONG BREAK)"],
+        ],
+      },
+      {
+        title: "Clickable elements",
+        items: [
+          ["text-button-primary", T["button-primary"], "Text and icons on the popup CTA and on Start/Resume"],
+          ["text-button-secondary", T["button-secondary"], "Icons and text on gray buttons: stepper, Reset, Skip, Pause, Cancel"],
+          ["text-button-secondary-hover", T["button-secondary-hover"], "The same on hover"],
+          ["text-button-tertiary", T["button-tertiary"], "Text-only actions, both log toggles and their chevrons, unselected pills"],
+          ["text-button-tertiary-hover", T["button-tertiary-hover"], "The same on hover"],
+          ["text-radio-selected", T["radio-selected"], "Selected pill"],
+        ],
+      },
+    ],
   },
-  bg: {
-    page: "Page, popup and completion cards",
-    overlay: "Veil behind an open popup",
-    "button-primary": "Primary button: popup CTA (same value as the Focus mode color)",
-    "button-primary-hover": "The same on hover",
-    "button-secondary": "Secondary (gray) buttons: stepper − / +, Reset, Skip, Pause, Cancel",
-    "button-secondary-hover": "The same on hover",
-    "radio-selected": "Selected pill",
-    mode: "Start / Resume",
-    "mode-hover": "Start / Resume on hover",
+  {
+    title: "Backgrounds",
+    subgroups: [
+      {
+        title: "General",
+        items: [
+          ["bg-page", B.page, "Page, popup and completion cards"],
+          ["bg-overlay", B.overlay, "Veil behind an open popup"],
+        ],
+      },
+      {
+        title: "Buttons",
+        items: [
+          ["bg-button-primary", B["button-primary"], "Popup CTA (same value as the Focus mode color)"],
+          ["bg-button-primary-hover", B["button-primary-hover"], "The same on hover"],
+          ["bg-button-mode", B["button-mode"], "Start/Resume, in the current mode color"],
+          ["bg-button-mode-hover", B["button-mode-hover"], "The same on hover"],
+          ["bg-button-secondary", B["button-secondary"], "Gray buttons: stepper, Reset, Skip, Pause, Cancel"],
+          ["bg-button-secondary-hover", B["button-secondary-hover"], "The same on hover"],
+          ["bg-radio-selected", B["radio-selected"], "Selected pill"],
+        ],
+      },
+    ],
   },
-  border: { subtle: "Cards, stepper outline and dividers" },
-  ring: { "radio-selected": "Selected pill outline", radio: "Unselected pill outline" },
-  stroke: { "ring-track": "Gray track under the progress arc" },
-};
+  {
+    title: "Borders and outlines",
+    intro: "Rings are outlines drawn with box-shadow instead of a border (so they don't change the element's size), but they play the same role.",
+    subgroups: [
+      {
+        items: [
+          ["border-subtle", THEME.borderColor.subtle, "Popup and completion cards, stepper outline and dividers"],
+          ["ring-radio", R.radio, "Unselected pill"],
+          ["ring-radio-hover", R["radio-hover"], "Unselected pill on hover"],
+          ["ring-radio-selected", R["radio-selected"], "Selected pill"],
+        ],
+      },
+    ],
+  },
+  {
+    title: "Strokes (SVG)",
+    subgroups: [{ items: [["stroke-ring-track", THEME.stroke["ring-track"], "Gray track under the progress arc"]] }],
+  },
+];
 
 const ref = (value) =>
   value === "var(--mode-color)" ? "→ mode color (Mode toolbar)"
   : value === "var(--mode-color-hover)" ? "→ mode hover color (Mode toolbar)"
   : primitiveName(value) ? `→ ${primitiveName(value)} · ${value}` : value;
 
-const Group = ({ title, prefix, tokens, noteKey }) => (
-  <Section title={title}>
-    <div className="grid grid-cols-2 gap-3">
-      {Object.entries(tokens).map(([name, value]) => (
-        <Swatch key={name} name={`${prefix}-${name}`} value={value} sub={ref(value)} note={notes[noteKey][name]} />
-      ))}
-    </div>
-  </Section>
-);
-
 function Tokens({ mode }) {
   const m = MODES[mode];
   return (
     <Page
       title="Tokens"
-      intro="Semantic tokens: what a color is for. Each one is a Tailwind class (text-secondary, bg-button-secondary, …) pointing at a palette primitive. Mode tokens change with the Mode toolbar."
+      intro="Semantic tokens: what a color is for. Each one is a Tailwind class pointing at a palette primitive. Mode tokens change with the Mode toolbar."
     >
       <Section title={`Mode · ${m.label}`}>
         <div className="grid grid-cols-2 gap-3">
@@ -62,11 +96,19 @@ function Tokens({ mode }) {
           <Swatch name="shadowColor" value={m.shadowColor} sub={ref(m.shadowColor)} note="Ring tip shadow, colored button shadows" />
         </div>
       </Section>
-      <Group title="Text" prefix="text" tokens={THEME.textColor} noteKey="text" />
-      <Group title="Backgrounds" prefix="bg" tokens={THEME.backgroundColor} noteKey="bg" />
-      <Group title="Borders" prefix="border" tokens={THEME.borderColor} noteKey="border" />
-      <Group title="Rings" prefix="ring" tokens={THEME.ringColor} noteKey="ring" />
-      <Group title="Strokes (SVG)" prefix="stroke" tokens={THEME.stroke} noteKey="stroke" />
+      {groups.map((g) => (
+        <Section key={g.title} title={g.title}>
+          {g.intro && <div className="text-body text-secondary max-w-xl">{g.intro}</div>}
+          {g.subgroups.map((sg, i) => (
+            <div key={i} className="flex flex-col gap-3">
+              {sg.title && <div className="text-control text-label">{sg.title}</div>}
+              <div className="grid grid-cols-2 gap-3">
+                {sg.items.map(([name, value, note]) => <Swatch key={name} name={name} value={value} sub={ref(value)} note={note} />)}
+              </div>
+            </div>
+          ))}
+        </Section>
+      ))}
     </Page>
   );
 }

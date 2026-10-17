@@ -46,7 +46,8 @@
       "button-tertiary-hover": P.neutral[600],
       // selected radio pill (unselected pills use the tertiary button colors)
       "radio-selected": P.violet[500],
-      "on-color": P.neutral[0],
+      // text and icons on the colored buttons: popup CTA and the mode-colored Start/Resume
+      "button-primary": P.neutral[0],
       // secondary buttons: icons and text on the gray buttons (stepper, Reset, Skip, Pause, Cancel)
       "button-secondary": P.neutral[600],
       "button-secondary-hover": P.neutral[700],
@@ -62,11 +63,12 @@
       "button-secondary": P.neutral[100],
       "button-secondary-hover": P.neutral[200],
       "radio-selected": P.violet[50],
-      mode: "var(--mode-color)",
-      "mode-hover": "var(--mode-color-hover)",
+      // Start/Resume: a primary-level button in the current mode color
+      "button-mode": "var(--mode-color)",
+      "button-mode-hover": "var(--mode-color-hover)",
     },
     borderColor: { subtle: P.neutral[200] },
-    ringColor: { "radio-selected": P.violet[500], radio: P.neutral[400] },
+    ringColor: { "radio-selected": P.violet[500], radio: P.neutral[200], "radio-hover": P.neutral[400] },
     // SVG strokes
     stroke: { "ring-track": P.neutral[100] },
     // text styles: size / line-height / weight (and tracking) in one class

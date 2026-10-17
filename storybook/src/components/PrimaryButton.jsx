@@ -7,7 +7,7 @@ export function PrimaryButton({ children = "Button", onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full h-11 px-6 rounded-xl text-on-color text-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
+      className="w-full h-11 px-6 rounded-xl text-button-primary text-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
       style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
     >
       {children}

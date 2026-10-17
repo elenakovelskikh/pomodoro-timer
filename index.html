@@ -213,7 +213,7 @@ function RadioGroup({ label, options, value, onChange }) {
               className={`px-6 py-3 rounded-xl text-control whitespace-nowrap focus-visible:outline-none ${
                 selected
                   ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
-                  : "ring-1 ring-inset ring-radio text-button-tertiary hover:text-button-tertiary-hover"
+                  : "ring-1 ring-inset ring-radio hover:ring-radio-hover text-button-tertiary hover:text-button-tertiary-hover"
               }`}
             >
               {opt.label}
@@ -683,7 +683,7 @@ function PomodoroTimer() {
                 </button>
                 <button
                   onClick={confirmAddRounds}
-                  className="grow-[999] h-11 px-6 rounded-xl text-on-color text-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
+                  className="grow-[999] h-11 px-6 rounded-xl text-button-primary text-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
                   style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
                 >
                   {addRoundsAmount === null
@@ -755,7 +755,7 @@ function PomodoroTimer() {
 
             <button
               onClick={startSession}
-              className="w-full h-11 px-6 rounded-xl text-on-color text-button bg-button-primary hover:bg-button-primary-hover"
+              className="w-full h-11 px-6 rounded-xl text-button-primary text-button bg-button-primary hover:bg-button-primary-hover"
               style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadowColor}59` }}
             >
               Start
@@ -866,7 +866,7 @@ function PomodoroTimer() {
                 aria-label={buttonLabel}
                 title={buttonLabel}
                 className={`flex items-center justify-center h-14 w-14 rounded-full disabled:opacity-40 disabled:cursor-not-allowed ${
-                  looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-mode hover:bg-mode-hover text-on-color"
+                  looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-button-mode hover:bg-button-mode-hover text-button-primary"
                 }`}
                 style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
               >
