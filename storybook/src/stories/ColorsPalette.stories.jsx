@@ -11,7 +11,7 @@ function Palette() {
     >
       {hues.map(([hue, steps]) => (
         <Section key={hue} title={hue[0].toUpperCase() + hue.slice(1)}>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {Object.entries(steps).map(([step, value]) => <Swatch key={step} name={`${hue}-${step}`} value={value} />)}
           </div>
         </Section>

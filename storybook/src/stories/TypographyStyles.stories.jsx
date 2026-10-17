@@ -27,7 +27,7 @@ function TextStyles() {
     <Page title="Text styles" intro="Size, line height and weight in one class; color is set separately. Values are in px; in code they are rem.">
       <div className="flex flex-col">
         {styles.map(([cls, key, sample]) => (
-          <div key={key} className="grid grid-cols-[13rem_1fr] items-baseline gap-6 border-b border-subtle py-4">
+          <div key={key} className="grid grid-cols-1 sm:grid-cols-[13rem_1fr] items-baseline gap-2 sm:gap-6 border-b border-subtle py-4">
             <div>
               <div className="type-control text-primary">type-{key}</div>
               <div className="type-caption text-secondary font-mono">{spec(key)}</div>
