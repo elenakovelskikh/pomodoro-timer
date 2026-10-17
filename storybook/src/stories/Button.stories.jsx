@@ -2,6 +2,7 @@ import { Button } from "../components/Button";
 
 export default {
   title: "Components/Button",
+  parameters: { docs: { description: { component: "Text button in three levels. Primary and secondary fill the width they are given; tertiary is as wide as its text." } } },
   component: Button,
   tags: ["autodocs"],
   // an 18rem container for primary and secondary to fill, as they would in a popup; not part of the component

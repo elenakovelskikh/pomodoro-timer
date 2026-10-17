@@ -3,6 +3,7 @@ import { modeArg } from "./argHelpers";
 
 export default {
   title: "Components/TimerRing",
+  parameters: { docs: { description: { component: "Time left in the round: a countdown inside a ring whose arc shrinks as time passes." } } },
   component: TimerRing,
   tags: ["autodocs"],
   argTypes: {

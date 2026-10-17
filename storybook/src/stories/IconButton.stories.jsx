@@ -6,12 +6,13 @@ const ICONS = { Play: <PlayIcon size={20} />, Pause: <PauseIcon size={20} />, Re
 
 export default {
   title: "Components/IconButton",
+  parameters: { docs: { description: { component: "Round button with an icon, gray or in the mode color." } } },
   component: IconButton,
   tags: ["autodocs"],
   argTypes: {
     variant: { control: "radio", options: ["secondary", "mode"], description: "Gray, or in the mode color", table: { type: { summary: '"secondary" | "mode"' }, defaultValue: { summary: '"secondary"' } } },
     size: { control: "radio", options: ["md", "lg"], description: "md (44 px): Reset and Skip; lg (56 px): Play/Pause", table: { type: { summary: '"md" | "lg"' }, defaultValue: { summary: '"md"' } } },
-    icon: { control: "select", options: Object.keys(ICONS), mapping: ICONS, description: "Icon", table: { type: { summary: "ReactNode" } } },
+    icon: { control: "select", options: Object.keys(ICONS), mapping: ICONS, description: "Icon inside the button", table: { type: { summary: "ReactNode" } } },
     label: { control: "text", description: "Accessible name and tooltip", table: { type: { summary: "string" } } },
     mode: modeArg,
     disabled: { control: "boolean", description: "Not clickable", table: { type: { summary: "boolean" } } },

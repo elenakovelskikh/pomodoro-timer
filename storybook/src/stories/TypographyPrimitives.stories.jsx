@@ -19,7 +19,13 @@ const Row = ({ label, sub, children }) => (
 
 function Primitives() {
   return (
-    <Page title="Type primitives" intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting.">
+    <Page title="Primitives" intro="The building blocks of the text styles. Sizes are in rem (px at the default 16px), so text follows the browser's font size setting.">
+      <Section title="Families">
+        <div>
+          <Row label="Sans" sub="System UI font"><span className="font-sans">Automatic Pomodoro Focus Timer</span></Row>
+          <Row label="Mono" sub="System monospace, for times in the log"><span className="font-mono">10:00 – 10:25</span></Row>
+        </div>
+      </Section>
       <Section title="Sizes">
         <div>{sizes.map((s) => <Row key={s} label={toPx(s)} sub={s}><span style={{ fontSize: s, lineHeight: 1.25 }}>Focus</span></Row>)}</div>
       </Section>

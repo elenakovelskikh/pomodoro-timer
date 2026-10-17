@@ -6,7 +6,7 @@ export default {
   title: "Components/Popup",
   component: Popup,
   tags: ["autodocs"],
-  parameters: { layout: "padded" },
+  parameters: { layout: "padded", docs: { description: { component: "Card over the page: a title, optional text, controls and one or two buttons." } } },
 };
 
 // the CTA text follows the stepper, as in the app
@@ -17,12 +17,12 @@ const action = (name, description) => ({ action: name, control: false, descripti
 export const Default = {
   args: { title: "Add more rounds", description: "", primaryLabel: "Add 4 rounds", secondaryLabel: "Cancel", inline: true, rounds: 4 },
   argTypes: {
-    title: { control: "text", description: "Optional heading", table: { type: { summary: "string" } } },
-    description: { control: "text", description: "Optional text", table: { type: { summary: "ReactNode" } } },
+    title: { control: "text", description: "Heading (optional)", table: { type: { summary: "string" } } },
+    description: { control: "text", description: "Text under the heading (optional)", table: { type: { summary: "ReactNode" } } },
     children: { control: false, description: "Controls inside the popup", table: { type: { summary: "ReactNode" } } },
-    primaryLabel: { control: "text", description: "Primary button (required)", table: { type: { summary: "string" } } },
+    primaryLabel: { control: "text", description: "Primary button text", table: { type: { summary: "string" } } },
     onPrimary: action("primary", "Primary button click"),
-    secondaryLabel: { control: "text", description: "Optional secondary button", table: { type: { summary: "string" } } },
+    secondaryLabel: { control: "text", description: "Secondary button text (optional)", table: { type: { summary: "string" } } },
     onSecondary: action("secondary", "Secondary button click"),
     inline: { control: false, description: "Show without the backdrop (preview only)", table: { type: { summary: "boolean" } } },
     rounds: { table: { disable: true } },

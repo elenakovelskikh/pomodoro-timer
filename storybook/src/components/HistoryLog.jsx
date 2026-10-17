@@ -9,7 +9,7 @@ export function HistoryLog({ history }) {
         return (
           <div key={i} className="flex type-caption text-secondary">
             <span className="inline-block w-20">{label}</span>
-            <span className="tabular-nums">
+            <span className="font-mono">
               {formatClock(entry.start)} – {formatClock(entry.end)}
             </span>
           </div>

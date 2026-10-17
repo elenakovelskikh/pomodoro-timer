@@ -6,6 +6,7 @@ const fn = (description) => ({ description, table: { type: { summary: "() => voi
 
 export default {
   title: "Components/ControlRow",
+  parameters: { docs: { description: { component: "Reset, Play/Pause and Skip under the timer. Click the middle button to switch between Pause and Resume." } } },
   component: ControlRow,
   tags: ["autodocs"],
   // clicking the middle button switches Pause <-> Resume, like in the app

@@ -23,7 +23,7 @@ const groups = [
       {
         title: "Clickable elements",
         rows: [
-          [["text-button-primary", T["button-primary"], "Primary and mode buttons"]],
+          [["text-button-primary", T["button-primary"], "Primary button, Start and Resume"]],
           [["text-button-secondary", T["button-secondary"], "Secondary buttons"], hover("text-button-secondary-hover", T["button-secondary-hover"])],
           [["text-button-tertiary", T["button-tertiary"], "Tertiary buttons and radio options"], hover("text-button-tertiary-hover", T["button-tertiary-hover"])],
           [["text-radio-selected", T["radio-selected"], "Selected radio option"]],
@@ -45,7 +45,7 @@ const groups = [
         title: "Buttons",
         rows: [
           [["bg-button-primary", B["button-primary"], "Primary button"], hover("bg-button-primary-hover", B["button-primary-hover"])],
-          [["bg-button-mode", B["button-mode"], "Mode button"], hover("bg-button-mode-hover", B["button-mode-hover"])],
+          [["bg-button-mode", B["button-mode"], "Start and Resume"], hover("bg-button-mode-hover", B["button-mode-hover"])],
           [["bg-button-secondary", B["button-secondary"], "Secondary buttons"], hover("bg-button-secondary-hover", B["button-secondary-hover"])],
           [["bg-radio-selected", B["radio-selected"], "Selected radio option"]],
         ],
@@ -86,7 +86,7 @@ const Rows = ({ rows }) => (
 
 function Tokens() {
   return (
-    <Page title="Tokens" intro="What each color is for. Each token is a class whose value comes from the palette. Mode tokens take their color from the current mode (see Modes).">
+    <Page title="Tokens" intro="What each color is for. Each token is a class whose value comes from the palette; mode tokens take the color of the current mode (see Modes).">
       {groups.map((g) => (
         <Section key={g.title} title={g.title}>
           {g.subgroups.map((sg, i) => (

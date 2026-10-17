@@ -12,10 +12,11 @@ const sample = [
 
 export default {
   title: "Components/Log",
+  parameters: { docs: { description: { component: "Number of completed rounds. Opens the log of finished rounds with their times." } } },
   component: LogToggle,
   tags: ["autodocs"],
   argTypes: {
-    count: { control: { type: "number", min: 0 }, description: "Completed rounds", table: { type: { summary: "number" } } },
+    count: { control: { type: "number", min: 0 }, description: "Number of completed rounds", table: { type: { summary: "number" } } },
     open: { control: "boolean", description: "Log is open", table: { type: { summary: "boolean" } } },
     onClick: { control: false, description: "Toggle the log", table: { type: { summary: "() => void" } } },
   },
