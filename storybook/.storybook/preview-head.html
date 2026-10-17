@@ -1,2 +1,10 @@
 <!-- Storybook is shared by link only: keep its pages out of search results -->
 <meta name="robots" content="noindex, nofollow" />
+<style>
+  /* Phones: narrower docs margins than Storybook's 40px, and the props table scrolls sideways
+     inside its own box instead of pushing the whole page wider than the screen. */
+  @media (max-width: 600px) {
+    .sbdocs-wrapper { padding: 32px 16px !important; }
+    div:has(> .docblock-argstable) { overflow-x: auto; }
+  }
+</style>

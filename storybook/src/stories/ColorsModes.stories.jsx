@@ -15,20 +15,22 @@ function Modes() {
   const modes = Object.values(MODES);
   return (
     <Page title="Modes" intro="Each timer mode has its own color family: violet, blue or teal. The roles and steps are the same in every mode; switching modes swaps the family.">
-      <div className="grid grid-cols-[minmax(8rem,1fr)_repeat(3,minmax(0,1fr))] gap-x-4 gap-y-5 items-center">
-        <div />
+      {/* Phones: three columns, each role as a header row above its swatches, swatch above its
+          name. Wider: the role in its own first column, swatch beside its name. */}
+      <div className="grid grid-cols-3 sm:grid-cols-[minmax(8rem,1fr)_repeat(3,minmax(0,1fr))] gap-x-4 gap-y-3 sm:gap-y-5 sm:items-center">
+        <div className="hidden sm:block" />
         {modes.map((m) => (
           <div key={m.label} className="type-mode-label uppercase" style={{ color: m.accent }}>{m.label}</div>
         ))}
         {ROLES.flatMap(([role, note]) => [
-          <div key={role}>
+          <div key={role} className="col-span-3 sm:col-span-1 mt-3 sm:mt-0">
             <div className="type-control text-primary font-mono">{role}</div>
             <div className="type-caption text-muted">{note}</div>
           </div>,
           ...modes.map((m) => (
-            <div key={role + m.label} className="flex items-center gap-3">
+            <div key={role + m.label} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
               <div className="w-12 h-12 shrink-0 rounded-xl border border-subtle" style={{ background: m[role] }} />
-              <div className="type-body">
+              <div className="type-body min-w-0">
                 <div className="type-control text-primary">{primitiveName(m[role])}</div>
                 <div className="font-mono text-secondary">{m[role]}</div>
               </div>

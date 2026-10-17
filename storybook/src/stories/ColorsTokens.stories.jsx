@@ -75,11 +75,12 @@ const ref = (value) =>
   : value === "var(--mode-accent-hover)" ? "→ accentHover of the current mode"
   : primitiveName(value) ? `→ ${primitiveName(value)} · ${value}` : value;
 
+// Phones: one column, each hover state right under its default. Wider: default | hover.
 const Rows = ({ rows }) => (
-  <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-4">
     {rows.flatMap((row, i) => [
       <Swatch key={`${i}a`} name={row[0][0]} value={row[0][1]} sub={ref(row[0][1])} note={row[0][2]} />,
-      row[1] ? <Swatch key={`${i}b`} name={row[1][0]} value={row[1][1]} sub={ref(row[1][1])} note={row[1][2]} /> : <div key={`${i}b`} />,
+      row[1] ? <Swatch key={`${i}b`} name={row[1][0]} value={row[1][1]} sub={ref(row[1][1])} note={row[1][2]} /> : <div key={`${i}b`} className="hidden sm:block" />,
     ])}
   </div>
 );

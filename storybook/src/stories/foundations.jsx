@@ -22,7 +22,7 @@ export const toPx = (rem) => (String(rem).endsWith("rem") ? `${parseFloat(rem) *
 export const Swatch = ({ name, value, sub, note }) => (
   <div className="flex items-center gap-3">
     <div className="w-12 h-12 shrink-0 rounded-xl border border-subtle" style={{ background: value }} />
-    <div className="type-body">
+    <div className="type-body min-w-0 break-words">
       <div className="type-control text-primary">{name}</div>
       <div className="font-mono text-secondary">{sub ?? value}</div>
       {note && <div className="type-caption text-muted">{note}</div>}

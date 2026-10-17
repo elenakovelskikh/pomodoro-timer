@@ -8,8 +8,8 @@ const WEIGHT_NAMES = { 400: "Regular", 500: "Medium", 700: "Bold" };
 const weights = [...new Set(textStyles.map((s) => s.fontWeight))].sort();
 
 const Row = ({ label, sub, children }) => (
-  <div className="flex items-baseline gap-6 border-b border-subtle py-3">
-    <div className="w-40 shrink-0">
+  <div className="flex items-baseline gap-4 sm:gap-6 border-b border-subtle py-3">
+    <div className="w-28 sm:w-40 shrink-0">
       <div className="type-control text-primary">{label}</div>
       {sub && <div className="type-caption text-secondary font-mono">{sub}</div>}
     </div>
