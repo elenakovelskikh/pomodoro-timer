@@ -53,6 +53,8 @@
       "button-secondary": P.neutral[600],
       "button-secondary-hover": P.neutral[700],
       mode: "var(--mode-accent)",
+      // the dark status pill ("Reconnecting…", "Not synced") in the Discord Activity
+      notice: P.neutral[0],
     },
     backgroundColor: {
       page: P.neutral[0],
@@ -67,6 +69,7 @@
       // Start/Resume: a primary-level button in the current mode color
       "button-mode": "var(--mode-accent)",
       "button-mode-hover": "var(--mode-accent-hover)",
+      notice: P.neutral[900],
     },
     borderColor: { subtle: P.neutral[200] },
     ringColor: { "radio-selected": P.violet[500], radio: P.neutral[200], "radio-hover": P.neutral[400] },
