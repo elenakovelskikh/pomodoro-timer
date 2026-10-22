@@ -402,7 +402,7 @@ function Dialog({ title, description, enterHint, children, onSubmit, onClose }) 
               }
             : undefined
         }
-        className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
+        className="w-full max-w-[26rem] bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
       >
         <div className="w-full text-left">
           <h2 id={titleId} className="type-heading text-primary">{title}</h2>
@@ -438,6 +438,7 @@ function PomodoroTimer() {
   const [addRoundsAmount, setAddRoundsAmount] = useState(4);
   const [addStartsWithBreak, setAddStartsWithBreak] = useState(true);
   const [originalRoundsChoice, setOriginalRoundsChoice] = useState(null);
+  const [newSessionModalOpen, setNewSessionModalOpen] = useState(false);
   const intervalRef = useRef(null);
   const playPauseRef = useRef(null);
   const completionHeadingRef = useRef(null);
@@ -643,14 +644,14 @@ function PomodoroTimer() {
   // Lock background scroll while a popup covers the screen — otherwise the page behind it can
   // still be scrolled (e.g. by touch drag), even though it's inert and visually dimmed.
   useEffect(() => {
-    const modalOpen = !setupComplete || addRoundsModalOpen;
+    const modalOpen = !setupComplete || addRoundsModalOpen || newSessionModalOpen;
     document.documentElement.style.overflow = modalOpen ? "hidden" : "";
     document.body.style.overflow = modalOpen ? "hidden" : "";
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     };
-  }, [setupComplete, addRoundsModalOpen]);
+  }, [setupComplete, addRoundsModalOpen, newSessionModalOpen]);
 
   // Keyboard focus when the screen changes underneath it: the timer screen (after Start or after
   // adding rounds) puts focus on Play/Pause, the completion screen on its heading.
@@ -672,6 +673,29 @@ function PomodoroTimer() {
     pausedMsRef.current = 0;
     pauseStartedAtRef.current = null;
     setIsRunning(true);
+  }
+
+  // "Set up new session" on the summary screen (after confirming): back to the setup popup with
+  // everything as on first load — the log is gone.
+  function setUpNewSession() {
+    setNewSessionModalOpen(false);
+    setSessionComplete(false);
+    setSetupComplete(false);
+    setMode("focus");
+    setSecondsLeft(FOCUS_MIN * 60);
+    setSegmentTotal(FOCUS_MIN * 60);
+    setIsRunning(false);
+    setIsTransitioning(false);
+    setCompletedCycles(0);
+    setHistory([]);
+    setLogOpen(false);
+    setSummaryLogOpen(false);
+    setLongBreakMinutes(30);
+    setRoundsLimit(null);
+    setOriginalRoundsChoice(null);
+    segmentStartRef.current = null;
+    pausedMsRef.current = 0;
+    pauseStartedAtRef.current = null;
   }
 
   function confirmAddRounds() {
@@ -781,7 +805,7 @@ function PomodoroTimer() {
         {announcer}
         <main className="flex-1 w-full flex items-center justify-center p-6">
         <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Focus Timer</h1>
-        <div inert={addRoundsModalOpen ? "" : undefined} className="w-full max-w-xs bg-page rounded-2xl border border-subtle p-6 flex flex-col items-center text-center">
+        <div inert={addRoundsModalOpen || newSessionModalOpen ? "" : undefined} className="w-full max-w-xs bg-page rounded-2xl border border-subtle p-6 flex flex-col items-center text-center">
           <div className="type-emoji leading-normal" aria-hidden="true">🎉</div>
           <div className="w-full flex flex-col items-center mt-5">
             <h2 ref={completionHeadingRef} tabIndex={-1} className="type-heading text-primary focus:outline-none">{completionHeading}</h2>
@@ -816,7 +840,42 @@ function PomodoroTimer() {
           >
             Add more rounds
           </button>
+          <button
+            onClick={() => setNewSessionModalOpen(true)}
+            className="w-full flex items-center justify-center type-control text-button-tertiary hover:text-button-tertiary-hover h-11"
+          >
+            Set up new session
+          </button>
         </div>
+
+        {newSessionModalOpen && (
+          <Dialog
+            title="Set up new session"
+            description="Are you sure you want to set up a new session? The session log will be deleted, and this can't be undone."
+            onClose={() => setNewSessionModalOpen(false)}
+          >
+            {/* Not going ahead is the safe choice, so Cancel is the primary button and comes first.
+                While both fit on one line (a row of 20.75rem or more) each is as wide as its text,
+                Cancel on the left edge and the other on the right; narrower, they stack at full
+                width with Cancel on top. The basis is huge and positive below the threshold (one
+                button per line, capped at full width) and negative, so ignored, above it. */}
+            <div className="w-full flex flex-wrap justify-between gap-2">
+              <button
+                onClick={() => setNewSessionModalOpen(false)}
+                className="max-w-full basis-[calc((20.75rem_-_100%)*999)] h-11 px-6 rounded-xl text-button-primary type-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
+                style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadow}59` }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={setUpNewSession}
+                className="max-w-full basis-[calc((20.75rem_-_100%)*999)] h-11 px-6 rounded-xl bg-button-secondary type-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap"
+              >
+                Yes, set up new session
+              </button>
+            </div>
+          </Dialog>
+        )}
 
         {addRoundsModalOpen && (
           <Dialog
@@ -863,7 +922,7 @@ function PomodoroTimer() {
           </Dialog>
         )}
         </main>
-        <Credit inert={addRoundsModalOpen} />
+        <Credit inert={addRoundsModalOpen || newSessionModalOpen} />
       </div>
     );
   }

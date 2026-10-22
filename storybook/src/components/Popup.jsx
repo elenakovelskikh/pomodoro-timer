@@ -22,7 +22,7 @@ export function Popup({ title, description, enterHint, children, primaryLabel = 
         e.preventDefault();
         onPrimary?.();
       }}
-      className="w-full max-w-sm bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
+      className="w-full max-w-[26rem] bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none"
     >
       {/* hidden: read only as part of the description, the VoiceOver cursor doesn't stop on it */}
       {enterHint && <p id={hintId} hidden>{enterHint}</p>}
