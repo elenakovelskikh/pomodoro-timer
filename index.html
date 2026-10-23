@@ -470,15 +470,27 @@ function PomodoroTimer() {
 
   // automatic: timer hit zero — play the sound, show the transition animation,
   // and only start the next round once the sound has actually finished
+  //
+  // When the timer ran out by itself (no labelOverride: not Skip), the segment ends when it was
+  // due, not when the page noticed. A tab in the background, or a phone that left the browser,
+  // may check the time minutes late; ending (and logging) the segment at its due time and starting
+  // the next one on schedule after the sound keeps the session on the clock, and coming back after
+  // a while catches up segment by segment. Segments that ended more than 90s ago end silently.
   const handleAutoComplete = useCallback((labelOverride) => {
-    const endTime = new Date();
+    const now = new Date();
+    const dueAt =
+      labelOverride === undefined && segmentStartRef.current
+        ? new Date(segmentStartRef.current.getTime() + pausedMsRef.current + segmentTotal * 1000)
+        : now;
+    const endTime = dueAt < now ? dueAt : now;
     const startTime = segmentStartRef.current || endTime;
     const endedMode = mode;
     const soundKind = endedMode === "focus" ? "focusEnd" : "breakEnd";
     const newCompletedIfFocus = completedCycles + 1;
+    const nextStart = new Date(endTime.getTime() + SOUND_DURATION_MS[soundKind]);
 
     setPreTransitionLabel(labelOverride ?? "Pause");
-    playSound(soundKind);
+    if (now - endTime < 90000) playSound(soundKind);
     setIsRunning(false);
     setIsTransitioning(true);
     logSegment(endedMode, startTime, endTime);
@@ -496,7 +508,7 @@ function PomodoroTimer() {
         setMode(isLongBreak ? "longBreak" : "break");
         setSecondsLeft(nextTotal);
         setSegmentTotal(nextTotal);
-        segmentStartRef.current = new Date();
+        segmentStartRef.current = nextStart;
         pausedMsRef.current = 0;
         pauseStartedAtRef.current = null;
         setIsRunning(true);
@@ -505,14 +517,14 @@ function PomodoroTimer() {
         setMode("focus");
         setSecondsLeft(FOCUS_MIN * 60);
         setSegmentTotal(FOCUS_MIN * 60);
-        segmentStartRef.current = new Date();
+        segmentStartRef.current = nextStart;
         pausedMsRef.current = 0;
         pauseStartedAtRef.current = null;
         setIsRunning(true);
         setIsTransitioning(false);
       }
-    }, SOUND_DURATION_MS[soundKind]);
-  }, [mode, logSegment, completedCycles, longBreakMinutes, roundsLimit]);
+    }, Math.max(0, nextStart - Date.now()));
+  }, [mode, logSegment, completedCycles, longBreakMinutes, roundsLimit, segmentTotal]);
 
   // lets the group cut a 30-min long break short and drop into a fresh 5-min break instead
   function switchToShortBreak() {
