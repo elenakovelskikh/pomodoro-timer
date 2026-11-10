@@ -123,10 +123,24 @@ function formatClock(date) {
 
 const N = { G4:392.00, A4:440.00, C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00, C6:1046.50, D6:1174.66, E6:1318.51, G6:1567.98 };
 
-function playNotes(notes) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const now = ctx.currentTime;
-  let maxEnd = 0;
+// One audio context for the page. Browsers only let it play after the person has clicked or
+// pressed a key, so it's (re)started on every such input; Start is one.
+let audioCtx = null;
+function audio() {
+  audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+["pointerdown", "keydown"].forEach((type) => document.addEventListener(type, audio, true));
+
+// Plays the notes now, or delayMs from now; returns a function that cancels them. A sound booked
+// ahead is played by the browser's audio engine on its own, so it comes on time even while the
+// page is in the background and its timers only run about once a minute.
+function playNotes(notes, delayMs = 0) {
+  const ctx = audio();
+  const out = ctx.createGain();
+  out.connect(ctx.destination);
+  const now = ctx.currentTime + Math.max(0, delayMs) / 1000;
   notes.forEach(({ freq, start, dur, gain = 0.22, type = "sine" }) => {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -137,12 +151,11 @@ function playNotes(notes) {
     g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     osc.connect(g);
-    g.connect(ctx.destination);
+    g.connect(out);
     osc.start(t0);
     osc.stop(t0 + dur);
-    maxEnd = Math.max(maxEnd, start + dur);
   });
-  setTimeout(() => ctx.close(), (maxEnd + 0.3) * 1000);
+  return () => out.disconnect();
 }
 
 const FANFARE_EXTENDED = [
@@ -165,9 +178,9 @@ const PENTATONIC_CLIMB = [
   { freq: N.C6, start: 0.80, dur: 0.6 },
 ];
 
-function playSound(kind) {
+function playSound(kind, delayMs = 0) {
   // kind: "focusEnd" — a focus round just finished, "breakEnd" — a break just finished
-  playNotes(kind === "focusEnd" ? FANFARE_EXTENDED : PENTATONIC_CLIMB);
+  return playNotes(kind === "focusEnd" ? FANFARE_EXTENDED : PENTATONIC_CLIMB, delayMs);
 }
 
 // how long each melody actually plays, used to hold off starting the next round
@@ -448,6 +461,8 @@ function PomodoroTimer() {
   // real-time countdown recompute below subtracts this out instead.
   const pausedMsRef = useRef(0);
   const pauseStartedAtRef = useRef(null);
+  // the end-of-segment sound booked ahead for the running segment: when it's due, and how to cancel it
+  const bookedSoundRef = useRef({ at: null, cancel: null });
 
   const totalSeconds = segmentTotal;
   const progress = 1 - secondsLeft / totalSeconds;
@@ -490,7 +505,12 @@ function PomodoroTimer() {
     const nextStart = new Date(endTime.getTime() + SOUND_DURATION_MS[soundKind]);
 
     setPreTransitionLabel(labelOverride ?? "Pause");
-    if (now - endTime < 90000) playSound(soundKind);
+    // a timer that ran out by itself has usually had its sound played on time already (see the
+    // booking effect below); otherwise play it now, unless the segment ended long ago
+    const booked = bookedSoundRef.current;
+    const playedOnTime =
+      labelOverride === undefined && booked.at != null && Math.abs(booked.at - endTime.getTime()) < 1000 && audioCtx?.state === "running";
+    if (!playedOnTime && now - endTime < 90000) playSound(soundKind);
     setIsRunning(false);
     setIsTransitioning(true);
     logSegment(endedMode, startTime, endTime);
@@ -621,6 +641,22 @@ function PomodoroTimer() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [isRunning, syncSecondsLeft]);
+
+  // Books the end-of-segment sound ahead whenever a segment is running, so it plays on time even
+  // while the page is in the background; booked again when the end moves (Reset, Add another 5 min,
+  // a new segment) and cancelled on pause. A sound that has already started is left to finish.
+  const dueAt =
+    isRunning && !isTransitioning && segmentStartRef.current
+      ? segmentStartRef.current.getTime() + pausedMsRef.current + segmentTotal * 1000
+      : null;
+  useEffect(() => {
+    const booked = bookedSoundRef.current;
+    if (dueAt != null && booked.at != null && Math.abs(dueAt - booked.at) < 1000) return;
+    if (booked.at != null && Date.now() < booked.at) booked.cancel();
+    bookedSoundRef.current = { at: null, cancel: null };
+    if (dueAt == null || dueAt <= Date.now()) return;
+    bookedSoundRef.current = { at: dueAt, cancel: playSound(mode === "focus" ? "focusEnd" : "breakEnd", dueAt - Date.now()) };
+  });
 
   // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
   // the tab is in view. Released automatically by the browser once the tab is hidden, and
