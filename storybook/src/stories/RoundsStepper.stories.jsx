@@ -8,7 +8,7 @@ const render = (args) => (
 
 export default {
   title: "Components/RoundsStepper",
-  parameters: { docs: { description: { component: "Number of rounds, from 1 to 16 or no limit (∞)." } } },
+  parameters: { docs: { description: { component: "Number of rounds, from 1 to 16 or no limit (∞). The values go round in a loop, so neither button is ever disabled." } } },
   component: RoundsStepper,
   tags: ["autodocs"],
   render,
@@ -20,7 +20,7 @@ export default {
   args: { label: "Label", value: "∞" },
 };
 
-// The three edge states the stepper has to handle:
-export const Unlimited = { parameters: { docs: { description: { story: "No limit; minus is disabled." } } } };
+// The edges of the loop:
+export const Unlimited = { parameters: { docs: { description: { story: "No limit (the default). Plus starts over from 1, minus gives 16." } } } };
 export const SingleRound = { args: { value: "1" }, parameters: { docs: { description: { story: "One round: the unit is singular." } } } };
-export const Maximum = { args: { value: "16" }, parameters: { docs: { description: { story: "Upper limit; plus is disabled." } } } };
+export const Maximum = { args: { value: "16" }, parameters: { docs: { description: { story: "The highest number. Plus gives no limit (∞)." } } } };

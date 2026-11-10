@@ -311,40 +311,27 @@ function moveFocus(el) {
 }
 
 // Rounds picker: − / value / +. value is a number of rounds or null for "no limit" (∞).
-// At an end of the range its button is disabled and out of the Tab order, with one exception:
-// if that button was just pressed to reach the limit, it stays focusable (aria-disabled) until
-// focus leaves it, so keyboard focus isn't dropped. The value is a polite live region, read out
-// after each press.
+// The value is a polite live region, read out after each press.
 function RoundsStepper({ label, value, onChange }) {
   const labelId = useId();
-  const atMin = value === null;
-  const atMax = value === 16;
-  // "min" or "max": the end the user just reached with that button, while it still has focus
-  const [held, setHeld] = useState(null);
+  const noLimit = value === null;
+  // The values go round in a loop: ∞ → 1 → 2 → … → 16 → ∞. "No limit" counts as more than 16,
+  // so "+" at 16 gives ∞ and "−" at ∞ gives 16; "+" at ∞ starts again from 1, "−" at 1 gives ∞.
+  // Neither button is ever disabled.
+  const fewer = () => onChange(noLimit ? 16 : value === 1 ? null : value - 1);
+  const more = () => onChange(noLimit ? 1 : value === 16 ? null : value + 1);
   const step =
-    "w-11 h-11 flex items-center justify-center bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-button-secondary disabled:hover:text-button-secondary aria-disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-button-secondary aria-disabled:hover:text-button-secondary";
-  const press = (next, end) => {
-    if (next === null || next === 16) setHeld(end);
-    onChange(next);
-  };
+    "w-11 h-11 flex items-center justify-center bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover";
   return (
     <div role="group" aria-labelledby={labelId} className="w-full flex flex-col items-start gap-2">
       <div id={labelId} className="type-control text-label">{label}</div>
       <div className="flex items-stretch rounded-xl border border-subtle">
-        <button
-          type="button"
-          aria-label="Fewer rounds"
-          disabled={atMin && held !== "min"}
-          aria-disabled={(atMin && held === "min") || undefined}
-          onClick={() => !atMin && press(value === 1 ? null : value - 1, "min")}
-          onBlur={() => held === "min" && setHeld(null)}
-          className={`${step} rounded-l-xl`}
-        >
+        <button type="button" aria-label="Fewer rounds" onClick={fewer} className={`${step} rounded-l-xl`}>
           <MinusIcon size={20} />
         </button>
         <span className="w-24 flex items-center justify-center border-x border-subtle" aria-live="polite" aria-atomic="true">
           <span className="flex items-baseline gap-1.5 tabular-nums">
-            {atMin ? (
+            {noLimit ? (
               <>
                 <span className="type-heading text-primary" aria-hidden="true">∞</span>
                 <span className="sr-only">No limit</span>
@@ -357,15 +344,7 @@ function RoundsStepper({ label, value, onChange }) {
             )}
           </span>
         </span>
-        <button
-          type="button"
-          aria-label="More rounds"
-          disabled={atMax && held !== "max"}
-          aria-disabled={(atMax && held === "max") || undefined}
-          onClick={() => !atMax && press(atMin ? 1 : value + 1, "max")}
-          onBlur={() => held === "max" && setHeld(null)}
-          className={`${step} rounded-r-xl`}
-        >
+        <button type="button" aria-label="More rounds" onClick={more} className={`${step} rounded-r-xl`}>
           <PlusIcon size={20} />
         </button>
       </div>
@@ -1153,6 +1132,8 @@ function PomodoroTimer() {
           )}
         </div>
 
+        {/* the count and its log only once the first focus round is done — "0 completed" opens nothing */}
+        {completedCycles > 0 && (
         <div className="w-full flex flex-col items-center gap-1 mt-6">
           <button
             onClick={() => setLogOpen((o) => !o)}
@@ -1177,6 +1158,7 @@ function PomodoroTimer() {
 
           {logOpen && history.length > 0 && <div id="session-log"><HistoryLog history={history} /></div>}
         </div>
+        )}
       </main>
       </div>
       <Credit inert={!setupComplete} />
