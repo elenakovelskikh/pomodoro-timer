@@ -24,7 +24,7 @@ export default {
       storySort: {
         order: [
           "Foundations", ["Colors", ["Palette", "Tokens", "Modes"], "Typography", ["Primitives", "Text styles"]],
-          "Components", ["Button", "ControlRow", "IconButton", "Log", "Popup", "RadioGroup", "RoundsStepper", "TimerRing"],
+          "Components", ["Button", "CompactTile", "ControlRow", "IconButton", "Log", "Popup", "RadioGroup", "RoundsStepper", "SyncNotice", "TimerRing"],
         ],
       },
     },

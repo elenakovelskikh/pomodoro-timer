@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Violet Tomato – Automatic Pomodoro Focus Timer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Discord Activity build of the timer; the website is ../index.html. Shared code: ../shared/ui.jsx, ../design-tokens.js -->
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<!-- Libraries are vendored (not loaded from CDNs) so the page also works inside a Discord Activity,
+     whose proxy blocks requests to domains that aren't URL-mapped in the Developer Portal -->
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="vendor/babel.min.js"></script>
+<script src="vendor/tailwindcss-3.4.17.js"></script>
+<!-- the same design tokens as the website (../design-tokens.js) -->
+<script src="design-tokens.js"></script>
+<script>
+  // Without this, tapping a button on a touch device leaves its hover: styles (e.g. the
+  // darker background on the round control buttons) stuck on until something else is tapped,
+  // since there's no mouse to trigger a "leave". This scopes every hover: utility to devices
+  // that actually support hovering, matching how a real mouse/trackpad behaves.
+  // theme + plugin: the tokens from design-tokens.js replace Tailwind's palette and type scale
+  tailwind.config = { future: { hoverOnlyWhenSupported: true }, theme: DESIGN_TOKENS.THEME, plugins: [DESIGN_TOKENS.typePlugin] };
+</script>
+<!-- Discord Activity wrapper + shared timer state. Inside Discord the room is the Activity instance,
+     so everyone in the voice channel sees one timer; in a plain browser, open the page with
+     ?room=<name> to test syncing between tabs. Without a room the timer runs standalone. -->
+<script type="module">
+const DISCORD_CLIENT_ID = "1552028275574964275"; // Developer Portal → OAuth2 → Client ID (public, not a secret)
+// Firebase web config is a public identifier, not a secret; access is limited by the database rules
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCOwTuLww-HLUrNZsJlaEtd-7q4FCGCzoA",
+  databaseURL: "https://violet-tomato-discord-activity-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "violet-tomato-discord-activity",
+  appId: "1:304315009793:web:9de620aa871ef04d0da900",
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Loads a script, trying again (after 2s, then 4s) when Discord's proxy or the network drops it.
+// Failures carry reason "load", which the timer shows in its status notice.
+async function loadScript(src, attempts = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      await new Promise((resolve, reject) => {
+        const el = document.createElement("script");
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => {
+          el.remove();
+          reject(new Error(`Failed to load ${src}`));
+        };
+        document.head.appendChild(el);
+      });
+      return;
+    } catch (err) {
+      if (i >= attempts) throw Object.assign(err, { reason: "load" });
+      await sleep(2000 * i);
+    }
+  }
+}
+
+// Which room to sync with: the Activity instance inside Discord, ?room=<name> in a plain browser
+// (to test syncing between tabs), or null for a standalone timer. Settled once, before the timer
+// component mounts.
+//
+// Inside Discord the room is the instance id, which Discord puts in the page's address
+// (instance_id=…), so it's known right away. The Discord SDK starts in the background and isn't
+// waited for: SDK 2.5.0 throws while reading the start-up READY message from newer Discord clients
+// (a user with no avatar comes as null where its schema expects a string), so its ready() never
+// settled there and waiting for it left the timer stuck on "Connecting…". The vendored copy is
+// patched for that (READY's user.avatar also accepts null, as the SDK's other user schemas do;
+// re-apply when updating the SDK unless Discord fixed it), and not waiting for it keeps the timer
+// working if something like it happens again. Only if the address has no instance id is the SDK
+// waited for; failing that is reported with reason "discord".
+async function findRoom() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("frame_id")) return params.get("room");
+
+  // Discord's proxy blocks direct requests to Firebase, so route its WebSocket through the URL
+  // Mapping /rtdb → <database host> set in the Developer Portal. Firebase also hands clients a
+  // per-shard hostname to reconnect to; those all go to the same mapping, since the main host
+  // accepts connections itself (the ns= query parameter names the database). Must run before
+  // the Firebase script loads, since it grabs the WebSocket constructor at load time.
+  const NativeWebSocket = window.WebSocket;
+  window.WebSocket = class extends NativeWebSocket {
+    constructor(url, protocols) {
+      const u = new URL(url);
+      if (u.hostname.endsWith(".firebasedatabase.app")) {
+        u.host = location.host;
+        u.pathname = "/.proxy/rtdb" + u.pathname;
+        if (!u.searchParams.has("ns")) u.searchParams.set("ns", new URL(FIREBASE_CONFIG.databaseURL).hostname.split(".")[0]);
+      }
+      super(u, protocols);
+    }
+  };
+
+  const sdkStarted = (async () => {
+    const { DiscordSDK } = await import("./vendor/discord-embedded-app-sdk-2.5.0.mjs");
+    const discordSdk = new DiscordSDK(DISCORD_CLIENT_ID);
+    await discordSdk.ready(); // tells Discord to hide its loading screen
+    window.discordSdk = discordSdk;
+    return discordSdk;
+  })().catch((err) => {
+    console.error("Discord SDK init failed:", err);
+    return null;
+  });
+
+  // Plain target="_blank" links don't open from inside the Activity iframe; route them through
+  // Discord once its SDK is up
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href^='http']");
+    if (!link || !window.discordSdk) return;
+    e.preventDefault();
+    window.discordSdk.commands.openExternalLink({ url: link.href });
+  });
+
+  const instanceId = params.get("instance_id");
+  if (instanceId) return instanceId;
+  const discordSdk = await sdkStarted;
+  if (!discordSdk) throw Object.assign(new Error("Discord SDK didn't start"), { reason: "discord" });
+  return discordSdk.instanceId;
+}
+
+let db = null;
+
+// Loads Firebase and opens the room. Kept while it works; after a failure the next call starts over
+// (only the scripts that didn't load are fetched again).
+let connecting = null;
+function connect(roomId) {
+  connecting ??= (async () => {
+    if (!window.firebase) await loadScript("vendor/firebase-app-compat-12.4.0.js");
+    if (!window.firebase.database) await loadScript("vendor/firebase-database-compat-12.4.0.js");
+    if (!db) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+      db.INTERNAL.forceWebSockets(); // the long-polling fallback can't get through Discord's proxy
+    }
+    const roomRef = db.ref(`rooms/${roomId.replace(/[.#$\[\]\/]/g, "_")}`);
+    const stateRef = roomRef.child("state");
+
+    // Devices' clocks disagree; Firebase reports how far this one is from the server's, so every
+    // participant can compute the countdown against the same clock.
+    let clockOffsetMs = 0;
+    db.ref(".info/serverTimeOffset").on("value", (snap) => { clockOffsetMs = snap.val() || 0; });
+
+    // Delete the room's state once everyone has left, so finished sessions don't pile up in the
+    // database. There's no server to notice an empty room, so the last participant standing asks
+    // the database to remove the state the moment their connection drops, and withdraws that as
+    // soon as someone else joins. (If that last connection only blipped, the timer component puts
+    // its state back when it reconnects.) Best effort: any failure here just leaves the room behind.
+    const presenceRef = roomRef.child("presence");
+    const me = presenceRef.push();
+    let deleteOnLeave = false;
+    db.ref(".info/connected").on("value", (snap) => {
+      if (snap.val() !== true) return;
+      deleteOnLeave = false; // whatever was registered on the previous connection is gone with it
+      me.onDisconnect().remove().then(() => me.set(true)).catch(() => {});
+    });
+    presenceRef.on(
+      "value",
+      (snap) => {
+        const alone = snap.numChildren() === 1 && snap.hasChild(me.key);
+        if (alone === deleteOnLeave) return;
+        deleteOnLeave = alone;
+        const onLeave = stateRef.onDisconnect();
+        (alone ? onLeave.remove() : onLeave.cancel()).catch(() => {});
+      },
+      () => {}
+    );
+
+    return {
+      now: () => Date.now() + clockOffsetMs,
+      // onState gets { rev, json } (or null for a brand-new room) now and after every change —
+      // including this client's own writes, and the winning write when one of ours loses a race.
+      // onError gets an error with reason "denied" if the database refuses or drops the read.
+      // Returns a function that stops listening.
+      subscribe(onState, onConnected, onError) {
+        const stateHandler = stateRef.on("value", (snap) => onState(snap.val()), (err) => onError(Object.assign(err, { reason: "denied" })));
+        const connectedRef = db.ref(".info/connected");
+        const connectedHandler = connectedRef.on("value", (snap) => onConnected(snap.val() === true));
+        return () => {
+          stateRef.off("value", stateHandler);
+          connectedRef.off("value", connectedHandler);
+        };
+      },
+      // Writes only if nobody else changed the room since baseRev; otherwise the write is dropped
+      // and subscribe() delivers the state that got there first.
+      publish(baseRev, next) {
+        const value = { rev: next.rev, json: JSON.stringify(next) };
+        stateRef
+          .transaction((cur) => ((cur ? cur.rev : 0) === baseRev ? value : undefined))
+          .catch((err) => console.error("Sync write failed:", err));
+      },
+    };
+  })().catch((err) => {
+    connecting = null;
+    console.error("Sync init failed:", err);
+    throw err;
+  });
+  return connecting;
+}
+
+// What the timer component uses. room: resolves to the room id or null (no room: standalone timer),
+// rejects with reason "discord". connect(): resolves to the sync API, rejects with reason "load".
+// retry(): for "Try again" — Firebase keeps reconnecting on its own with growing pauses; this makes
+// it try right now. Assigned synchronously so it exists before the timer component mounts.
+window.timerSync = {
+  room: findRoom(),
+  connect,
+  retry() {
+    if (db) {
+      db.goOffline();
+      db.goOnline();
+    }
+  },
+};
+</script>
+<style>
+  /* Tapping a button on mobile leaves the browser's default focus outline stuck on it until
+     something else is tapped. Keep the outline for real keyboard navigation (:focus-visible),
+     drop it after a touch/mouse click. */
+  button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
+    outline: none;
+  }
+  /* Keyboard focus ring: the same on every button, radio pill and link — the browser's own default
+     outline (color/style/width), pushed 2px away so there's a transparent gap first. */
+  button:focus-visible, a:focus-visible {
+    outline-offset: 2px;
+  }
+  /* Focus the page moved by itself after a tap or click (see moveFocus): no ring until the
+     keyboard is used. */
+  [data-quiet-focus]:focus-visible {
+    outline: none;
+  }
+  /* "Reduce motion" in the system settings: the ring jumps instead of gliding and doesn't pulse
+     between rounds. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+<noscript>
+<main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
+<h1>Automatic Pomodoro Focus Timer</h1>
+<p>Start once: 25-minute focus rounds and 5-minute breaks switch automatically, each one is logged and ends with a sound alert. Set a round limit, or let it run without one, and choose whether every 4th round gets a longer break. Free, no sign-up.</p>
+<p>Please enable JavaScript to use the timer.</p>
+</main>
+</noscript>
+</div>
+<!-- constants, sounds, icons and UI pieces shared with the website (../shared/ui.jsx) -->
+<script type="text/babel" src="shared/ui.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useId } = React;
+
+const WORK_MIN = 25;
+
+const { MODE_COLORS } = window.DESIGN_TOKENS;
+
+// "work" is the focus mode's key in the shared room state (kept as is so rooms stay compatible);
+// its colors are the tokens' focus colors.
+const MODES = {
+  work: { label: "Focus", minutes: WORK_MIN, ...MODE_COLORS.focus, emoji: ["📚", "💻", "✍️"] },
+  break: { label: "Break", minutes: BREAK_MIN, ...MODE_COLORS.break, emoji: "☕" },
+  longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, ...MODE_COLORS.longBreak, emoji: "🌴" },
+};
+
+// Everything about the session lives in this one object so it can be shared as-is: whatever one
+// participant does — including opening the log or a popup — shows up for everyone in the room.
+// Times are timestamps (ms) on the shared clock, never Date objects, so the state survives JSON.
+const INITIAL_STATE = {
+  rev: 0, // bumped on every change; lets two people changing the room at once be told apart
+  mode: "work",
+  segmentTotal: WORK_MIN * 60,
+  isRunning: false,
+  completedCycles: 0,
+  history: [],
+  logOpen: false,
+  summaryLogOpen: false,
+  isTransitioning: false,
+  preTransitionLabel: "Pause",
+  longBreakMinutes: 30,
+  roundsLimit: null, // null = unlimited (default), number = limit
+  setupComplete: false,
+  sessionComplete: false,
+  endedEarly: false, // the session was ended with "End session" rather than by reaching the round limit
+  completionHeading: "Great job!",
+  addRoundsModalOpen: false,
+  endSessionModalOpen: false, // "Are you sure…?" after pressing End session, shared like every other popup
+  newSessionModalOpen: false, // the same for Set up new session on the summary screen (the log gets erased)
+  addRoundsAmount: 4,
+  addStartsWithBreak: true,
+  originalRoundsChoice: null,
+  // The countdown isn't stored — it's derived from when the segment really started, minus the
+  // time spent paused (pausedMs so far, plus the pause in progress since pauseStartedAt, if any).
+  // segmentStart must stay the true start for the session log.
+  segmentStart: null,
+  pausedMs: 0,
+  pauseStartedAt: null,
+  // While the end-of-segment sound plays: what comes after it, and when ({ mode, total, at } or
+  // { complete, heading, at }). Stored rather than held in a timeout so any participant can finish
+  // the transition, even if the one who triggered it has left.
+  next: null,
+};
+
+// Recomputed from the real start time (rather than decremented once a second) so a throttled or
+// fully paused background tab still lands on the correct remaining time the moment it's looked at
+// again — and so every participant shows the same number.
+function remainingSeconds(s, now) {
+  if (s.segmentStart == null) return s.segmentTotal;
+  const pausedMs = s.pausedMs + (s.pauseStartedAt != null ? now - s.pauseStartedAt : 0);
+  const elapsed = Math.floor((now - s.segmentStart - pausedMs) / 1000);
+  return Math.max(0, Math.min(s.segmentTotal, s.segmentTotal - elapsed));
+}
+
+function toggleLabel(s, now) {
+  return s.isRunning ? "Pause" : remainingSeconds(s, now) === s.segmentTotal ? "Start" : "Resume";
+}
+
+function freshSegment(mode, total, now) {
+  return { mode, segmentTotal: total, segmentStart: now, pausedMs: 0, pauseStartedAt: null, isRunning: true };
+}
+
+// Ends the current segment: logs it, then holds for the length of the end-of-segment sound
+// before `next` takes over (see the finishTransition action).
+function beginTransition(s, now, label, next) {
+  const soundKind = s.mode === "work" ? "focusEnd" : "breakEnd";
+  const completedCycles = s.mode === "work" ? s.completedCycles + 1 : s.completedCycles;
+  const entry = {
+    type: s.mode === "work" ? "focus" : s.mode === "longBreak" ? "longBreak" : "break",
+    round: completedCycles,
+    start: s.segmentStart ?? now,
+    end: now,
+  };
+  return {
+    ...s,
+    completedCycles,
+    history: [...s.history, entry].slice(-300),
+    preTransitionLabel: label,
+    isRunning: false,
+    isTransitioning: true,
+    pauseStartedAt: s.pauseStartedAt ?? now, // freeze the countdown where it stopped
+    next: { ...next, endedAt: now, at: now + SOUND_DURATION_MS[soundKind] },
+  };
+}
+
+// The current segment is over (timer hit zero, or Skip): work out what follows it
+function completeSegment(s, now, label) {
+  const newCompleted = s.completedCycles + 1;
+  let next;
+  if (s.mode === "work" && s.roundsLimit && newCompleted >= s.roundsLimit) {
+    // the last permitted focus is done — end the session right away, no trailing break
+    next = { complete: true, heading: COMPLETION_HEADINGS[Math.floor(Math.random() * COMPLETION_HEADINGS.length)] };
+  } else if (s.mode === "work") {
+    const isLongBreak = newCompleted % CYCLES_BEFORE_LONG_BREAK === 0 && s.longBreakMinutes !== null;
+    next = { mode: isLongBreak ? "longBreak" : "break", total: (isLongBreak ? s.longBreakMinutes : BREAK_MIN) * 60 };
+  } else {
+    next = { mode: "work", total: WORK_MIN * 60 };
+  }
+  return beginTransition(s, now, label, next);
+}
+
+// Returns the new state, or the same object when the action doesn't apply (e.g. a second
+// participant's click that arrived after the first one already did the same thing).
+function reduce(s, action, now) {
+  switch (action.type) {
+    case "set": {
+      const value = typeof action.value === "function" ? action.value(s[action.key]) : action.value;
+      return value === s[action.key] ? s : { ...s, [action.key]: value };
+    }
+    case "startSession":
+      if (s.setupComplete) return s;
+      return { ...s, setupComplete: true, originalRoundsChoice: s.roundsLimit, ...freshSegment("work", WORK_MIN * 60, now) };
+    case "toggle":
+      if (s.isTransitioning) return s;
+      if (s.isRunning) return { ...s, isRunning: false, pauseStartedAt: now };
+      if (s.segmentStart == null) return { ...s, isRunning: true, segmentStart: now, pausedMs: 0, pauseStartedAt: null };
+      // resuming: fold the just-finished pause into the running total so it isn't counted as
+      // elapsed segment time
+      return {
+        ...s,
+        isRunning: true,
+        pausedMs: s.pausedMs + (s.pauseStartedAt != null ? now - s.pauseStartedAt : 0),
+        pauseStartedAt: null,
+      };
+    case "reset": {
+      if (s.isTransitioning) return s;
+      const minutes = s.mode === "longBreak" ? s.longBreakMinutes ?? LONG_BREAK_MIN : MODES[s.mode].minutes;
+      return { ...s, ...freshSegment(s.mode, minutes * 60, now) };
+    }
+    case "autoComplete": {
+      // automatic: timer hit zero. The segment ends when it was due, not when someone's page
+      // noticed: with every participant's Activity closed or in the background, nobody's timer
+      // runs, and the first one back may notice minutes late. Ending (and logging) it at the due
+      // time, and starting the next one on schedule after it, keeps the session on the clock; a
+      // whole stretch missed while everyone was away is caught up segment by segment.
+      if (!s.isRunning || s.isTransitioning || remainingSeconds(s, now) > 0) return s;
+      const dueAt = s.segmentStart + s.pausedMs + s.segmentTotal * 1000;
+      return completeSegment(s, Math.min(dueAt, now), "Pause");
+    }
+    case "skip":
+      // reuse the same sound + transition-delay flow as auto-complete, so it's easy to test
+      if (s.isTransitioning) return s;
+      return completeSegment(s, now, toggleLabel(s, now));
+    case "switchToShortBreak":
+      // lets the group cut a 30-min long break short and drop into a fresh 5-min break instead
+      if (s.isTransitioning || s.mode !== "longBreak") return s;
+      return beginTransition(s, now, toggleLabel(s, now), { mode: "break", total: BREAK_MIN * 60 });
+    case "startLongBreak": {
+      // mins lets a one-off long break be started even when the auto-cycle's long break is set to
+      // "None" — it doesn't touch the longBreakMinutes setting, so the 4th-round rule stays as
+      // configured. Falls back to 30 min when it is None, so the manual button always works.
+      if (s.isTransitioning) return s;
+      const minutes = action.mins ?? s.longBreakMinutes ?? LONG_BREAK_MIN;
+      return beginTransition(s, now, toggleLabel(s, now), { mode: "longBreak", total: minutes * 60 });
+    }
+    case "addFiveMinutes":
+      // lets the group top up the current long break by 5 more minutes — extending the total
+      // means the progress ring reflects the new, longer duration instead of jumping backwards
+      if (s.isTransitioning) return s;
+      return { ...s, segmentTotal: s.segmentTotal + 5 * 60 };
+    case "confirmAddRounds": {
+      if (!s.addRoundsModalOpen) return s;
+      let nextMode = "work";
+      if (s.addStartsWithBreak) {
+        const longBreakDue = s.completedCycles > 0 && s.completedCycles % CYCLES_BEFORE_LONG_BREAK === 0;
+        nextMode = longBreakDue && s.longBreakMinutes !== null ? "longBreak" : "break";
+      }
+      const total = (nextMode === "longBreak" ? s.longBreakMinutes : MODES[nextMode].minutes) * 60;
+      return {
+        ...s,
+        roundsLimit: s.addRoundsAmount === null ? null : (s.roundsLimit ?? 0) + s.addRoundsAmount,
+        addRoundsModalOpen: false,
+        sessionComplete: false,
+        endedEarly: false,
+        ...freshSegment(nextMode, total, now),
+      };
+    }
+    case "endSession": {
+      // Stops the session where it is and shows the summary. Nothing is erased yet: from the
+      // summary the group can still add rounds and carry on. Like Skip, it closes the segment it
+      // was pressed in: the segment goes into the log (from when it started — Start in the setup
+      // popup for the first one — to now, even if the timer never moved), and a focus segment
+      // counts as a completed round. So whatever is in the log is also in the count.
+      if (!s.setupComplete || s.sessionComplete || s.isTransitioning) return s;
+      const completedCycles = s.mode === "work" ? s.completedCycles + 1 : s.completedCycles;
+      const entry = s.segmentStart != null && {
+        type: s.mode === "work" ? "focus" : s.mode === "longBreak" ? "longBreak" : "break",
+        round: completedCycles,
+        start: s.segmentStart,
+        end: now,
+      };
+      return {
+        ...s,
+        completedCycles,
+        history: entry ? [...s.history, entry].slice(-300) : s.history,
+        endSessionModalOpen: false,
+        isRunning: false,
+        pauseStartedAt: s.pauseStartedAt ?? now,
+        sessionComplete: true,
+        endedEarly: true,
+        roundsLimit: completedCycles, // so "Add more rounds" adds on top of what was actually done
+        completionHeading: COMPLETION_HEADINGS[Math.floor(Math.random() * COMPLETION_HEADINGS.length)],
+      };
+    }
+    case "newSession":
+      // back to the setup popup with a clean slate, for everyone
+      if (!s.sessionComplete) return s;
+      return { ...INITIAL_STATE, rev: s.rev };
+    case "finishTransition":
+      // the sound has finished — start what was lined up
+      if (!s.isTransitioning || !s.next) return s;
+      if (s.next.complete) {
+        return { ...s, isTransitioning: false, next: null, completionHeading: s.next.heading, sessionComplete: true };
+      }
+      // on schedule: right after the sound, even if this runs late (see autoComplete)
+      return { ...s, isTransitioning: false, next: null, ...freshSegment(s.next.mode, s.next.total, Math.min(s.next.at, now)) };
+    default:
+      return s;
+  }
+}
+
+function PomodoroTimer() {
+  const [state, setState] = useState(INITIAL_STATE);
+  const stateRef = useRef(INITIAL_STATE);
+  const syncRef = useRef(null);
+  // "loading": the first seconds, while the room's state is fetched (blank screen, so nobody sees
+  // the setup popup flash before a running session appears); "connecting": still trying after
+  // that, the timer is shown but only works locally until it connects; "synced"; "local" (no room:
+  // plain standalone timer); "failed": gave up for now, syncProblem says why ("discord", "load",
+  // "denied" or "offline") and "Try again" starts over. A late connection still turns it "synced".
+  const [syncStatus, setSyncStatus] = useState(window.timerSync ? "loading" : "local");
+  const [syncProblem, setSyncProblem] = useState(null);
+  const [syncAttempt, setSyncAttempt] = useState(0);
+  const [connected, setConnected] = useState(true);
+  const [, setTick] = useState(0);
+
+  // the shared clock when syncing, so every participant computes the same countdown
+  const now = () => (syncRef.current ? syncRef.current.now() : Date.now());
+
+  // Every change goes through here: applied locally right away, then offered to the room. If
+  // someone else changed the room first, the write is dropped and their state arrives instead.
+  const dispatch = useCallback((action) => {
+    const base = stateRef.current;
+    const reduced = reduce(base, action, now());
+    if (reduced === base) return;
+    const next = { ...reduced, rev: base.rev + 1 };
+    stateRef.current = next;
+    setState(next);
+    if (syncRef.current) syncRef.current.publish(base.rev, next);
+  }, []);
+
+  // Connects to the room; runs again for every "Try again" (syncAttempt).
+  useEffect(() => {
+    if (!window.timerSync) return;
+    let cancelled = false;
+    let received = false;
+    let unsubscribe = null;
+    const fail = (problem) => {
+      clearTimeout(showTimer);
+      clearTimeout(giveUp);
+      setSyncProblem(problem);
+      setSyncStatus("failed");
+    };
+    // after 10s show the timer instead of a blank screen; after 30s without the room, stop saying
+    // "Connecting…" (Firebase itself keeps trying, and a late connection still syncs)
+    const showTimer = setTimeout(() => setSyncStatus((st) => (st === "loading" ? "connecting" : st)), 10000);
+    const giveUp = setTimeout(() => !received && fail("offline"), 30000);
+    (async () => {
+      let roomId;
+      try {
+        roomId = await window.timerSync.room;
+      } catch (err) {
+        if (!cancelled) fail(err.reason || "discord");
+        return;
+      }
+      if (cancelled) return;
+      if (!roomId) {
+        clearTimeout(showTimer);
+        clearTimeout(giveUp);
+        setSyncStatus("local");
+        return;
+      }
+      let sync;
+      try {
+        sync = await window.timerSync.connect(roomId);
+      } catch (err) {
+        if (!cancelled) fail(err.reason || "load");
+        return;
+      }
+      if (cancelled) return;
+      syncRef.current = sync;
+      unsubscribe = sync.subscribe(
+        (value) => {
+          received = true;
+          clearTimeout(showTimer);
+          clearTimeout(giveUp);
+          if (value) {
+            const next = { ...INITIAL_STATE, ...JSON.parse(value.json), rev: value.rev };
+            stateRef.current = next;
+            setState(next);
+          } else if (stateRef.current.rev > 0) {
+            // the room is empty but a timer is already going here (it started before the
+            // connection came up) — make it the room's timer
+            const next = { ...stateRef.current, rev: 1 };
+            stateRef.current = next;
+            setState(next);
+            sync.publish(0, next);
+          }
+          setSyncProblem(null);
+          setSyncStatus("synced");
+        },
+        setConnected,
+        (err) => {
+          console.error("Sync read failed:", err);
+          syncRef.current = null;
+          if (!cancelled) fail(err.reason || "denied");
+        }
+      );
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(showTimer);
+      clearTimeout(giveUp);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [syncAttempt]);
+
+  // "Try again" on the sync notice. Discord's own connection can only be redone by reloading.
+  const retrySync = () => {
+    if (syncProblem === "discord") {
+      location.reload();
+      return;
+    }
+    window.timerSync.retry();
+    setSyncProblem(null);
+    setSyncStatus("connecting");
+    setSyncAttempt((n) => n + 1);
+  };
+
+  const {
+    mode, segmentTotal, isRunning, completedCycles, history, logOpen, summaryLogOpen, isTransitioning,
+    preTransitionLabel, longBreakMinutes, roundsLimit, setupComplete, sessionComplete, completionHeading,
+    addRoundsModalOpen, addRoundsAmount, addStartsWithBreak, originalRoundsChoice, endedEarly, endSessionModalOpen,
+    newSessionModalOpen,
+  } = state;
+
+  const secondsLeft = remainingSeconds(state, now());
+  const totalSeconds = segmentTotal;
+  const progress = 1 - secondsLeft / totalSeconds;
+
+  // same call shape as a useState setter (value or updater function), but shared with the room
+  const setter = (key) => (value) => dispatch({ type: "set", key, value });
+  const setLogOpen = setter("logOpen");
+  const setSummaryLogOpen = setter("summaryLogOpen");
+  const setLongBreakMinutes = setter("longBreakMinutes");
+  const setRoundsLimit = setter("roundsLimit");
+  const setAddRoundsModalOpen = setter("addRoundsModalOpen");
+  const setEndSessionModalOpen = setter("endSessionModalOpen");
+  const setNewSessionModalOpen = setter("newSessionModalOpen");
+  const setAddRoundsAmount = setter("addRoundsAmount");
+  const setAddStartsWithBreak = setter("addStartsWithBreak");
+
+  const startSession = () => dispatch({ type: "startSession" });
+  const endSession = () => dispatch({ type: "endSession" });
+  const newSession = () => dispatch({ type: "newSession" });
+  const confirmAddRounds = () => dispatch({ type: "confirmAddRounds" });
+  const handleToggle = () => dispatch({ type: "toggle" });
+  const handleReset = () => dispatch({ type: "reset" });
+  const handleSkip = () => dispatch({ type: "skip" });
+  const switchToShortBreak = () => dispatch({ type: "switchToShortBreak" });
+  const startLongBreak = (mins) => dispatch({ type: "startLongBreak", mins });
+  const addFiveMinutes = () => dispatch({ type: "addFiveMinutes" });
+
+  // Re-render a few times a second so the derived countdown stays current. Mobile browsers
+  // pause/throttle JS timers while the tab is hidden (backgrounded, screen locked, another app in
+  // front) — there's no way for a web page to keep ticking through that, but re-rendering the
+  // instant the tab becomes visible again means it snaps to the correct value right away.
+  useEffect(() => {
+    const tick = () => setTick((t) => t + 1);
+    const interval = setInterval(tick, 250);
+    const onVisible = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("resize", tick); // the layout below depends on the window size
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("resize", tick);
+    };
+  }, []);
+
+  // Timer hit zero. Every participant's copy notices this at about the same moment; the first
+  // write wins and the rest receive it.
+  useEffect(() => {
+    if (isRunning && secondsLeft <= 0) dispatch({ type: "autoComplete" });
+  }, [isRunning, secondsLeft, dispatch]);
+
+  // only start the next round once the end-of-segment sound has actually finished
+  const nextAt = state.next ? state.next.at : null;
+  useEffect(() => {
+    if (!isTransitioning || nextAt == null) return;
+    const timeout = setTimeout(() => dispatch({ type: "finishTransition" }), Math.max(0, nextAt - now()));
+    return () => clearTimeout(timeout);
+  }, [isTransitioning, nextAt, dispatch]);
+
+  // The sound plays on each participant's own device, whenever a segment ends — whoever caused it.
+  // During a transition `mode` is still the segment that just ended. Segments that ended more than
+  // a minute and a half ago (caught up after everyone was away) end silently, so coming back doesn't
+  // set off a string of sounds; a page in the background, checking the time about once a minute,
+  // still plays its sound. A segment that ran out on schedule has usually had its sound played on
+  // time already by the booking below, so it isn't played twice.
+  const wasTransitioningRef = useRef(false);
+  const bookedSoundRef = useRef({ at: null, cancel: null });
+  useEffect(() => {
+    const endedAt = state.next?.endedAt;
+    const recent = endedAt == null || now() - endedAt < 90000;
+    const booked = bookedSoundRef.current;
+    const playedOnTime = endedAt != null && booked.at != null && Math.abs(booked.at - endedAt) < 1000 && audioCtx?.state === "running";
+    if (isTransitioning && !wasTransitioningRef.current && recent && !playedOnTime) playSound(mode === "work" ? "focusEnd" : "breakEnd");
+    wasTransitioningRef.current = isTransitioning;
+  }, [isTransitioning]);
+
+  // Books the end-of-segment sound ahead on each participant's device whenever a segment is
+  // running, so it plays on time even while the Activity is minimised; booked again when the end
+  // moves (Reset, Add another 5 min, a new segment — whoever caused it) and cancelled on pause.
+  // A sound that has already started is left to finish. (Runs after the effect above, which needs
+  // the booking as it was.)
+  const dueAt =
+    isRunning && !isTransitioning && state.segmentStart != null
+      ? state.segmentStart + state.pausedMs + segmentTotal * 1000
+      : null;
+  useEffect(() => {
+    const booked = bookedSoundRef.current;
+    if (dueAt != null && booked.at != null && Math.abs(dueAt - booked.at) < 1000) return;
+    if (booked.at != null && now() < booked.at) booked.cancel();
+    bookedSoundRef.current = { at: null, cancel: null };
+    if (dueAt == null || dueAt <= now()) return;
+    bookedSoundRef.current = { at: dueAt, cancel: playSound(mode === "work" ? "focusEnd" : "breakEnd", dueAt - now()) };
+  });
+
+  // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
+  // the tab is in view. Released automatically by the browser once the tab is hidden, and
+  // there's no API to keep a background tab's screen awake or to override the phone's own
+  // lock button — so this only helps while the timer is actually on screen. Not inside Discord:
+  // its Activity frame doesn't allow wake locks, and asking only logs a policy violation.
+  useEffect(() => {
+    if (!("wakeLock" in navigator) || new URLSearchParams(location.search).has("frame_id")) return;
+    let wakeLock = null;
+    async function acquire() {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+      } catch (err) {
+        // often rejects on low battery / when the tab isn't visible — not worth surfacing
+      }
+    }
+    async function onVisible() {
+      if (isRunning && !document.hidden && !wakeLock) await acquire();
+    }
+    if (isRunning) acquire();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      if (wakeLock) wakeLock.release().catch(() => {});
+    };
+  }, [isRunning]);
+
+  useEffect(() => {
+    document.title = isRunning
+      ? `${formatTime(secondsLeft)} — ${MODES[mode].label}`
+      : "Violet Tomato – Automatic Pomodoro Focus Timer";
+  }, [secondsLeft, mode, isRunning]);
+
+  // Lock background scroll while a popup covers the screen — otherwise the page behind it can
+  // still be scrolled (e.g. by touch drag), even though it's inert and visually dimmed.
+  useEffect(() => {
+    const modalOpen = !setupComplete || addRoundsModalOpen || endSessionModalOpen || newSessionModalOpen;
+    document.documentElement.style.overflow = modalOpen ? "hidden" : "";
+    document.body.style.overflow = modalOpen ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [setupComplete, addRoundsModalOpen, endSessionModalOpen, newSessionModalOpen]);
+
+  // Keyboard focus when the screen changes underneath it — whoever in the room caused it: the
+  // timer screen (after Start, after adding rounds, or on joining a running session) puts focus
+  // on Play/Pause, the summary screen on its heading. Other changes (someone pausing, skipping)
+  // leave each participant's focus where it is.
+  const playPauseRef = useRef(null);
+  const completionHeadingRef = useRef(null);
+  const timerScreen = syncStatus !== "loading" && setupComplete && !sessionComplete;
+  useEffect(() => {
+    if (timerScreen) moveFocus(playPauseRef.current);
+  }, [timerScreen]);
+  useEffect(() => {
+    if (sessionComplete) moveFocus(completionHeadingRef.current);
+  }, [sessionComplete]);
+
+  const completeText = mode === "work" ? "Focus round complete" : mode === "break" ? "Break complete" : "Long break complete";
+  // A finished session always has at least one round: the first focus round counts once it ends,
+  // by the timer, Skip or End session.
+  const roundsText =
+    completedCycles === 1
+      ? "You completed 1 round"
+      : `You completed ${endedEarly ? "" : "all "}${completedCycles} rounds`;
+
+  // Read out by screen readers whenever it changes: round starts, round ends, session end —
+  // for everyone in the room, whoever caused it. It doesn't include the time, so it stays quiet
+  // while the clock ticks.
+  const status =
+    syncStatus === "loading" || !setupComplete
+      ? ""
+      : sessionComplete
+      ? `${completionHeading} ${roundsText}`
+      : isTransitioning
+      ? completeText
+      : mode === "work"
+      ? `Focus, round ${completedCycles + 1}`
+      : MODES[mode].label;
+  // The live region gets the text a moment later: the same click or Enter also moves focus (e.g.
+  // Start → Pause), and VoiceOver drops a live update that lands together with a focus change.
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setAnnouncement(status), 700);
+    return () => clearTimeout(t);
+  }, [status]);
+  // First child of every screen's root, so React keeps the same element when the screen switches
+  // and the change is announced.
+  const announcer = <div className="sr-only" role="status">{announcement}</div>;
+
+  // nothing to show until the room's current state is known — otherwise someone joining a
+  // session in progress would see the setup popup flash first
+  if (syncStatus === "loading") return <div className="min-h-screen w-full bg-page" />;
+
+  const SYNC_PROBLEMS = {
+    discord: "Discord didn't connect the Activity.",
+    load: "The sync service didn't load.",
+    denied: "The room couldn't be opened.",
+    offline: "No connection to the room.",
+  };
+  const syncNoticeText =
+    syncStatus === "connecting"
+      ? "Connecting… Until then, this timer is only on your screen."
+      : syncStatus === "failed"
+      ? `Not synced. ${SYNC_PROBLEMS[syncProblem] ?? ""} This timer is only on your screen.`
+      : syncStatus === "synced" && !connected
+      ? "Reconnecting…"
+      : null;
+  // Always rendered (second child of every screen's root), so screen readers announce changes.
+  const syncNotice = (
+    <div className="fixed top-2 left-0 w-full flex justify-center px-4 pointer-events-none z-[60]" role="status">
+      {syncNoticeText && (
+        <div className="pointer-events-auto max-w-sm px-3 py-1 rounded-2xl bg-notice text-notice type-caption text-center">
+          {syncNoticeText}
+          {syncStatus === "failed" && (
+            <>
+              {" "}
+              <button onClick={retrySync} className="underline font-medium">Try again</button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const accent = MODES[mode].accent;
+  const shadowColor = MODES[mode].shadow;
+  const arcColor = MODES[mode].arc;
+  // the current mode's colors for text-mode and bg-button-mode
+  const modeVars = { "--mode-accent": accent, "--mode-accent-hover": MODES[mode].accentHover };
+  const radius = 120;
+  const circumference = 2 * Math.PI * radius;
+  // The colored arc is the time remaining: it starts full at 12 o'clock and its moving end
+  // retreats counter-clockwise as the segment runs.
+  const dashoffset = circumference * progress;
+  const tipDeg = (1 - progress) * 360;
+  // Soft round shadow cast by the moving end onto whatever lies just clockwise of it — the gray
+  // track mid-segment, or the fixed end of the arc itself right at the start. It's a blurred disc
+  // nudged ahead of the cap, so the part peeking out from under the cap is crescent-shaped.
+  const shadowDeg = 1.5;
+  const shadowCenter = {
+    x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
+    y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
+  };
+
+  const centerLabel = mode === "work" ? `Round ${completedCycles + 1}` : "";
+
+  // Discord shows the Activity as a small tile (about 150px square on a phone) when it's minimised
+  // next to the participants' video. The full layout doesn't fit there and would just be cropped,
+  // so the tile gets the top of the full view — mode label and ring, with the same contents and
+  // proportions — scaled down to whatever space there is, and without the controls.
+  // (read at render time: the countdown re-renders this several times a second anyway)
+  const viewport = { width: window.innerWidth, height: window.innerHeight };
+  if (viewport.height < 320 || viewport.width < 260) {
+    // the full view's sizes in px, times k: a 20px label, a 24px gap, then the 288px ring
+    const k = Math.min((viewport.width * 0.92) / 288, (viewport.height * 0.92) / (20 + 24 + 288));
+    const px = (n) => n * k;
+    const emoji = sessionComplete
+      ? ["🎉"]
+      : isTransitioning
+      ? [mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"]
+      : [].concat(MODES[mode].emoji);
+    const caption = sessionComplete
+      ? `${completedCycles} completed`
+      : isTransitioning
+      ? completeText
+      : !setupComplete
+      ? "Not started"
+      : !isRunning
+      ? "Paused"
+      : centerLabel;
+    // Sizes are scaled inline (the text styles' fixed sizes would not fit); colors are tokens.
+    return (
+      <div className="w-full flex flex-col items-center justify-center bg-page overflow-hidden" style={{ height: "100vh", ...modeVars }}>
+        {announcer}
+        <div className="font-bold tracking-wide uppercase text-mode" style={{ fontSize: px(20), lineHeight: 1 }}>
+          {sessionComplete ? "Done" : MODES[mode].label}
+        </div>
+        <div
+          className={`relative ${isTransitioning ? "animate-pulse" : ""}`}
+          style={{ width: px(288), height: px(288), marginTop: px(24) }}
+        >
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
+            <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
+            {!sessionComplete && secondsLeft > 0 && (
+              <circle
+                cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
+                strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
+                style={{ transition: "stroke-dashoffset 1s linear" }}
+              />
+            )}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center" style={{ gap: px(4), height: px(30), marginBottom: px(12) }} aria-hidden="true">
+              {emoji.map((e, i) => (
+                <span key={i} style={{ fontSize: px(30), lineHeight: 1 }}>{e}</span>
+              ))}
+            </div>
+            {!sessionComplete && !isTransitioning && (
+              <div className="font-bold tabular-nums text-primary" style={{ fontSize: px(48), lineHeight: 1 }}>
+                {formatTime(secondsLeft)}
+              </div>
+            )}
+            {/* the caption is the one thing not scaled all the way down: 14px would become unreadable */}
+            <div
+              className="flex items-center justify-center text-secondary"
+              style={{ fontSize: Math.max(8, px(14)), lineHeight: 1, height: px(30), marginTop: px(12) }}
+            >
+              {caption}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const primaryButton = "w-full h-11 px-6 rounded-xl text-button-primary type-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap";
+  const primaryShadow = { boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadow}59` };
+  const secondaryButton =
+    "w-full h-11 px-6 rounded-xl bg-button-secondary type-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap";
+  const tertiaryButton =
+    "flex items-center justify-center type-control text-button-tertiary hover:text-button-tertiary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed h-11";
+  // Two buttons in a popup: one row (secondary hugging its text, primary taking the rest) while
+  // both labels fit on one line; once they don't, the primary wraps onto its own line and
+  // wrap-reverse puts it above the secondary, both full width. The 1 : 999 grow ratio keeps the
+  // secondary hugging in the one-row case.
+  const buttonRow = (secondary, primary) => (
+    <div className="w-full flex flex-wrap-reverse gap-2">
+      <div className="grow">{secondary}</div>
+      <div className="grow-[999]">{primary}</div>
+    </div>
+  );
+
+  // Buttons of a "Are you sure…?" popup. Not going ahead is the safe choice, so Cancel is the
+  // primary button and comes first. While both fit on one line (a row at least `fitsFrom` wide)
+  // each is as wide as its text, Cancel on the left edge and the other on the right; narrower,
+  // they stack at full width with Cancel on top. The basis is huge and positive below the
+  // threshold (one button per line, capped at full width) and negative, so ignored, above it.
+  // The two thresholds are written out in full so Tailwind finds the classes.
+  const CONFIRM_BASIS = { "18.5rem": "basis-[calc((18.5rem_-_100%)*999)]", "20.75rem": "basis-[calc((20.75rem_-_100%)*999)]" };
+  const confirmButtons = ({ onCancel, confirmLabel, onConfirm, fitsFrom }) => (
+    <div className="w-full flex flex-wrap justify-between gap-2">
+      <button onClick={onCancel} className={`${primaryButton.replace("w-full ", "")} max-w-full ${CONFIRM_BASIS[fitsFrom]}`} style={primaryShadow}>
+        Cancel
+      </button>
+      <button onClick={onConfirm} className={`${secondaryButton.replace("w-full ", "")} max-w-full ${CONFIRM_BASIS[fitsFrom]}`}>
+        {confirmLabel}
+      </button>
+    </div>
+  );
+
+  if (sessionComplete) {
+    const openAddRounds = () => {
+      setAddRoundsAmount(originalRoundsChoice ?? 4);
+      setAddStartsWithBreak(true);
+      setAddRoundsModalOpen(true);
+    };
+    return (
+      <div className="min-h-screen w-full flex flex-col bg-page">
+        {announcer}
+        {syncNotice}
+        <main className="flex-1 w-full flex items-center justify-center p-6">
+        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Focus Timer</h1>
+        <div inert={addRoundsModalOpen || newSessionModalOpen ? "" : undefined} className="w-full max-w-xs bg-page rounded-2xl border border-subtle p-6 flex flex-col items-center text-center">
+          <div className="type-emoji leading-normal" aria-hidden="true">🎉</div>
+          <div className="w-full flex flex-col items-center mt-5">
+            <h2 ref={completionHeadingRef} tabIndex={-1} className="type-heading text-primary focus:outline-none">{completionHeading}</h2>
+            <button
+              onClick={() => setSummaryLogOpen((o) => !o)}
+              disabled={history.length === 0}
+              aria-expanded={history.length > 0 ? summaryLogOpen : undefined}
+              aria-controls={history.length > 0 ? "summary-log" : undefined}
+              className="w-full flex items-center justify-center gap-1 type-control text-button-tertiary hover:text-button-tertiary-hover disabled:hover:text-button-tertiary disabled:cursor-default h-11 mt-2"
+            >
+              <span>{roundsText}</span>
+              {history.length > 0 &&
+                (summaryLogOpen ? (
+                  <ChevronUpIcon size={16} />
+                ) : (
+                  <ChevronDownIcon size={16} />
+                ))}
+            </button>
+            {summaryLogOpen && history.length > 0 && (
+              <div id="summary-log" className="mb-3">
+                <HistoryLog history={history} />
+              </div>
+            )}
+          </div>
+          <button onClick={openAddRounds} className={`${tertiaryButton} w-full mt-1`}>
+            Add more rounds
+          </button>
+          <button onClick={() => setNewSessionModalOpen(true)} className={`${tertiaryButton} w-full`}>
+            Set up new session
+          </button>
+        </div>
+
+        {newSessionModalOpen && (
+          <Dialog
+            title="Set up new session"
+            description="Are you sure you want to set up a new session? The session log will be deleted, and this can't be undone."
+            onClose={() => setNewSessionModalOpen(false)}
+          >
+            {confirmButtons({
+              onCancel: () => setNewSessionModalOpen(false),
+              confirmLabel: "Yes, set up new session",
+              onConfirm: newSession,
+              fitsFrom: "20.75rem",
+            })}
+          </Dialog>
+        )}
+
+        {addRoundsModalOpen && (
+          <Dialog
+            title="Add more rounds"
+            enterHint="Press Enter to add the rounds, or Escape to cancel."
+            onSubmit={confirmAddRounds}
+            onClose={() => setAddRoundsModalOpen(false)}
+          >
+            <RoundsStepper label="Number of rounds" value={addRoundsAmount} onChange={setAddRoundsAmount} />
+            <RadioGroup
+              label="Start with"
+              options={START_WITH_OPTIONS}
+              value={addStartsWithBreak}
+              onChange={setAddStartsWithBreak}
+            />
+            <RadioGroup
+              label="Long break length"
+              options={LONG_BREAK_OPTIONS}
+              value={longBreakMinutes}
+              onChange={setLongBreakMinutes}
+            />
+            {buttonRow(
+              <button onClick={() => setAddRoundsModalOpen(false)} className={secondaryButton}>
+                Cancel
+              </button>,
+              <button onClick={confirmAddRounds} className={primaryButton} style={primaryShadow}>
+                {addRoundsAmount === null
+                  ? "Continue without a limit"
+                  : addRoundsAmount === 1
+                  ? "Add 1 round"
+                  : `Add ${addRoundsAmount} rounds`}
+              </button>
+            )}
+          </Dialog>
+        )}
+        </main>
+        <Credit inert={addRoundsModalOpen || newSessionModalOpen} privacyHref="https://elenakovelskikh.github.io/pomodoro-timer/discord/privacy.html" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full flex flex-col bg-page" style={modeVars}>
+      {announcer}
+      {syncNotice}
+      <div className="flex-1 w-full flex items-start justify-center p-6 pt-16">
+      {!setupComplete && (
+        <Dialog
+          title="Automatic Pomodoro Focus Timer"
+          description={
+            <>
+              Start once: 25&#8209;minute focus rounds and 5&#8209;minute breaks switch automatically, each
+              one is logged and ends with a sound alert. Every 4th round gets an optional longer break.
+            </>
+          }
+          enterHint="Press Enter to start with these settings."
+          onSubmit={startSession}
+        >
+          <RoundsStepper label="Number of rounds" value={roundsLimit} onChange={setRoundsLimit} />
+          <RadioGroup
+            label="Long break length"
+            options={LONG_BREAK_OPTIONS}
+            value={longBreakMinutes}
+            onChange={setLongBreakMinutes}
+          />
+          <button onClick={startSession} className={primaryButton} style={primaryShadow}>
+            Start
+          </button>
+        </Dialog>
+      )}
+
+      {setupComplete && endSessionModalOpen && (
+        <Dialog
+          title="End session"
+          description="Are you sure you want to end the session? This will stop the timer for everyone and can't be undone."
+          onClose={() => setEndSessionModalOpen(false)}
+        >
+          {confirmButtons({
+            onCancel: () => setEndSessionModalOpen(false),
+            confirmLabel: "Yes, end session",
+            onConfirm: endSession,
+            fitsFrom: "18.5rem",
+          })}
+        </Dialog>
+      )}
+
+      <main inert={!setupComplete || endSessionModalOpen ? "" : undefined} className="w-full max-w-sm flex flex-col items-center">
+        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Focus Timer</h1>
+        <h2 className="type-mode-label uppercase text-mode">
+          {MODES[mode].label}
+        </h2>
+
+        <div className={`relative w-72 h-72 mt-6 ${isTransitioning ? "animate-pulse" : ""}`}>
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
+            <defs>
+              <radialGradient id="ring-tip-shadow">
+                <stop offset="0%" stopColor={shadowColor} stopOpacity="0.25" />
+                <stop offset="45%" stopColor={shadowColor} stopOpacity="0.07" />
+                <stop offset="100%" stopColor={shadowColor} stopOpacity="0" />
+              </radialGradient>
+              {/* keeps the shadow inside the ring's band */}
+              <clipPath id="ring-band">
+                <path
+                  clipRule="evenodd"
+                  d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
+                      M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`}
+                />
+              </clipPath>
+            </defs>
+            <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
+            <circle
+              cx="140" cy="140" r={radius} fill="none" stroke={arcColor} strokeWidth="10"
+              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashoffset}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+            {/* Moving end: shadow patch plus a cap drawn on top of it, rotated as one piece so it
+                tracks the arc with the same 1s linear easing. */}
+            <g
+              style={{
+                transform: `rotate(${tipDeg}deg)`,
+                transformOrigin: "140px 140px",
+                transition: "transform 1s linear",
+                display: secondsLeft > 0 ? undefined : "none",
+              }}
+            >
+              <circle
+                cx={shadowCenter.x} cy={shadowCenter.y} r="8"
+                fill="url(#ring-tip-shadow)" clipPath="url(#ring-band)"
+              />
+              <circle cx={140 + radius} cy="140" r="5" fill={arcColor} />
+            </g>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {isTransitioning ? (
+              <>
+                <div className="type-emoji leading-[2.125rem]" aria-hidden="true">{mode === "work" ? "💪" : mode === "break" ? "🙌" : "🔋"}</div>
+                <div className="type-body text-secondary mt-1">{completeText}</div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3" aria-hidden="true">
+                  {Array.isArray(MODES[mode].emoji) ? (
+                    MODES[mode].emoji.map((e, i) => (
+                      <span key={i} className="type-emoji">{e}</span>
+                    ))
+                  ) : (
+                    <span className="type-emoji">{MODES[mode].emoji}</span>
+                  )}
+                </div>
+                <div className="type-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
+                <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">
+                  {mode === "work" ? centerLabel : ""}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* aria-disabled instead of disabled during the transition, so a button keeps keyboard
+            focus while it's briefly unavailable (the reducer ignores the press anyway) */}
+        <div className="flex items-center gap-5 mt-6">
+          <button
+            onClick={() => !isTransitioning && handleReset()}
+            aria-disabled={isTransitioning || undefined}
+            className="flex items-center justify-center rounded-full bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed h-11 w-11"
+            aria-label="Reset current round"
+            title="Reset current round"
+          >
+            <RotateCcwIcon size={20} />
+          </button>
+          {(() => {
+            const buttonLabel = isTransitioning
+              ? preTransitionLabel
+              : isRunning
+              ? "Pause"
+              : secondsLeft === totalSeconds
+              ? "Start"
+              : "Resume";
+            const looksActive = buttonLabel === "Pause";
+            return (
+              <button
+                ref={playPauseRef}
+                onClick={() => !isTransitioning && handleToggle()}
+                aria-disabled={isTransitioning || undefined}
+                aria-label={buttonLabel}
+                title={buttonLabel}
+                className={`flex items-center justify-center h-14 w-14 rounded-full aria-disabled:opacity-40 aria-disabled:cursor-not-allowed ${
+                  looksActive ? "bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover" : "bg-button-mode hover:bg-button-mode-hover text-button-primary"
+                }`}
+                style={looksActive ? undefined : { boxShadow: `0 2px 8px -2px ${shadowColor}59` }}
+              >
+                {looksActive ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
+              </button>
+            );
+          })()}
+          <button
+            onClick={() => !isTransitioning && handleSkip()}
+            aria-disabled={isTransitioning || undefined}
+            className="flex items-center justify-center rounded-full bg-button-secondary text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed h-11 w-11"
+            aria-label="Skip"
+            title="Skip"
+          >
+            <SkipForwardIcon size={20} />
+          </button>
+        </div>
+
+        {/* The first button is the same element in every mode (only its text and action change),
+            so keyboard focus stays on it when pressing it switches the mode. */}
+        <div className="flex flex-col items-center mt-6 gap-1">
+          <button
+            onClick={() => !isTransitioning && (mode === "longBreak" ? switchToShortBreak() : startLongBreak())}
+            aria-disabled={isTransitioning || undefined}
+            className={tertiaryButton}
+          >
+            {mode === "longBreak" ? "Switch to 5 min break" : mode === "break" ? "Switch to long break" : "Start long break"}
+          </button>
+          {mode === "longBreak" && (
+            <button
+              onClick={() => !isTransitioning && addFiveMinutes()}
+              aria-disabled={isTransitioning || undefined}
+              className={tertiaryButton}
+            >
+              Add another 5 min
+            </button>
+          )}
+          <button
+            onClick={() => !isTransitioning && setEndSessionModalOpen(true)}
+            aria-disabled={isTransitioning || undefined}
+            className={tertiaryButton}
+          >
+            End session
+          </button>
+        </div>
+
+        {/* the count and its log only once the first focus round is done — "0 completed" opens nothing */}
+        {completedCycles > 0 && (
+        <div className="w-full flex flex-col items-center gap-1 mt-6">
+          <button
+            onClick={() => setLogOpen((o) => !o)}
+            aria-expanded={history.length > 0 ? logOpen : undefined}
+            aria-controls={history.length > 0 ? "session-log" : undefined}
+            className="flex items-center min-h-11 text-button-tertiary hover:text-button-tertiary-hover"
+          >
+            <span className="flex items-baseline gap-1.5">
+              <span className="type-heading text-primary">{completedCycles}</span>
+              <span className="type-body text-primary">completed</span>
+              {completedCycles > 0 && (
+                <span className="self-end py-px">
+                  {logOpen ? (
+                    <ChevronUpIcon size={16} />
+                  ) : (
+                    <ChevronDownIcon size={16} />
+                  )}
+                </span>
+              )}
+            </span>
+          </button>
+
+          {logOpen && history.length > 0 && <div id="session-log"><HistoryLog history={history} /></div>}
+        </div>
+        )}
+      </main>
+      </div>
+      <Credit inert={!setupComplete || endSessionModalOpen} privacyHref="https://elenakovelskikh.github.io/pomodoro-timer/discord/privacy.html" />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<PomodoroTimer />);
+</script>
+</body>
+</html>
