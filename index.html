@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Violet Tomato – Automatic Pomodoro Focus Timer</title>
-<meta name="description" content="Focus and break timers switch automatically, each one is logged and ends with a sound alert. Optional round limit. Free, no sign-up." />
+<title>Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking</title>
+<meta name="description" content="Free Pomodoro timer for study and coworking: focus rounds and breaks switch automatically, each one is logged and ends with a sound alert. No sign-up." />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="author" content="Elena Kovelskikh" />
 <meta name="robots" content="index, follow" />
 <meta name="google-site-verification" content="yJUSkpdvQbsdATbhvbNcVoprPHWovTJD3ZvdCywHBmw" />
 <link rel="canonical" href="https://elenakovelskikh.github.io/pomodoro-timer/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
-<meta property="og:description" content="Focus and break timers switch automatically, each one is logged and ends with a sound alert. Optional round limit. Free, no sign-up." />
+<meta property="og:title" content="Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking" />
+<meta property="og:description" content="Free Pomodoro timer for study and coworking: focus rounds and breaks switch automatically, each one is logged and ends with a sound alert. No sign-up." />
 <meta property="og:url" content="https://elenakovelskikh.github.io/pomodoro-timer/" />
 <meta property="og:image" content="https://elenakovelskikh.github.io/pomodoro-timer/og-image.jpg?v=2" />
 <meta property="og:image:width" content="1200" />
@@ -19,13 +19,13 @@
 <meta property="og:image:alt" content="Violet Tomato: a timer ring showing 22:17, Round 3. Automatic Pomodoro Timer for Study &amp; Coworking." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://elenakovelskikh.github.io/pomodoro-timer/og-image.jpg?v=2" />
-<meta name="twitter:title" content="Violet Tomato – Automatic Pomodoro Focus Timer" />
-<meta name="twitter:description" content="Focus and break timers switch automatically, each one is logged and ends with a sound alert. Optional round limit. Free, no sign-up." />
+<meta name="twitter:title" content="Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking" />
+<meta name="twitter:description" content="Free Pomodoro timer for study and coworking: focus rounds and breaks switch automatically, each one is logged and ends with a sound alert. No sign-up." />
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Violet Tomato","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer that switches automatically between focus sessions and breaks, with an optional round limit and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit or unlimited rounds","Optional long break every 4th round","Time log of every focus session and break","Sound alerts"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"Violet Tomato","url":"https://elenakovelskikh.github.io/pomodoro-timer/","applicationCategory":"ProductivityApplication","operatingSystem":"Any","description":"A free Pomodoro timer for study and coworking that switches automatically between focus rounds and breaks, with an optional round limit, an optional long break every 4th round and a time log of every session.","featureList":["Automatic focus/break switching","Optional round limit or unlimited rounds","Optional long break every 4th round","Time log of every focus round and break","Sound alerts","Keyboard and screen reader accessible"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Elena Kovelskikh"},"inLanguage":"en","isAccessibleForFree":true}
 </script>
 <!-- Libraries are vendored (not loaded from CDNs), so the page doesn't depend on third-party hosts
      and the Tailwind version stays pinned -->
@@ -73,7 +73,7 @@
 <div id="root">
 <noscript>
 <main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
-<h1>Automatic Pomodoro Focus Timer</h1>
+<h1>Automatic Pomodoro Timer for Study &amp; Coworking</h1>
 <p>Start once: 25-minute focus rounds and 5-minute breaks switch automatically, each one is logged and ends with a sound alert. Set a round limit, or let it run without one, and choose whether every 4th round gets a longer break. Free, no sign-up.</p>
 <p>Please enable JavaScript to use the timer.</p>
 </main>
@@ -665,7 +665,7 @@ function PomodoroTimer() {
   useEffect(() => {
     document.title = isRunning
       ? `${formatTime(secondsLeft)} — ${MODES[mode].label}`
-      : "Violet Tomato – Automatic Pomodoro Focus Timer";
+      : "Violet Tomato – Automatic Pomodoro Timer for Study & Coworking";
   }, [secondsLeft, mode, isRunning]);
 
   // Lock background scroll while a popup covers the screen — otherwise the page behind it can
@@ -831,7 +831,7 @@ function PomodoroTimer() {
       <div className="min-h-screen w-full flex flex-col bg-page">
         {announcer}
         <main className="flex-1 w-full flex items-center justify-center p-6">
-        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Focus Timer</h1>
+        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking</h1>
         <div inert={addRoundsModalOpen || newSessionModalOpen ? "" : undefined} className="w-full max-w-xs bg-page rounded-2xl border border-subtle p-6 flex flex-col items-center text-center">
           <div className="type-emoji leading-normal" aria-hidden="true">🎉</div>
           <div className="w-full flex flex-col items-center mt-5">
@@ -988,7 +988,7 @@ function PomodoroTimer() {
       )}
 
       <main inert={!setupComplete ? "" : undefined} className="w-full max-w-sm flex flex-col items-center">
-        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Focus Timer</h1>
+        <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking</h1>
         <h2 className="type-mode-label uppercase text-mode">
           {MODES[mode].label}
         </h2>
