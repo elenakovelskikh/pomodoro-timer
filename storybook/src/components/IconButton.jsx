@@ -1,5 +1,5 @@
 import React from "react";
-import { MODES } from "../tokens";
+import { ALL_MODES } from "../tokens";
 
 const SIZES = { md: "h-11 w-11", lg: "h-14 w-14" };
 const VARIANTS = {
@@ -18,7 +18,7 @@ export function IconButton({ icon, label, variant = "secondary", size = "md", mo
       aria-label={label}
       title={label}
       className={`flex items-center justify-center rounded-full aria-disabled:opacity-40 aria-disabled:cursor-not-allowed ${SIZES[size]} ${VARIANTS[variant]}`}
-      style={variant === "mode" ? { boxShadow: `0 2px 8px -2px ${MODES[mode].shadow}59` } : undefined}
+      style={variant === "mode" ? { boxShadow: `0 2px 8px -2px ${ALL_MODES[mode].shadow}59` } : undefined}
     >
       {icon}
     </button>

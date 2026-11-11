@@ -25,6 +25,19 @@ export const MODES = {
   longBreak: { label: "Long break", minutes: LONG_BREAK_MIN, ...MODE_COLORS.longBreak, emoji: "🌴" },
 };
 
+// Retro page. Left: the meeting's Pomodoro (focus colors, its own name and emoji). Right: the
+// speaker (5 min) or commentator (2 min) timer; past zero only its colors change, to overtime.
+export const SPEAKER_PRESETS = [2, 5];
+export const roleFor = (minutes) => (minutes === 2 ? "commentator" : "speaker");
+export const RETRO_MODES = {
+  meeting: { label: "Meeting", ...MODE_COLORS.focus, emoji: ["🌞", "🌧️", "🌈"] },
+  speaker: { label: "Speaker", ...MODE_COLORS.speaker, emoji: "🎤" },
+  commentator: { label: "Commentator", ...MODE_COLORS.speaker, emoji: "💬" },
+  overtime: { label: "Over time", ...MODE_COLORS.overtime },
+};
+// every mode a button or ring can be colored with
+export const ALL_MODES = { ...MODES, ...RETRO_MODES };
+
 export function formatTime(s) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
   const sec = (s % 60).toString().padStart(2, "0");
@@ -35,4 +48,9 @@ export function formatClock(date) {
   const h = date.getHours().toString().padStart(2, "0");
   const m = date.getMinutes().toString().padStart(2, "0");
   return `${h}:${m}`;
+}
+
+// for captions: 5:00, 12:30
+export function formatShort(s) {
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 }

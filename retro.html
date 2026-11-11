@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Violet Tomato – Retro timers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png" />
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="vendor/babel.min.js"></script>
+<script src="vendor/tailwindcss-3.4.17.js"></script>
+<script src="design-tokens.js"></script>
+<script>
+  tailwind.config = { future: { hoverOnlyWhenSupported: true }, theme: DESIGN_TOKENS.THEME, plugins: [DESIGN_TOKENS.typePlugin] };
+</script>
+<style>
+  button:focus:not(:focus-visible) { outline: none; }
+  button:focus-visible { outline-offset: 2px; }
+  /* Tailwind's animate-pulse, written out here: the display window only gets the styles that
+     exist when it opens, and Tailwind adds a class's CSS only once the page first uses it */
+  @keyframes retro-pulse { 50% { opacity: 0.5; } }
+  .retro-pulse { animation: retro-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body class="bg-page">
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+// Two independent timers for the weekly retro, shown side by side on a shared screen.
+// Left: Pomodoro 25/5 that stops at zero and waits for Start before the next round. The end of a
+// meeting round is silent; the end of a break plays the main timer's break-end melody.
+// Right: speaker (5 min) or commentator (2 min) timer. At zero it plays the focus-end sound and
+// keeps counting the time over in red, without further sounds.
+const { useState, useEffect, useRef, useId } = React;
+const { MODE_COLORS } = window.DESIGN_TOKENS;
+
+const FOCUS_MIN = 25;
+const BREAK_MIN = 5;
+const SPEAKER_PRESETS = [2, 5];
+const SPEAKER_DEFAULT_MIN = 5;
+// who the right timer is for, by its length
+const roleFor = (minutes) => (minutes === 2 ? "commentator" : "speaker");
+
+const MODES = {
+  focus: { label: "Meeting", emoji: ["🌞", "🌧️", "🌈"], ...MODE_COLORS.focus },
+  break: { label: "Break", emoji: "☕", ...MODE_COLORS.break },
+  speaker: { label: "Speaker", emoji: "🎤", ...MODE_COLORS.speaker },
+  commentator: { label: "Commentator", emoji: "💬", ...MODE_COLORS.speaker },
+  // only colors: past zero the heading, the ring, the time and Start turn red; the name stays
+  overtime: { ...MODE_COLORS.overtime },
+};
+
+function formatTime(s) {
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+}
+// for captions: 5:00, 12:30
+function formatShort(s) {
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+}
+
+// ---- Sounds: the main timer's melodies for the end of a focus round and of a break ----
+const N = { G4: 392.0, C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880.0, C6: 1046.5, E6: 1318.51, G6: 1567.98 };
+const FANFARE_EXTENDED = [
+  { freq: N.G4, start: 0,    dur: 0.2 },
+  { freq: N.C5, start: 0.15, dur: 0.2 },
+  { freq: N.E5, start: 0.30, dur: 0.2 },
+  { freq: N.G5, start: 0.45, dur: 0.2 },
+  { freq: N.C6, start: 0.60, dur: 0.2 },
+  { freq: N.E6, start: 0.75, dur: 0.2 },
+  { freq: N.G6, start: 0.90, dur: 0.25 },
+  { freq: N.C6, start: 1.10, dur: 0.8 },
+];
+// how long the break-end melody plays: the "Break complete" message stays up this long
+const BREAK_SOUND_MS = 1400;
+const PENTATONIC_CLIMB = [
+  { freq: N.C5, start: 0,    dur: 0.22 },
+  { freq: N.D5, start: 0.16, dur: 0.22 },
+  { freq: N.E5, start: 0.32, dur: 0.22 },
+  { freq: N.G5, start: 0.48, dur: 0.22 },
+  { freq: N.A5, start: 0.64, dur: 0.22 },
+  { freq: N.C6, start: 0.80, dur: 0.6 },
+];
+
+// One audio context for the whole page, created and unlocked by the first click or key press.
+// Safari keeps a context that was created without a click muted, and a timer reaching zero isn't
+// a click, so the sound has to be unlocked ahead of time.
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state !== "running") audioCtx.resume().catch(() => {});
+  } catch {}
+}
+["pointerdown", "keydown", "touchend"].forEach((type) => document.addEventListener(type, unlockAudio, { capture: true }));
+
+function playNotes(notes) {
+  unlockAudio();
+  const ctx = audioCtx;
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  notes.forEach(({ freq, start, dur, gain = 0.22 }) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const t0 = now + start;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+  });
+}
+
+// ---- Icons ----
+function Icon({ children, size = 20 }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true" focusable="false" style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }}>
+      {children}
+    </svg>
+  );
+}
+const PlayIcon = () => <Icon><polygon points="6 3 20 12 6 21 6 3" /></Icon>;
+const PauseIcon = () => <Icon><rect x="14" y="4" width="4" height="16" rx="1" /><rect x="6" y="4" width="4" height="16" rx="1" /></Icon>;
+const RotateCcwIcon = () => <Icon><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icon>;
+const SkipForwardIcon = () => <Icon><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
+// lucide "square"
+const StopIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" /></Icon>;
+const ChevronDownIcon = ({ size }) => <Icon size={size}><path d="m6 9 6 6 6-6" /></Icon>;
+const ChevronUpIcon = ({ size }) => <Icon size={size}><path d="m18 15-6-6-6 6" /></Icon>;
+
+// ---- Timer clock ----
+// The countdown is derived from real time (time run so far plus the run in progress), so a
+// throttled background tab still shows the right number when looked at again.
+const idleClock = () => ({ runMs: 0, runningSince: null });
+// Never below zero: `now` from the last render can be up to a quarter second older than the
+// moment Start was pressed, which would otherwise show one second too many (05:01).
+const elapsedMs = (c, now) => c.runMs + (c.runningSince != null ? Math.max(0, now - c.runningSince) : 0);
+const startClock = (c, now) => ({ ...c, runningSince: now });
+const pauseClock = (c, now) => ({ runMs: elapsedMs(c, now), runningSince: null });
+
+// Re-renders about 4 times a second, so the seconds tick over on time. While the display window
+// is open the ticks come from it: it's the one on screen, while this tab may be hidden behind the
+// call app, and a hidden tab's timers can slow down to once a minute.
+function useNow(win) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const w = win || window;
+    const id = w.setInterval(() => setNow(Date.now()), 250);
+    return () => { try { w.clearInterval(id); } catch {} };
+  }, [win]);
+  return now;
+}
+
+// ---- Display window: only the two timers, to share on screen ----
+// Picture-in-picture window where the browser supports it (Chrome, Edge: no address bar, stays on
+// top), otherwise a small popup (double-click it for full screen). The timers are rendered into it
+// from this page, so the buttons here keep working and both always show the same thing.
+async function openDisplayWindow() {
+  let win = null;
+  if ("documentPictureInPicture" in window) {
+    try { win = await window.documentPictureInPicture.requestWindow({ width: 760, height: 440 }); } catch {}
+  }
+  if (!win) {
+    win = window.open("", "retro-display", "popup,width=760,height=440");
+    if (!win) return null;
+    win.document.open();
+    win.document.write('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Retro timers</title></head><body></body></html>');
+    win.document.close();
+    win.document.addEventListener("dblclick", () => {
+      const doc = win.document;
+      (doc.fullscreenElement ? doc.exitFullscreen() : doc.documentElement.requestFullscreen()).catch(() => {});
+    });
+  }
+  const doc = win.document;
+  // the page's styles (Tailwind writes them into <style> tags here)
+  document.querySelectorAll('style, link[rel="stylesheet"]').forEach((n) => doc.head.appendChild(n.cloneNode(true)));
+  doc.body.className = "bg-page";
+  doc.body.style.cssText = "margin:0;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden";
+  const stage = doc.createElement("div");
+  stage.style.cssText = "display:flex;flex-shrink:0;align-items:flex-start;gap:48px;transform-origin:center";
+  const left = doc.createElement("div");
+  const right = doc.createElement("div");
+  stage.append(left, right);
+  doc.body.append(stage);
+  // Scale the pair to fill the window, whatever size it's dragged to. The pair's own size is
+  // known up front (two 18rem columns, the gap, heading + ring), so the fit doesn't depend on
+  // measuring it at the right moment; re-checked twice a second as well, since Safari doesn't
+  // always report the popup's final size right away.
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const pairWidth = 2 * 18 * rem + 48;
+  const pairHeight = 1.5625 * rem + 1.5 * rem + 18 * rem;
+  const margin = 32;
+  let lastScale = 0;
+  const fit = () => {
+    const width = Math.max(pairWidth, stage.offsetWidth);
+    const height = Math.max(pairHeight, stage.offsetHeight);
+    const viewW = doc.documentElement.clientWidth || win.innerWidth;
+    const viewH = doc.documentElement.clientHeight || win.innerHeight;
+    const scale = Math.max(0.1, Math.min((viewW - 2 * margin) / width, (viewH - 2 * margin) / height));
+    if (Math.abs(scale - lastScale) < 0.001) return;
+    lastScale = scale;
+    stage.style.transform = `scale(${scale})`;
+  };
+  fit();
+  win.addEventListener("resize", fit);
+  win.setInterval(fit, 500);
+  return { win, left, right };
+}
+
+// Keeps the screen awake while a timer runs (the laptop sharing the screen shouldn't dim).
+function useWakeLock(active) {
+  useEffect(() => {
+    if (!active || !("wakeLock" in navigator)) return;
+    let lock = null;
+    let cancelled = false;
+    const acquire = async () => {
+      try {
+        lock = await navigator.wakeLock.request("screen");
+        if (cancelled) lock.release().catch(() => {});
+      } catch {}
+    };
+    const onVisible = () => document.visibilityState === "visible" && acquire();
+    acquire();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release().catch(() => {});
+    };
+  }, [active]);
+}
+
+// ---- Views ----
+// Ring around the time. progress: share of the time that has passed (the arc shrinks); the
+// moving tip shows only while there's time left.
+function Ring({ mode, progress, showTip, pulse = false, children }) {
+  const uid = useId().replace(/:/g, "");
+  const { arc, shadow } = MODES[mode];
+  const radius = 120;
+  const circumference = 2 * Math.PI * radius;
+  const tipDeg = (1 - progress) * 360;
+  const shadowDeg = 1.5;
+  const shadowCenter = {
+    x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
+    y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
+  };
+  return (
+    <div className={`relative w-72 h-72 ${pulse ? "retro-pulse" : ""}`}>
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id={`tip-${uid}`}>
+            <stop offset="0%" stopColor={shadow} stopOpacity="0.25" />
+            <stop offset="45%" stopColor={shadow} stopOpacity="0.07" />
+            <stop offset="100%" stopColor={shadow} stopOpacity="0" />
+          </radialGradient>
+          <clipPath id={`band-${uid}`}>
+            <path clipRule="evenodd"
+              d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
+                  M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`} />
+          </clipPath>
+        </defs>
+        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
+        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={circumference * progress}
+          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s" }} />
+        <g style={{ transform: `rotate(${tipDeg}deg)`, transformOrigin: "140px 140px", transition: "transform 1s linear", display: showTip ? undefined : "none" }}>
+          <circle cx={shadowCenter.x} cy={shadowCenter.y} r="8" fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
+          <circle cx={140 + radius} cy="140" r="5" fill={arc} />
+        </g>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+function RingContent({ mode, time, caption, timeColor }) {
+  const emoji = MODES[mode].emoji;
+  return (
+    <>
+      <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3" aria-hidden="true">
+        {(Array.isArray(emoji) ? emoji : [emoji]).map((e, i) => <span key={i} className="type-emoji">{e}</span>)}
+      </div>
+      <div className={`type-display tabular-nums ${timeColor ? "" : "text-primary"}`} style={timeColor ? { color: timeColor } : undefined}>{time}</div>
+      <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">{caption}</div>
+    </>
+  );
+}
+
+// disabled is aria-disabled, so keyboard focus isn't dropped when a press disables the button
+function RoundButton({ label, onClick, disabled = false, children }) {
+  return (
+    <button onClick={disabled ? undefined : onClick} aria-disabled={disabled || undefined} aria-label={label} title={label}
+      className="flex items-center justify-center rounded-full h-11 w-11 bg-button-secondary text-button-secondary hover:bg-button-secondary-hover hover:text-button-secondary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed">
+      {children}
+    </button>
+  );
+}
+
+function PlayPauseButton({ label, mode, onClick, disabled = false }) {
+  const running = label === "Pause";
+  return (
+    <button onClick={disabled ? undefined : onClick} aria-disabled={disabled || undefined} aria-label={label} title={label}
+      className={`flex items-center justify-center h-14 w-14 rounded-full aria-disabled:opacity-40 aria-disabled:cursor-not-allowed ${running
+        ? "bg-button-secondary text-button-secondary hover:bg-button-secondary-hover hover:text-button-secondary-hover"
+        : "bg-button-mode hover:bg-button-mode-hover text-button-primary"}`}
+      style={running ? undefined : { boxShadow: `0 2px 8px -2px ${MODES[mode].shadow}59` }}>
+      {running ? <PauseIcon /> : <PlayIcon />}
+    </button>
+  );
+}
+
+// Heading and ring of a timer; shown on the page and, while it's open, in the display window too
+function TimerFace({ mode, label, slot, children }) {
+  const face = <TimerColumn mode={mode} label={label}>{children}</TimerColumn>;
+  return slot ? ReactDOM.createPortal(face, slot) : null;
+}
+
+// Sets --mode-accent for everything inside, like the main app's screen root
+function TimerColumn({ mode, label, children }) {
+  return (
+    <section aria-label={label} className="w-72 flex flex-col items-center"
+      style={{ "--mode-accent": MODES[mode].accent, "--mode-accent-hover": MODES[mode].accentHover }}>
+      {children}
+    </section>
+  );
+}
+
+function Dialog({ title, description, confirmLabel, onConfirm, onCancel }) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const ref = useRef(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    ref.current?.focus();
+    return () => previous?.focus?.();
+  }, []);
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-overlay" onKeyDown={(e) => e.key === "Escape" && onCancel()}>
+      <div className="min-h-full flex items-center justify-center p-6">
+        <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || e.target !== e.currentTarget) return;
+            e.preventDefault();
+            onConfirm();
+          }}
+          className="w-full max-w-[26rem] bg-page rounded-2xl border border-subtle shadow-xl p-6 flex flex-col items-center gap-6 focus:outline-none">
+          <div className="w-full text-left">
+            <h2 id={titleId} className="type-heading text-primary">{title}</h2>
+            <p id={descriptionId} className="type-body text-secondary mt-3">{description}</p>
+          </div>
+          <div className="w-full flex flex-wrap-reverse gap-2">
+            <button onClick={onCancel}
+              className="grow h-11 px-6 rounded-xl bg-button-secondary type-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap">
+              Cancel
+            </button>
+            <button onClick={onConfirm}
+              className="grow-[999] h-11 px-6 rounded-xl text-button-primary type-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
+              style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadow}59` }}>
+              {confirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Turn log ----
+// Finished turns grouped by the meeting round (the left timer's "Round N") they happened in.
+// log: [{ round, turns: [{ role, seconds, limit }, …] }, …]
+function addTurn(log, round, turn) {
+  const last = log[log.length - 1];
+  if (last && last.round === round) return [...log.slice(0, -1), { round, turns: [...last.turns, turn] }];
+  return [...log, { round, turns: [turn] }];
+}
+
+// "2 rounds ⌄", the same toggle as "2 completed" under the main timer
+function LogToggle({ count, open, onClick }) {
+  return (
+    <button onClick={onClick} aria-expanded={count > 0 ? open : undefined} aria-controls={count > 0 ? "turn-log" : undefined}
+      className="flex items-center min-h-11 text-button-tertiary hover:text-button-tertiary-hover">
+      <span className="flex items-baseline gap-1.5">
+        <span className="type-heading text-primary">{count}</span>
+        <span className="type-body text-primary">{count === 1 ? "round" : "rounds"}</span>
+        {count > 0 && <span className="self-end py-px">{open ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}</span>}
+      </span>
+    </button>
+  );
+}
+
+// Like the main log: name, then the time in monospace. A turn that ran over its limit is in red.
+function TurnLog({ log }) {
+  return (
+    <div id="turn-log" className="flex flex-col items-start gap-3 mt-4 text-left">
+      {log.map(({ round, turns }) => (
+        <div key={round} className="flex flex-col items-start gap-0.5">
+          <div className="type-caption text-primary">Round {round}</div>
+          {turns.map((t, i) => (
+            <div key={i} className="flex type-caption text-secondary">
+              <span className="inline-block w-24">{MODES[t.role].label}</span>
+              <span className="font-mono" style={t.seconds > t.limit ? { color: MODES.overtime.accent } : undefined}>
+                {formatTime(t.seconds)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Presets under the speaker timer: the current length is marked as selected.
+function PresetPills({ presets, value, onPick }) {
+  return (
+    <div role="group" aria-label="Speaker time" className="flex gap-2">
+      {presets.map((min) => {
+        const selected = min === value;
+        return (
+          <button key={min} type="button" aria-pressed={selected} onClick={() => onPick(min)}
+            className={`px-6 py-3 rounded-xl type-control whitespace-nowrap ${selected
+              ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
+              : "ring-1 ring-inset ring-radio hover:ring-radio-hover text-button-tertiary hover:text-button-tertiary-hover"}`}>
+            {min} min
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---- Left: Pomodoro ----
+function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
+  const [mode, setMode] = useState("focus");
+  const [round, setRound] = useState(1);
+  const [clock, setClock] = useState(idleClock);
+  const total = (mode === "focus" ? FOCUS_MIN : BREAK_MIN) * 60;
+  const running = clock.runningSince != null;
+  const left = Math.max(0, total - Math.floor(elapsedMs(clock, now) / 1000));
+
+  // While the break-end melody plays, the ring pulses with "Break complete" (as in the main timer)
+  // and the buttons wait; then the next meeting round is lined up. Kept as a time rather than a
+  // timeout, so it ends on the same clock as everything else.
+  const [breakEndUntil, setBreakEndUntil] = useState(null);
+  const breakEnding = breakEndUntil != null;
+
+  // Next round is lined up but not started: it waits for Start. A break ends with the sound and the
+  // pulse, whether its time ran out or it was skipped; a meeting round ends silently, right away.
+  function goToNext() {
+    if (mode === "break") {
+      playNotes(PENTATONIC_CLIMB);
+      setClock(pauseClock(clock, Date.now()));
+      setBreakEndUntil(Date.now() + BREAK_SOUND_MS);
+      return;
+    }
+    setMode("break");
+    setClock(idleClock());
+  }
+
+  useEffect(() => {
+    if (!breakEnding || now < breakEndUntil) return;
+    setBreakEndUntil(null);
+    setRound((r) => r + 1);
+    setMode("focus");
+    setClock(idleClock());
+  }, [breakEnding, now]);
+
+  // time's up: move on to the next round and wait
+  useEffect(() => {
+    if (!running || left !== 0 || breakEnding) return;
+    goToNext();
+  }, [running, left]);
+
+  useEffect(() => onRunningChange(running), [running]);
+  useEffect(() => onRoundChange(round), [round]);
+
+  const label = running ? "Pause" : left === total ? "Start" : "Resume";
+  const face = (
+    <>
+      <h2 className="type-mode-label uppercase text-mode">{MODES[mode].label}</h2>
+      <div className="mt-6">
+        <Ring mode={mode} progress={breakEnding ? 1 : 1 - left / total} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
+          {breakEnding ? (
+            <>
+              <div className="type-emoji" style={{ lineHeight: "2.125rem" }} aria-hidden="true">🙌</div>
+              <div className="type-body text-secondary" style={{ marginTop: "0.25rem" }}>Break complete</div>
+            </>
+          ) : (
+            <RingContent mode={mode} time={formatTime(left)} caption={mode === "focus" ? `Round ${round}` : ""} />
+          )}
+        </Ring>
+      </div>
+    </>
+  );
+  return (
+    <TimerColumn mode={mode} label="Pomodoro">
+      {face}
+      <TimerFace mode={mode} label="Pomodoro" slot={displaySlot}>{face}</TimerFace>
+      <div className="flex items-center gap-5 mt-6">
+        <RoundButton label="Reset current round" disabled={breakEnding} onClick={() => setClock(idleClock())}><RotateCcwIcon /></RoundButton>
+        <PlayPauseButton label={label} mode={mode} disabled={breakEnding} onClick={() => setClock(running ? pauseClock(clock, Date.now()) : startClock(clock, Date.now()))} />
+        <RoundButton label={mode === "focus" ? "Skip to break" : "Skip to focus"} disabled={breakEnding} onClick={goToNext}><SkipForwardIcon /></RoundButton>
+      </div>
+    </TimerColumn>
+  );
+}
+
+// ---- Right: speaker timer ----
+function SpeakerTimer({ now, onRunningChange, onTurn, displaySlot }) {
+  const [minutes, setMinutes] = useState(SPEAKER_DEFAULT_MIN);
+  const [clock, setClock] = useState(idleClock);
+  // Stop: the turn is over. The final time stays on screen; Start begins a new turn from the top.
+  const [stopped, setStopped] = useState(false);
+  const [pendingPreset, setPendingPreset] = useState(null);
+  const role = roleFor(minutes);
+  const total = minutes * 60;
+  const running = clock.runningSince != null;
+  const elapsed = Math.floor(elapsedMs(clock, now) / 1000);
+  const left = total - elapsed; // goes below zero
+  const over = left <= 0;
+  // fresh: nothing to lose by starting over (never started, or stopped)
+  const fresh = !running && (clock.runMs === 0 || stopped);
+
+  // One sound, at zero. beeped remembers it was played, so pausing and resuming in overtime
+  // doesn't play it again; a new turn (reset, preset, Start after Stop) clears it.
+  const beeped = useRef(false);
+  useEffect(() => {
+    if (!running || left > 0 || beeped.current) return;
+    beeped.current = true;
+    playNotes(FANFARE_EXTENDED);
+  }, [running, left]);
+
+  useEffect(() => onRunningChange(running), [running]);
+
+  function reset(min = minutes) {
+    setMinutes(min);
+    setClock(idleClock());
+    setStopped(false);
+    beeped.current = false;
+  }
+
+  function playPause() {
+    const t = Date.now();
+    if (running) setClock(pauseClock(clock, t));
+    else if (stopped) {
+      reset();
+      setClock(startClock(idleClock(), t));
+    } else setClock(startClock(clock, t));
+  }
+
+  // A turn goes into the log when it ends: with Stop, or when a preset switches to the next person
+  // without Stop. Reset throws the turn away (a do-over), so it isn't logged.
+  function logTurn() {
+    const seconds = Math.floor(elapsedMs(clock, Date.now()) / 1000);
+    if (seconds > 0) onTurn({ role, seconds, limit: total });
+  }
+
+  function stop() {
+    logTurn();
+    setClock(pauseClock(clock, Date.now()));
+    setStopped(true);
+  }
+
+  // A preset only asks first when it would throw away a turn that is still under way.
+  function pickPreset(min) {
+    if (fresh) reset(min);
+    else setPendingPreset(min);
+  }
+
+  const label = running ? "Pause" : fresh ? "Start" : "Resume";
+  // past zero: the time over in red, and the whole turn's time underneath
+  const caption = over ? `Total ${formatShort(elapsed)}` : formatShort(total);
+  const colorMode = over ? "overtime" : role;
+  const face = (
+    <>
+      <h2 className="type-mode-label uppercase text-mode">{MODES[role].label}</h2>
+      <div className="mt-6">
+        {/* past zero the whole ring turns red */}
+        <Ring mode={colorMode} progress={over ? 0 : 1 - left / total} showTip={!over}>
+          <RingContent mode={role} time={formatTime(Math.abs(left))} caption={caption} timeColor={over ? MODES.overtime.accent : undefined} />
+        </Ring>
+      </div>
+    </>
+  );
+  return (
+    <TimerColumn mode={colorMode} label="Speaker timer">
+      {face}
+      <TimerFace mode={colorMode} label="Speaker timer" slot={displaySlot}>{face}</TimerFace>
+      <div className="flex items-center gap-5 mt-6">
+        <RoundButton label="Reset timer" onClick={() => reset()}><RotateCcwIcon /></RoundButton>
+        <PlayPauseButton label={label} mode={colorMode} onClick={playPause} />
+        <RoundButton label="Stop" disabled={fresh} onClick={stop}><StopIcon /></RoundButton>
+      </div>
+      <div className="mt-6">
+        <PresetPills presets={SPEAKER_PRESETS} value={minutes} onPick={pickPreset} />
+      </div>
+      {pendingPreset != null && (
+        <Dialog
+          title={`Set the timer to ${pendingPreset} min?`}
+          description={`This turn ends and goes into the log. The timer resets to ${formatTime(pendingPreset * 60)} and waits for Start.`}
+          confirmLabel={`Set ${pendingPreset} min`}
+          onConfirm={() => { logTurn(); reset(pendingPreset); setPendingPreset(null); }}
+          onCancel={() => setPendingPreset(null)}
+        />
+      )}
+    </TimerColumn>
+  );
+}
+
+function RetroScreen() {
+  const [display, setDisplay] = useState(null); // { win, left, right } while the display window is open
+  const now = useNow(display?.win);
+  const [pomodoroRunning, setPomodoroRunning] = useState(false);
+  const [speakerRunning, setSpeakerRunning] = useState(false);
+  useWakeLock(pomodoroRunning || speakerRunning);
+  const [meetingRound, setMeetingRound] = useState(1);
+  const [log, setLog] = useState([]);
+  const [logOpen, setLogOpen] = useState(false);
+
+  async function toggleDisplay() {
+    if (display) {
+      display.win.close();
+      return;
+    }
+    const opened = await openDisplayWindow();
+    if (!opened) return;
+    opened.win.addEventListener("pagehide", () => setDisplay(null));
+    setDisplay(opened);
+  }
+  // closing this page closes the popup too (a picture-in-picture window closes by itself)
+  useEffect(() => {
+    if (!display) return;
+    const close = () => display.win.close();
+    window.addEventListener("pagehide", close);
+    return () => window.removeEventListener("pagehide", close);
+  }, [display]);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-10 px-4 py-10">
+      <main className="flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12">
+        <h1 className="sr-only">Retro timers</h1>
+        <PomodoroTimer now={now} onRunningChange={setPomodoroRunning} onRoundChange={setMeetingRound} displaySlot={display?.left} />
+        <SpeakerTimer now={now} onRunningChange={setSpeakerRunning} onTurn={(turn) => setLog((l) => addTurn(l, meetingRound, turn))} displaySlot={display?.right} />
+      </main>
+      {/* the turn log, centered under both timers */}
+      <div className="flex flex-col items-center gap-1">
+        <LogToggle count={log.length} open={logOpen} onClick={() => log.length > 0 && setLogOpen((o) => !o)} />
+        {logOpen && log.length > 0 && <TurnLog log={log} />}
+      </div>
+      <button onClick={toggleDisplay} className="flex items-center justify-center h-11 type-control text-button-tertiary hover:text-button-tertiary-hover">
+        {display ? "Close display window" : "Open display window to share"}
+      </button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<RetroScreen />);
+</script>
+</body>
+</html>

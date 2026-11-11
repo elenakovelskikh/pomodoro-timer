@@ -23,6 +23,7 @@
     violet: { 50: "#f5f3ff", 200: "#d1baf6", 500: "#7c3aed", 700: "#6d28d9" },
     blue: { 200: "#abdef5", 500: "#009ae2", 700: "#006da1" },
     teal: { 200: "#abdedd", 500: "#009c99", 700: "#007371" },
+    red: { 200: "#f8c4c4", 500: "#dc2626", 700: "#b91c1c" },
   };
   const P = PALETTE;
 
@@ -32,6 +33,9 @@
     focus: { accent: P.violet[500], accentHover: P.violet[700], arc: P.violet[200], shadow: P.violet[700] },
     break: { accent: P.blue[500], accentHover: P.blue[700], arc: P.blue[200], shadow: P.blue[700] },
     longBreak: { accent: P.teal[500], accentHover: P.teal[700], arc: P.teal[200], shadow: P.teal[700] },
+    // Retro page: the speaker timer while counting down, and once it runs past zero
+    speaker: { accent: P.teal[500], accentHover: P.teal[700], arc: P.teal[200], shadow: P.teal[700] },
+    overtime: { accent: P.red[500], accentHover: P.red[700], arc: P.red[200], shadow: P.red[700] },
   };
 
   const THEME = {
