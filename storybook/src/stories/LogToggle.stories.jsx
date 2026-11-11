@@ -16,7 +16,7 @@ export default {
   component: LogToggle,
   tags: ["autodocs"],
   argTypes: {
-    count: { control: { type: "number", min: 0 }, description: "Number of completed rounds", table: { type: { summary: "number" } } },
+    count: { control: { type: "number", min: 1 }, description: "Number of completed rounds", table: { type: { summary: "number" } } },
     open: { control: "boolean", description: "Log is open", table: { type: { summary: "boolean" } } },
     onClick: { control: false, description: "Toggle the log", table: { type: { summary: "() => void" } } },
   },
@@ -36,4 +36,3 @@ export default {
 
 export const Default = {};
 export const Open = { args: { open: true } };
-export const Empty = { args: { count: 0 }, parameters: { docs: { description: { story: "Nothing completed yet." } } } };

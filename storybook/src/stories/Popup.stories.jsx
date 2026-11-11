@@ -41,7 +41,6 @@ export const Default = {
 };
 
 export const Confirm = {
-  name: "Are you sure…?",
   args: {
     title: "Set up new session",
     description: "Are you sure you want to set up a new session? The session log will be deleted, and this can't be undone.",
