@@ -189,7 +189,9 @@ function HistoryLog({ history }) {
 
 // The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 10px;
 // the row's padding is trimmed to match, so the footer keeps its height.
-function Credit({ inert }) {
+// privacyHref: the page's privacy policy — the site's own relative page; the Activity passes a full
+// address, since inside Discord only full links open (in the browser, through Discord).
+function Credit({ inert, privacyHref = "privacy.html" }) {
   const link = "inline-flex items-center min-h-6 hover:text-label underline";
   return (
     <footer
@@ -204,6 +206,10 @@ function Credit({ inert }) {
       <span aria-hidden="true">·</span>
       <a href="https://github.com/elenakovelskikh" target="_blank" rel="noopener noreferrer" className={link}>
         GitHub<span className="sr-only"> (opens in a new tab)</span>
+      </a>
+      <span aria-hidden="true">·</span>
+      <a href={privacyHref} target="_blank" rel="noopener noreferrer" className={link}>
+        Privacy<span className="sr-only"> (opens in a new tab)</span>
       </a>
     </footer>
   );
