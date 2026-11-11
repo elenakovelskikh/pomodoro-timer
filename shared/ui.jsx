@@ -198,6 +198,10 @@ function Credit({ inert, privacyHref = "privacy.html" }) {
       inert={inert ? "" : undefined}
       className="w-full flex items-center justify-center gap-1 py-[0.6875rem] type-credit text-muted"
     >
+      <a href={privacyHref} target="_blank" rel="noopener noreferrer" className={link}>
+        Privacy<span className="sr-only"> (opens in a new tab)</span>
+      </a>
+      <span aria-hidden="true">·</span>
       <span>Made by Elena Kovelskikh</span>
       <span aria-hidden="true">·</span>
       <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className={link}>
@@ -206,10 +210,6 @@ function Credit({ inert, privacyHref = "privacy.html" }) {
       <span aria-hidden="true">·</span>
       <a href="https://github.com/elenakovelskikh" target="_blank" rel="noopener noreferrer" className={link}>
         GitHub<span className="sr-only"> (opens in a new tab)</span>
-      </a>
-      <span aria-hidden="true">·</span>
-      <a href={privacyHref} target="_blank" rel="noopener noreferrer" className={link}>
-        Privacy<span className="sr-only"> (opens in a new tab)</span>
       </a>
     </footer>
   );
