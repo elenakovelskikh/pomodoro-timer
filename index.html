@@ -1168,5 +1168,16 @@ function PomodoroTimer() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(<PomodoroTimer />);
 </script>
+<!-- Cloudflare Web Analytics: visit counts without cookies or anything stored on the device, so
+     no consent banner is needed. Loaded only on the live site, so local testing isn't counted. -->
+<script>
+  if (location.hostname === "elenakovelskikh.github.io") {
+    const beacon = document.createElement("script");
+    beacon.type = "module";
+    beacon.src = "https://static.cloudflareinsights.com/beacon.min.js";
+    beacon.dataset.cfBeacon = JSON.stringify({ token: "cb06604613bd42a993265b528af4f12d" });
+    document.body.appendChild(beacon);
+  }
+</script>
 </body>
 </html>
