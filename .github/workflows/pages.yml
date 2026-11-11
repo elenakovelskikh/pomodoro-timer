@@ -38,6 +38,20 @@ jobs:
           mkdir _site
           git ls-files | grep -v -e '^storybook/' -e '^\.github/' | xargs -I{} cp -L --parents {} _site/
 
+      # Discord only runs inline scripts that its proxy marks with a nonce; a script loaded with
+      # src= and executed by Babel is blocked there. So the Activity gets shared/ui.jsx written
+      # into its page instead of linked (the site keeps the link).
+      - name: Inline the shared UI code into the Discord Activity
+        run: |
+          python3 - <<'EOF'
+          page = "_site/discord/index.html"
+          tag = '<script type="text/babel" src="shared/ui.jsx"></script>'
+          html = open(page, encoding="utf-8").read()
+          code = open("shared/ui.jsx", encoding="utf-8").read()
+          assert html.count(tag) == 1 and "</script" not in code
+          open(page, "w", encoding="utf-8").write(html.replace(tag, '<script type="text/babel">\n' + code + '</script>'))
+          EOF
+
       - name: Build Storybook
         working-directory: storybook
         run: |
