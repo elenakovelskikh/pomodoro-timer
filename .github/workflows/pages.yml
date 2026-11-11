@@ -1,5 +1,7 @@
-# Publishes the site and its Storybook to GitHub Pages on every push to main:
+# Publishes the site, the Discord Activity and Storybook to GitHub Pages on every push to main:
 #   /            the site (the repo's tracked files, without storybook/ and .github/)
+#   /discord/    the Discord Activity; its links to shared files (../shared, ../design-tokens.js,
+#                ../vendor/…) become real copies, since Discord's proxy only serves that folder
 #   /storybook/  the built Storybook
 # Needs Settings → Pages → Source set to "GitHub Actions".
 name: Deploy to GitHub Pages
@@ -34,7 +36,7 @@ jobs:
       - name: Copy the site
         run: |
           mkdir _site
-          git ls-files | grep -v -e '^storybook/' -e '^\.github/' | xargs -I{} cp --parents {} _site/
+          git ls-files | grep -v -e '^storybook/' -e '^\.github/' | xargs -I{} cp -L --parents {} _site/
 
       - name: Build Storybook
         working-directory: storybook
