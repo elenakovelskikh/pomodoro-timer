@@ -6,7 +6,14 @@ import { Button } from "./Button";
 // the card in normal flow (for Storybook); without it the card sits over the page on the white veil.
 // While focus is on the card itself (as right after it opens in the app), Enter runs onPrimary;
 // enterHint is read by screen readers to tell about it.
-export function Popup({ title, description, enterHint, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, inline = false }) {
+//
+// buttons="confirm" is for "Are you sure…?" popups (End session, Set up new session): not going
+// ahead is the safe choice, so the primary button is Cancel and comes first. While both fit on one
+// line (a row of 20.75rem or more) each is as wide as its text, primary on the left edge and
+// secondary on the right; narrower, they stack at full width with the primary on top. The basis
+// is huge and positive below that width (one button per line, capped at full width) and negative,
+// so ignored, above it.
+export function Popup({ title, description, enterHint, children, primaryLabel = "Button", onPrimary, secondaryLabel, onSecondary, buttons = "default", inline = false }) {
   const titleId = useId();
   const descriptionId = useId();
   const hintId = useId();
@@ -33,7 +40,12 @@ export function Popup({ title, description, enterHint, children, primaryLabel = 
         </div>
       )}
       {children}
-      {secondaryLabel ? (
+      {secondaryLabel && buttons === "confirm" ? (
+        <div className="w-full flex flex-wrap justify-between gap-2">
+          <div className="max-w-full basis-[calc((20.75rem_-_100%)*999)]"><Button variant="primary" onClick={onPrimary}>{primaryLabel}</Button></div>
+          <div className="max-w-full basis-[calc((20.75rem_-_100%)*999)]"><Button variant="secondary" onClick={onSecondary}>{secondaryLabel}</Button></div>
+        </div>
+      ) : secondaryLabel ? (
         // One row (secondary hugging its label, primary taking the rest) while both labels fit on
         // one line; once they don't, the primary wraps onto its own line and wrap-reverse puts it
         // above the secondary, both full width. The 1 : 999 grow ratio keeps the secondary hugging.

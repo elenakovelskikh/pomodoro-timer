@@ -25,6 +25,7 @@ export const Default = {
     onPrimary: action("primary", "Primary button click"),
     secondaryLabel: { control: "text", description: "Secondary button text (optional)", table: { type: { summary: "string" } } },
     onSecondary: action("secondary", "Secondary button click"),
+    buttons: { control: "inline-radio", options: ["default", "confirm"], description: "default: secondary on the left hugging its text, primary taking the rest; confirm: primary (Cancel) left, secondary right, both as wide as their text", table: { type: { summary: '"default" | "confirm"' }, defaultValue: { summary: '"default"' } } },
     inline: { control: false, description: "Show without the backdrop (preview only)", table: { type: { summary: "boolean" } } },
     rounds: { table: { disable: true } },
   },
@@ -37,4 +38,18 @@ export const Default = {
       </Popup>
     );
   },
+};
+
+export const Confirm = {
+  name: "Are you sure…?",
+  args: {
+    title: "Set up new session",
+    description: "Are you sure you want to set up a new session? The session log will be deleted, and this can't be undone.",
+    primaryLabel: "Cancel",
+    secondaryLabel: "Yes, set up new session",
+    buttons: "confirm",
+    inline: true,
+  },
+  parameters: { docs: { description: { story: "Confirmation before something that can't be undone. Cancel is the primary button; on narrow screens the two stack, Cancel on top." } } },
+  render: (args) => <Popup {...args} />,
 };
