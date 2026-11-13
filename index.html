@@ -121,26 +121,45 @@ function About({ inert }) {
         </ul>
       </div>
       <div className="flex flex-col gap-3">
-        <h2 className={h}>Focus together on Discord</h2>
-        <p className={p}>
-          Violet Tomato also runs as a Discord Activity: everyone in a voice channel sees and controls the
-          same timer, without anyone sharing their screen.
-        </p>
-      </div>
-      <div className="flex flex-col gap-3">
         <h2 className={h}>Questions</h2>
-        <div className="flex flex-col gap-4">
-          <div>
-            <h3 className="type-control text-primary">Is it free? Do I need an account?</h3>
-            <p className={`${p} mt-1`}>It's free, and there's nothing to sign up for. Your settings and log stay in your browser.</p>
-          </div>
-          <div>
-            <h3 className="type-control text-primary">What is the Pomodoro Technique?</h3>
-            <p className={`${p} mt-1`}>
-              A way of working in short focused intervals, traditionally 25 minutes, separated by short breaks,
-              with a longer break after every four rounds.
-            </p>
-          </div>
+        {/* native disclosure widgets: keyboard and screen reader support come with them, and search
+            engines read the collapsed answers too */}
+        <div className="flex flex-col">
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"What is the Pomodoro Technique?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>A way of working in short focused intervals, traditionally 25 minutes, separated by short breaks, with a longer break after every four rounds.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Why do I need breaks?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>Attention fades during long stretches of work. A short break every 25 minutes lets you rest before you're drained, so you can keep focusing for longer over the day. The timer starts the break for you, so you don't have to remember.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Can it help with ADHD?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>Some people with ADHD find it easier to start and to keep going when an outside timer structures the time for them: short, clear rounds, switches that happen on their own, and a sound when it's time to change. It's a tool, not a treatment, so use it in whatever way works for you.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"I'm in hyperfocus. Why should I stop?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>You don't have to. Hyperfocus can be productive, but it's also easy to lose track of time, skip food and water, or crash afterwards. The sound is a gentle check-in: if you want to keep going, press Skip to jump past the break, or Pause to stop the clock.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Is it free? Do I need an account?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>It's free, and there's nothing to sign up for. Your settings and log stay in your browser.</p>
+          </details>
         </div>
       </div>
     </section>
