@@ -121,7 +121,7 @@ function About({ inert }) {
         </ul>
       </div>
       <div className="flex flex-col gap-3">
-        <h2 className={h}>Questions</h2>
+        <h2 className={h}>FAQ</h2>
         {/* native disclosure widgets: keyboard and screen reader support come with them, and search
             engines read the collapsed answers too */}
         <div className="flex flex-col">
@@ -144,21 +144,21 @@ function About({ inert }) {
               {"Can it help with ADHD?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
-            <p className={`${p} pb-3`}>Some people with ADHD find it easier to start and to keep going when an outside timer structures the time for them: short, clear rounds, switches that happen on their own, and a sound when it's time to change. It's a tool, not a treatment, so use it in whatever way works for you.</p>
+            <p className={`${p} pb-3`}>Many people with ADHD or AuDHD (autism and ADHD) find that outside structure helps them focus and burn out less: short, clear rounds, switches that happen on their own, and a sound when it's time to change.</p>
           </details>
           <details className="group border-b border-subtle">
             <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
               {"I'm in hyperfocus. Why should I stop?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
-            <p className={`${p} pb-3`}>You don't have to. Hyperfocus can be productive, but it's also easy to lose track of time, skip food and water, or crash afterwards. The sound is a gentle check-in: if you want to keep going, press Skip to jump past the break, or Pause to stop the clock.</p>
+            <p className={`${p} pb-3`}>Hyperfocus can be productive, but it's also easy to lose track of time, skip food and water, and crash afterwards. Tension can also make your back and neck ache. To avoid that, we recommend getting up during the break, even briefly: check whether you need the bathroom, drink a glass of water or have a snack. It's also a good moment to ask yourself whether you want to keep doing the same thing in the next round. Five minutes is short, so you won't forget what you were working on and can easily pick up where you left off.</p>
           </details>
           <details className="group border-b border-subtle">
             <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
               {"Is it free? Do I need an account?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
-            <p className={`${p} pb-3`}>It's free, and there's nothing to sign up for. Your settings and log stay in your browser.</p>
+            <p className={`${p} pb-3`}>It's free and works without an account. Nothing is saved: the log covers the current session and is cleared when you reload or close the page.</p>
           </details>
         </div>
       </div>
