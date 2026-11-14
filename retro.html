@@ -327,9 +327,9 @@ function TimerFace({ mode, label, slot, children }) {
 }
 
 // Sets --mode-accent for everything inside, like the main app's screen root
-function TimerColumn({ mode, label, children }) {
+function TimerColumn({ mode, label, className = "", children }) {
   return (
-    <section aria-label={label} className="w-72 flex flex-col items-center"
+    <section aria-label={label} className={`w-72 flex flex-col items-center ${className}`}
       style={{ "--mode-accent": MODES[mode].accent, "--mode-accent-hover": MODES[mode].accentHover }}>
       {children}
     </section>
@@ -601,7 +601,8 @@ function SpeakerTimer({ now, onRunningChange, onTurn, displaySlot }) {
     </>
   );
   return (
-    <TimerColumn mode={role} label="Speaker timer">
+    // first when the two are stacked (phones), on the right side by side
+    <TimerColumn mode={role} label="Speaker timer" className="order-first md:order-none">
       {face}
       <TimerFace mode={role} label="Speaker timer" slot={displaySlot}>{face}</TimerFace>
       <div className="flex items-center gap-5 mt-6">
