@@ -782,27 +782,15 @@ function RetroScreen() {
       position: "absolute", left, top, width: 288, height: 288,
       transform: `scale(${size / 288})`, transformOrigin: "top left",
     });
-    // During a break (and its "Break complete") the tile is just the break ring, large and centered
+    // During a break (and its "Break complete") the tile is just the break timer, laid out like the
+    // timer Activity's tile: the label, then the ring, scaled together to 92% of the tile
     if (s.pomoMode === "break") {
-      const size = 0.9 * side;
+      const k = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
       return (
         <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
           {notice}
-          <div className="relative shrink-0" style={{ width: side, height: side }}>
-            <TimerColumn mode="break" label="Break timer">
-              <div style={place((side - size) / 2, (side - size) / 2, size)}>
-                {pomoRing(
-                  breakEnding ? (
-                    <>
-                      <div className="type-emoji leading-[2.125rem]" aria-hidden="true">🙌</div>
-                      <div className="type-body text-secondary mt-1">Break complete</div>
-                    </>
-                  ) : (
-                    <RingContent mode="break" time={formatTime(left)} caption="Break" />
-                  )
-                )}
-              </div>
-            </TimerColumn>
+          <div className="shrink-0" style={{ transform: `scale(${k})` }}>
+            <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
           </div>
         </div>
       );
