@@ -574,10 +574,10 @@ function RingContent({ mode, time, caption }) {
 }
 
 // heading + ring; mode sets --mode-accent for everything inside, controls included
-function TimerColumn({ mode, label, children }) {
+function TimerColumn({ mode, label, className = "", children }) {
   const m = RETRO_MODES[mode];
   return (
-    <section aria-label={label} className="w-72 flex flex-col items-center"
+    <section aria-label={label} className={`w-72 flex flex-col items-center ${className}`}
       style={{ "--mode-accent": m.accent, "--mode-accent-hover": m.accentHover }}>
       {children}
     </section>
@@ -721,20 +721,26 @@ function RetroScreen() {
 
   if (loading) return <div className="min-h-screen w-full bg-page" />;
 
+  // the ring around `content`, as the meeting timer is right now
+  const pomoRing = (content) => (
+    <Ring mode={s.pomoMode} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
+      {content}
+    </Ring>
+  );
   const pomoFace = (
     <>
       <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[s.pomoMode].label}</h2>
       <div className="mt-6">
-        <Ring mode={s.pomoMode} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
-          {breakEnding ? (
+        {pomoRing(
+          breakEnding ? (
             <>
               <div className="type-emoji leading-[2.125rem]" aria-hidden="true">🙌</div>
               <div className="type-body text-secondary mt-1">Break complete</div>
             </>
           ) : (
             <RingContent mode={s.pomoMode} time={formatTime(left)} caption={s.pomoMode === "focus" ? `Round ${s.round}` : ""} />
-          )}
-        </Ring>
+          )
+        )}
       </div>
     </>
   );
@@ -742,39 +748,58 @@ function RetroScreen() {
   // out from the turn's own times, so it shows for everyone at once and not again after a pause.
   const zeroAt = spRunning && s.spRunMs < spTotal * 1000 ? s.spSince + spTotal * 1000 - s.spRunMs : null;
   const timeUp = zeroAt != null && t >= zeroAt && t < zeroAt + SOUND_DURATION_MS.focusEnd;
+  const speakerRing = (
+    <Ring mode={role} progress={over ? 1 : 1 - spLeft / spTotal} showTip={!over} pulse={timeUp}>
+      {timeUp ? (
+        <>
+          <div className="type-emoji leading-[2.125rem]" aria-hidden="true">⏰</div>
+          <div className="type-body text-secondary mt-1">Time's up</div>
+        </>
+      ) : (
+        <RingContent mode={role} time={formatTime(Math.max(0, spLeft))}
+          caption={over ? `over time · total ${formatShort(elapsed)}` : formatShort(spTotal)} />
+      )}
+    </Ring>
+  );
   const speakerFace = (
     <>
       <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
-      <div className="mt-6">
-        <Ring mode={role} progress={over ? 1 : 1 - spLeft / spTotal} showTip={!over} pulse={timeUp}>
-          {timeUp ? (
-            <>
-              <div className="type-emoji leading-[2.125rem]" aria-hidden="true">⏰</div>
-              <div className="type-body text-secondary mt-1">Time's up</div>
-            </>
-          ) : (
-            <RingContent mode={role} time={formatTime(Math.max(0, spLeft))}
-              caption={over ? `over time · total ${formatShort(elapsed)}` : formatShort(spTotal)} />
-          )}
-        </Ring>
-      </div>
+      <div className="mt-6">{speakerRing}</div>
     </>
   );
 
-  // Minimised next to the video tiles the Activity is a small tile: just the two timers, scaled
-  // to fit, without the controls.
+  // Minimised next to the video tiles the Activity is a small square tile, without the controls:
+  // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
+  // right corner (just its time; the ring's color tells meeting from break). Both are the full-size
+  // 288px rings scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   if (vh < 420 || vw < 340) {
-    const pairW = 2 * 288 + 48;
-    const pairH = 25 + 24 + 288;
-    const k = Math.min((vw * 0.92) / pairW, (vh * 0.92) / pairH);
+    const side = Math.min(vw, vh);
+    const big = 0.72 * side;
+    const small = 0.32 * side;
+    const place = (left, top, size) => ({
+      position: "absolute", left, top, width: 288, height: 288,
+      transform: `scale(${size / 288})`, transformOrigin: "top left",
+    });
     return (
       <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
         {notice}
-        <div className="flex items-start gap-12 shrink-0" style={{ transform: `scale(${k})` }}>
-          <TimerColumn mode={s.pomoMode} label="Meeting timer">{pomoFace}</TimerColumn>
-          <TimerColumn mode={role} label="Speaker timer">{speakerFace}</TimerColumn>
+        <div className="relative shrink-0" style={{ width: side, height: side }}>
+          <TimerColumn mode={role} label="Speaker timer">
+            <div style={place(0.05 * side, 0.05 * side, big)}>{speakerRing}</div>
+          </TimerColumn>
+          <TimerColumn mode={s.pomoMode} label="Meeting timer">
+            <div style={place(side - 0.03 * side - small, side - 0.03 * side - small, small)}>
+              {pomoRing(
+                breakEnding ? (
+                  <div className="type-emoji" aria-hidden="true">🙌</div>
+                ) : (
+                  <div className="tabular-nums text-primary font-bold" style={{ fontSize: "4.5rem", lineHeight: 1 }}>{formatTime(left)}</div>
+                )
+              )}
+            </div>
+          </TimerColumn>
         </div>
       </div>
     );
@@ -798,7 +823,8 @@ function RetroScreen() {
               <RoundButton label={s.pomoMode === "focus" ? "Skip to break" : "Skip to meeting"} disabled={breakEnding} onClick={() => dispatch({ type: "pomoSkip" })}><SkipForwardIcon size={20} /></RoundButton>
             </div>
           </TimerColumn>
-          <TimerColumn mode={role} label="Speaker timer">
+          {/* first when the two are stacked (phones), on the right side by side */}
+          <TimerColumn mode={role} label="Speaker timer" className="order-first md:order-none">
             {speakerFace}
             <div className="flex items-center gap-5 mt-6">
               <RoundButton label="Reset timer" onClick={() => dispatch({ type: "spReset" })}><RotateCcwIcon size={20} /></RoundButton>
