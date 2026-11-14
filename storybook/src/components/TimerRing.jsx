@@ -1,8 +1,9 @@
 import React, { useId } from "react";
-import { MODES, formatTime } from "../tokens";
+import { ALL_MODES as MODES, formatTime } from "../tokens";
 
 // Pure view of the timer ring: everything it shows comes from props, no timers or state.
-// `round` is the "Round N" caption under the time; it only shows in Focus.
+// `round` is the "Round N" caption under the time; it only shows in Focus (and Meeting, the
+// retro page's name for a focus round).
 export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60, round = 1, isTransitioning = false }) {
   // unique ids so several rings on one page (e.g. a docs page) don't share a gradient/clip
   const uid = useId().replace(/:/g, "");
@@ -74,7 +75,7 @@ export function TimerRing({ mode = "focus", progress = 0, secondsLeft = 25 * 60,
             </div>
             <div className="type-display tabular-nums text-primary">{formatTime(secondsLeft)}</div>
             <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">
-              {mode === "focus" ? `Round ${round}` : ""}
+              {mode === "focus" || mode === "meeting" ? `Round ${round}` : ""}
             </div>
           </>
         )}

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Violet Tomato – Retro timers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Discord Activity for the weekly retro: a meeting Pomodoro and a speaker timer, shared by everyone in
+     the voice channel. Its own Discord app; the room connection is the same as the timer Activity
+     (../discord/index.html). Website version for screen sharing: ../retro.html.
+     Shared code: ../shared/ui.jsx, ../design-tokens.js -->
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<!-- Libraries are vendored (not loaded from CDNs) so the page also works inside a Discord Activity,
+     whose proxy blocks requests to domains that aren't URL-mapped in the Developer Portal -->
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="vendor/babel.min.js"></script>
+<script src="vendor/tailwindcss-3.4.17.js"></script>
+<!-- the same design tokens as the website (../design-tokens.js) -->
+<script src="design-tokens.js"></script>
+<script>
+  // Without this, tapping a button on a touch device leaves its hover: styles (e.g. the
+  // darker background on the round control buttons) stuck on until something else is tapped,
+  // since there's no mouse to trigger a "leave". This scopes every hover: utility to devices
+  // that actually support hovering, matching how a real mouse/trackpad behaves.
+  // theme + plugin: the tokens from design-tokens.js replace Tailwind's palette and type scale
+  tailwind.config = { future: { hoverOnlyWhenSupported: true }, theme: DESIGN_TOKENS.THEME, plugins: [DESIGN_TOKENS.typePlugin] };
+</script>
+<!-- Discord Activity wrapper + shared timer state. Inside Discord the room is the Activity instance,
+     so everyone in the voice channel sees one timer; in a plain browser, open the page with
+     ?room=<name> to test syncing between tabs. Without a room the timer runs standalone. -->
+<script type="module">
+const DISCORD_CLIENT_ID = "1571261434023649370"; // the Retro app: Developer Portal → OAuth2 → Client ID (public, not a secret)
+// Firebase web config is a public identifier, not a secret; access is limited by the database rules
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCOwTuLww-HLUrNZsJlaEtd-7q4FCGCzoA",
+  databaseURL: "https://violet-tomato-discord-activity-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "violet-tomato-discord-activity",
+  appId: "1:304315009793:web:9de620aa871ef04d0da900",
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Loads a script, trying again (after 2s, then 4s) when Discord's proxy or the network drops it.
+// Failures carry reason "load", which the timer shows in its status notice.
+async function loadScript(src, attempts = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      await new Promise((resolve, reject) => {
+        const el = document.createElement("script");
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => {
+          el.remove();
+          reject(new Error(`Failed to load ${src}`));
+        };
+        document.head.appendChild(el);
+      });
+      return;
+    } catch (err) {
+      if (i >= attempts) throw Object.assign(err, { reason: "load" });
+      await sleep(2000 * i);
+    }
+  }
+}
+
+// Which room to sync with: the Activity instance inside Discord, ?room=<name> in a plain browser
+// (to test syncing between tabs), or null for a standalone timer. Settled once, before the timer
+// component mounts.
+//
+// Inside Discord the room is the instance id, which Discord puts in the page's address
+// (instance_id=…), so it's known right away. The Discord SDK starts in the background and isn't
+// waited for: SDK 2.5.0 throws while reading the start-up READY message from newer Discord clients
+// (a user with no avatar comes as null where its schema expects a string), so its ready() never
+// settled there and waiting for it left the timer stuck on "Connecting…". The vendored copy is
+// patched for that (READY's user.avatar also accepts null, as the SDK's other user schemas do;
+// re-apply when updating the SDK unless Discord fixed it), and not waiting for it keeps the timer
+// working if something like it happens again. Only if the address has no instance id is the SDK
+// waited for; failing that is reported with reason "discord".
+async function findRoom() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("frame_id")) return params.get("room");
+
+  // Discord's proxy blocks direct requests to Firebase, so route its WebSocket through the URL
+  // Mapping /rtdb → <database host> set in the Developer Portal. Firebase also hands clients a
+  // per-shard hostname to reconnect to; those all go to the same mapping, since the main host
+  // accepts connections itself (the ns= query parameter names the database). Must run before
+  // the Firebase script loads, since it grabs the WebSocket constructor at load time.
+  const NativeWebSocket = window.WebSocket;
+  window.WebSocket = class extends NativeWebSocket {
+    constructor(url, protocols) {
+      const u = new URL(url);
+      if (u.hostname.endsWith(".firebasedatabase.app")) {
+        u.host = location.host;
+        u.pathname = "/.proxy/rtdb" + u.pathname;
+        if (!u.searchParams.has("ns")) u.searchParams.set("ns", new URL(FIREBASE_CONFIG.databaseURL).hostname.split(".")[0]);
+      }
+      super(u, protocols);
+    }
+  };
+
+  const sdkStarted = (async () => {
+    const { DiscordSDK } = await import("./vendor/discord-embedded-app-sdk-2.5.0.mjs");
+    const discordSdk = new DiscordSDK(DISCORD_CLIENT_ID);
+    await discordSdk.ready(); // tells Discord to hide its loading screen
+    window.discordSdk = discordSdk;
+    return discordSdk;
+  })().catch((err) => {
+    console.error("Discord SDK init failed:", err);
+    return null;
+  });
+
+  // Plain target="_blank" links don't open from inside the Activity iframe; route them through
+  // Discord once its SDK is up
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href^='http']");
+    if (!link || !window.discordSdk) return;
+    e.preventDefault();
+    window.discordSdk.commands.openExternalLink({ url: link.href });
+  });
+
+  const instanceId = params.get("instance_id");
+  if (instanceId) return instanceId;
+  const discordSdk = await sdkStarted;
+  if (!discordSdk) throw Object.assign(new Error("Discord SDK didn't start"), { reason: "discord" });
+  return discordSdk.instanceId;
+}
+
+let db = null;
+
+// Loads Firebase and opens the room. Kept while it works; after a failure the next call starts over
+// (only the scripts that didn't load are fetched again).
+let connecting = null;
+function connect(roomId) {
+  connecting ??= (async () => {
+    if (!window.firebase) await loadScript("vendor/firebase-app-compat-12.4.0.js");
+    if (!window.firebase.database) await loadScript("vendor/firebase-database-compat-12.4.0.js");
+    if (!db) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+      db.INTERNAL.forceWebSockets(); // the long-polling fallback can't get through Discord's proxy
+    }
+    // "retro_" keeps these rooms apart from the timer Activity's
+    const roomRef = db.ref(`rooms/retro_${roomId.replace(/[.#$\[\]\/]/g, "_")}`);
+    const stateRef = roomRef.child("state");
+
+    // Devices' clocks disagree; Firebase reports how far this one is from the server's, so every
+    // participant can compute the countdown against the same clock.
+    let clockOffsetMs = 0;
+    db.ref(".info/serverTimeOffset").on("value", (snap) => { clockOffsetMs = snap.val() || 0; });
+
+    // Delete the room's state once everyone has left, so finished sessions don't pile up in the
+    // database. There's no server to notice an empty room, so the last participant standing asks
+    // the database to remove the state the moment their connection drops, and withdraws that as
+    // soon as someone else joins. (If that last connection only blipped, the timer component puts
+    // its state back when it reconnects.) Best effort: any failure here just leaves the room behind.
+    const presenceRef = roomRef.child("presence");
+    const me = presenceRef.push();
+    let deleteOnLeave = false;
+    db.ref(".info/connected").on("value", (snap) => {
+      if (snap.val() !== true) return;
+      deleteOnLeave = false; // whatever was registered on the previous connection is gone with it
+      me.onDisconnect().remove().then(() => me.set(true)).catch(() => {});
+    });
+    presenceRef.on(
+      "value",
+      (snap) => {
+        const alone = snap.numChildren() === 1 && snap.hasChild(me.key);
+        if (alone === deleteOnLeave) return;
+        deleteOnLeave = alone;
+        const onLeave = stateRef.onDisconnect();
+        (alone ? onLeave.remove() : onLeave.cancel()).catch(() => {});
+      },
+      () => {}
+    );
+
+    return {
+      now: () => Date.now() + clockOffsetMs,
+      // onState gets { rev, json } (or null for a brand-new room) now and after every change —
+      // including this client's own writes, and the winning write when one of ours loses a race.
+      // onError gets an error with reason "denied" if the database refuses or drops the read.
+      // Returns a function that stops listening.
+      subscribe(onState, onConnected, onError) {
+        const stateHandler = stateRef.on("value", (snap) => onState(snap.val()), (err) => onError(Object.assign(err, { reason: "denied" })));
+        const connectedRef = db.ref(".info/connected");
+        const connectedHandler = connectedRef.on("value", (snap) => onConnected(snap.val() === true));
+        return () => {
+          stateRef.off("value", stateHandler);
+          connectedRef.off("value", connectedHandler);
+        };
+      },
+      // Writes only if nobody else changed the room since baseRev; otherwise the write is dropped
+      // and subscribe() delivers the state that got there first.
+      publish(baseRev, next) {
+        const value = { rev: next.rev, json: JSON.stringify(next) };
+        stateRef
+          .transaction((cur) => ((cur ? cur.rev : 0) === baseRev ? value : undefined))
+          .catch((err) => console.error("Sync write failed:", err));
+      },
+    };
+  })().catch((err) => {
+    connecting = null;
+    console.error("Sync init failed:", err);
+    throw err;
+  });
+  return connecting;
+}
+
+// What the timer component uses. room: resolves to the room id or null (no room: standalone timer),
+// rejects with reason "discord". connect(): resolves to the sync API, rejects with reason "load".
+// retry(): for "Try again" — Firebase keeps reconnecting on its own with growing pauses; this makes
+// it try right now. Assigned synchronously so it exists before the timer component mounts.
+window.timerSync = {
+  room: findRoom(),
+  connect,
+  retry() {
+    if (db) {
+      db.goOffline();
+      db.goOnline();
+    }
+  },
+};
+</script>
+<style>
+  /* Tapping a button on mobile leaves the browser's default focus outline stuck on it until
+     something else is tapped. Keep the outline for real keyboard navigation (:focus-visible),
+     drop it after a touch/mouse click. */
+  button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
+    outline: none;
+  }
+  /* Keyboard focus ring: the same on every button, radio pill and link — the browser's own default
+     outline (color/style/width), pushed 2px away so there's a transparent gap first. */
+  button:focus-visible, a:focus-visible {
+    outline-offset: 2px;
+  }
+  /* Focus the page moved by itself after a tap or click (see moveFocus): no ring until the
+     keyboard is used. */
+  [data-quiet-focus]:focus-visible {
+    outline: none;
+  }
+  /* "Reduce motion" in the system settings: the ring jumps instead of gliding and doesn't pulse
+     between rounds. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+<noscript>
+<main style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#444">
+<h1>Retro timers</h1>
+<p>Please enable JavaScript to use the timers.</p>
+</main>
+</noscript>
+</div>
+<!-- constants, sounds, icons and UI pieces shared with the website (../shared/ui.jsx) -->
+<script type="text/babel" src="shared/ui.jsx"></script>
+<script type="text/babel">
+// Retro timers, shared by everyone in the Activity. Left: the meeting's Pomodoro, 25/5. A meeting
+// round ends silently, a break ends with the break melody and a short "Break complete" pulse;
+// either way the next round waits for Start. Right: the speaker (5 min) or commentator (2 min)
+// timer. At zero it plays the focus-end melody once; after that the time stays at 00:00 while the
+// caption keeps counting the whole turn. Finished turns go into a log, grouped by meeting round.
+//
+// The whole screen is one state object kept in the room (see timerSync in <head>): every press
+// is applied here at once and offered to the room; everyone computes the countdowns from the
+// same start times against the shared clock. useState etc., formatTime, playNotes, the melodies,
+// icons, Dialog and Credit come from ../shared/ui.jsx.
+const { MODE_COLORS } = window.DESIGN_TOKENS;
+
+const MEETING_MIN = 25;
+const RETRO_BREAK_MIN = 5;
+const SPEAKER_PRESETS = [2, 5];
+// how long the "Break complete" pulse stays up: the length of the break melody
+const BREAK_END_MS = SOUND_DURATION_MS.breakEnd;
+// who the right timer is for, by its length
+const roleFor = (minutes) => (minutes === 2 ? "commentator" : "speaker");
+
+const RETRO_MODES = {
+  focus: { label: "Meeting", emoji: ["🌞", "🌧️", "🌈"], ...MODE_COLORS.focus },
+  break: { label: "Break", emoji: ["☕"], ...MODE_COLORS.break },
+  speaker: { label: "Speaker", emoji: ["🎤"], ...MODE_COLORS.longBreak },
+  commentator: { label: "Commentator", emoji: ["💬"], ...MODE_COLORS.longBreak },
+};
+
+// for captions: 5:00, 12:30
+const formatShort = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
+// lucide "square"
+const StopIcon = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="3" rx="2" /></Icon>;
+
+// ---- Shared state ----
+// A clock is the time run so far (runMs) plus the run in progress (since, a shared-clock time).
+const RETRO_STATE = {
+  rev: 0, // bumped on every change, as in the timer Activity
+  // left timer
+  pomoMode: "focus",
+  round: 1,
+  pomoRunMs: 0,
+  pomoSince: null,
+  breakEndAt: null, // set while "Break complete" shows: when the break ended
+  // right timer
+  minutes: 5,
+  spRunMs: 0,
+  spSince: null,
+  stopped: false, // Stop pressed: the turn is over and logged, its final time stays on screen
+  // finished turns: [{ round, turns: [{ role, seconds, limit }] }]
+  log: [],
+};
+
+const runMs = (ms, since, now) => ms + (since != null ? Math.max(0, now - since) : 0);
+const pomoTotal = (s) => (s.pomoMode === "focus" ? MEETING_MIN : RETRO_BREAK_MIN) * 60;
+const pomoLeft = (s, now) => Math.max(0, pomoTotal(s) - Math.floor(runMs(s.pomoRunMs, s.pomoSince, now) / 1000));
+const spElapsed = (s, now) => Math.floor(runMs(s.spRunMs, s.spSince, now) / 1000);
+// nothing to lose by starting the right timer over: never started, or stopped
+const spFresh = (s) => s.spSince == null && (s.spRunMs === 0 || s.stopped);
+
+// the turn under way goes into the log, under the meeting round it happened in
+function logTurn(s, now) {
+  const seconds = spElapsed(s, now);
+  if (seconds <= 0) return s.log;
+  const turn = { role: roleFor(s.minutes), seconds, limit: s.minutes * 60 };
+  const last = s.log[s.log.length - 1];
+  if (last && last.round === s.round) return [...s.log.slice(0, -1), { round: s.round, turns: [...last.turns, turn] }];
+  return [...s.log, { round: s.round, turns: [turn] }];
+}
+
+// The meeting round ends silently and the break is lined up; a break ends with "Break complete"
+// first (finished by "pomoFinish"). `at` is when it ended.
+function pomoNext(s, at) {
+  if (s.pomoMode === "focus") return { ...s, pomoMode: "break", pomoRunMs: 0, pomoSince: null };
+  return { ...s, pomoRunMs: 0, pomoSince: null, breakEndAt: at };
+}
+
+function retroReduce(s, action, now) {
+  switch (action.type) {
+    case "pomoToggle":
+      if (s.breakEndAt != null) return s;
+      return s.pomoSince != null
+        ? { ...s, pomoRunMs: runMs(s.pomoRunMs, s.pomoSince, now), pomoSince: null }
+        : { ...s, pomoSince: now };
+    case "pomoReset":
+      if (s.breakEndAt != null) return s;
+      return { ...s, pomoRunMs: 0, pomoSince: null };
+    case "pomoSkip":
+      if (s.breakEndAt != null) return s;
+      return pomoNext(s, now);
+    case "pomoTimeUp": {
+      // everyone's copy notices zero at about the same moment; the first write wins
+      if (s.pomoSince == null || s.breakEndAt != null || pomoLeft(s, now) > 0) return s;
+      return pomoNext(s, s.pomoSince + pomoTotal(s) * 1000 - s.pomoRunMs);
+    }
+    case "pomoFinish":
+      if (s.breakEndAt == null) return s;
+      return { ...s, breakEndAt: null, pomoMode: "focus", round: s.round + 1, pomoRunMs: 0, pomoSince: null };
+    case "spToggle":
+      if (s.spSince != null) return { ...s, spRunMs: runMs(s.spRunMs, s.spSince, now), spSince: null };
+      if (s.stopped) return { ...s, spRunMs: 0, spSince: now, stopped: false };
+      return { ...s, spSince: now };
+    case "spReset":
+      // a do-over: not logged
+      return { ...s, spRunMs: 0, spSince: null, stopped: false };
+    case "spStop":
+      if (spFresh(s)) return s;
+      return { ...s, log: logTurn(s, now), spRunMs: runMs(s.spRunMs, s.spSince, now), spSince: null, stopped: true };
+    case "spPreset":
+      // switching to the next person ends a turn still under way, which goes into the log
+      return { ...s, log: spFresh(s) ? s.log : logTurn(s, now), minutes: action.minutes, spRunMs: 0, spSince: null, stopped: false };
+    default:
+      return s;
+  }
+}
+
+// ---- Room connection (the same flow as the timer Activity) ----
+// Returns the shared state, dispatch, the shared clock and the sync status/notice.
+function useRoomState() {
+  const [state, setState] = useState(RETRO_STATE);
+  const stateRef = useRef(RETRO_STATE);
+  const syncRef = useRef(null);
+  const [syncStatus, setSyncStatus] = useState(window.timerSync ? "loading" : "local");
+  const [syncProblem, setSyncProblem] = useState(null);
+  const [syncAttempt, setSyncAttempt] = useState(0);
+  const [connected, setConnected] = useState(true);
+  const now = useCallback(() => (syncRef.current ? syncRef.current.now() : Date.now()), []);
+
+  const dispatch = useCallback((action) => {
+    const base = stateRef.current;
+    const reduced = retroReduce(base, action, now());
+    if (reduced === base) return;
+    const next = { ...reduced, rev: base.rev + 1 };
+    stateRef.current = next;
+    setState(next);
+    if (syncRef.current) syncRef.current.publish(base.rev, next);
+  }, []);
+
+  useEffect(() => {
+    if (!window.timerSync) return;
+    let cancelled = false;
+    let received = false;
+    let unsubscribe = null;
+    const fail = (problem) => {
+      clearTimeout(showTimer);
+      clearTimeout(giveUp);
+      setSyncProblem(problem);
+      setSyncStatus("failed");
+    };
+    const showTimer = setTimeout(() => setSyncStatus((st) => (st === "loading" ? "connecting" : st)), 10000);
+    const giveUp = setTimeout(() => !received && fail("offline"), 30000);
+    (async () => {
+      let roomId;
+      try {
+        roomId = await window.timerSync.room;
+      } catch (err) {
+        if (!cancelled) fail(err.reason || "discord");
+        return;
+      }
+      if (cancelled) return;
+      if (!roomId) {
+        clearTimeout(showTimer);
+        clearTimeout(giveUp);
+        setSyncStatus("local");
+        return;
+      }
+      let sync;
+      try {
+        sync = await window.timerSync.connect(roomId);
+      } catch (err) {
+        if (!cancelled) fail(err.reason || "load");
+        return;
+      }
+      if (cancelled) return;
+      syncRef.current = sync;
+      unsubscribe = sync.subscribe(
+        (value) => {
+          received = true;
+          clearTimeout(showTimer);
+          clearTimeout(giveUp);
+          if (value) {
+            const next = { ...RETRO_STATE, ...JSON.parse(value.json), rev: value.rev };
+            stateRef.current = next;
+            setState(next);
+          } else if (stateRef.current.rev > 0) {
+            // the room is empty but timers already started here before the connection came up
+            const next = { ...stateRef.current, rev: 1 };
+            stateRef.current = next;
+            setState(next);
+            sync.publish(0, next);
+          }
+          setSyncProblem(null);
+          setSyncStatus("synced");
+        },
+        setConnected,
+        (err) => {
+          console.error("Sync read failed:", err);
+          syncRef.current = null;
+          if (!cancelled) fail(err.reason || "denied");
+        }
+      );
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(showTimer);
+      clearTimeout(giveUp);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [syncAttempt]);
+
+  const retrySync = () => {
+    if (syncProblem === "discord") {
+      location.reload();
+      return;
+    }
+    window.timerSync.retry();
+    setSyncProblem(null);
+    setSyncStatus("connecting");
+    setSyncAttempt((n) => n + 1);
+  };
+
+  const SYNC_PROBLEMS = {
+    discord: "Discord didn't connect the Activity.",
+    load: "The sync service didn't load.",
+    denied: "The room couldn't be opened.",
+    offline: "No connection to the room.",
+  };
+  const noticeText =
+    syncStatus === "connecting"
+      ? "Connecting… Until then, these timers are only on your screen."
+      : syncStatus === "failed"
+      ? `Not synced. ${SYNC_PROBLEMS[syncProblem] ?? ""} These timers are only on your screen.`
+      : syncStatus === "synced" && !connected
+      ? "Reconnecting…"
+      : null;
+  const notice = (
+    <div className="fixed top-2 left-0 w-full flex justify-center px-4 pointer-events-none z-[60]" role="status">
+      {noticeText && (
+        <div className="pointer-events-auto max-w-sm px-3 py-1 rounded-2xl bg-notice text-notice type-caption text-center">
+          {noticeText}
+          {syncStatus === "failed" && (
+            <>
+              {" "}
+              <button onClick={retrySync} className="underline font-medium">Try again</button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+  return { state, dispatch, now, loading: syncStatus === "loading", notice };
+}
+
+// A sound booked ahead on this device for `dueAt` (shared clock), so it plays on time even while
+// the Activity is minimised; re-booked when the time moves, cancelled when it goes away (pause,
+// stop, skip). Returns a ref to the booking, { at, cancel }.
+function useBookedSound(dueAt, notes, now) {
+  const booked = useRef({ at: null, cancel: null });
+  useEffect(() => {
+    const b = booked.current;
+    if (dueAt != null && b.at != null && Math.abs(dueAt - b.at) < 1000) return;
+    if (b.at != null && now() < b.at) b.cancel();
+    booked.current = { at: null, cancel: null };
+    if (dueAt == null || dueAt <= now()) return;
+    booked.current = { at: dueAt, cancel: playNotes(notes, dueAt - now()) };
+  });
+  return booked;
+}
+
+// ---- Views ----
+function Ring({ mode, progress, showTip, pulse = false, children }) {
+  const uid = useId().replace(/:/g, "");
+  const { arc, shadow } = RETRO_MODES[mode];
+  const radius = 120;
+  const circumference = 2 * Math.PI * radius;
+  const tipDeg = (1 - progress) * 360;
+  const shadowDeg = 1.5;
+  const shadowCenter = {
+    x: 140 + radius * Math.cos((shadowDeg * Math.PI) / 180),
+    y: 140 + radius * Math.sin((shadowDeg * Math.PI) / 180),
+  };
+  return (
+    <div className={`relative w-72 h-72 ${pulse ? "animate-pulse" : ""}`}>
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id={`tip-${uid}`}>
+            <stop offset="0%" stopColor={shadow} stopOpacity="0.25" />
+            <stop offset="45%" stopColor={shadow} stopOpacity="0.07" />
+            <stop offset="100%" stopColor={shadow} stopOpacity="0" />
+          </radialGradient>
+          <clipPath id={`band-${uid}`}>
+            <path clipRule="evenodd"
+              d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
+                  M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`} />
+          </clipPath>
+        </defs>
+        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
+        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={circumference * progress}
+          style={{ transition: "stroke-dashoffset 1s linear" }} />
+        <g style={{ transform: `rotate(${tipDeg}deg)`, transformOrigin: "140px 140px", transition: "transform 1s linear", display: showTip ? undefined : "none" }}>
+          <circle cx={shadowCenter.x} cy={shadowCenter.y} r="8" fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
+          <circle cx={140 + radius} cy="140" r="5" fill={arc} />
+        </g>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+function RingContent({ mode, time, caption }) {
+  return (
+    <>
+      <div className="flex items-center justify-center gap-1 h-[1.875rem] mb-3" aria-hidden="true">
+        {RETRO_MODES[mode].emoji.map((e, i) => <span key={i} className="type-emoji">{e}</span>)}
+      </div>
+      <div className="type-display tabular-nums text-primary">{time}</div>
+      <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">{caption}</div>
+    </>
+  );
+}
+
+// heading + ring; mode sets --mode-accent for everything inside, controls included
+function TimerColumn({ mode, label, children }) {
+  const m = RETRO_MODES[mode];
+  return (
+    <section aria-label={label} className="w-72 flex flex-col items-center"
+      style={{ "--mode-accent": m.accent, "--mode-accent-hover": m.accentHover }}>
+      {children}
+    </section>
+  );
+}
+
+function RoundButton({ label, onClick, disabled = false, children }) {
+  return (
+    <button onClick={disabled ? undefined : onClick} aria-disabled={disabled || undefined} aria-label={label} title={label}
+      className="flex items-center justify-center rounded-full h-11 w-11 bg-button-secondary text-button-secondary hover:bg-button-secondary-hover hover:text-button-secondary-hover aria-disabled:opacity-40 aria-disabled:cursor-not-allowed">
+      {children}
+    </button>
+  );
+}
+
+function PlayPauseButton({ label, mode, onClick, disabled = false }) {
+  const running = label === "Pause";
+  return (
+    <button onClick={disabled ? undefined : onClick} aria-disabled={disabled || undefined} aria-label={label} title={label}
+      className={`flex items-center justify-center h-14 w-14 rounded-full aria-disabled:opacity-40 aria-disabled:cursor-not-allowed ${running
+        ? "bg-button-secondary text-button-secondary hover:bg-button-secondary-hover hover:text-button-secondary-hover"
+        : "bg-button-mode hover:bg-button-mode-hover text-button-primary"}`}
+      style={running ? undefined : { boxShadow: `0 2px 8px -2px ${RETRO_MODES[mode].shadow}59` }}>
+      {running ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
+    </button>
+  );
+}
+
+function PresetPills({ value, onPick }) {
+  return (
+    <div role="group" aria-label="Speaker time" className="flex gap-2">
+      {SPEAKER_PRESETS.map((min) => {
+        const selected = min === value;
+        return (
+          <button key={min} type="button" aria-pressed={selected} onClick={() => onPick(min)}
+            className={`px-6 py-3 rounded-xl type-control whitespace-nowrap ${selected
+              ? "ring-2 ring-inset ring-radio-selected bg-radio-selected text-radio-selected"
+              : "ring-1 ring-inset ring-radio hover:ring-radio-hover text-button-tertiary hover:text-button-tertiary-hover"}`}>
+            {min} min
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// "2 rounds ⌄", like "2 completed" under the timer Activity
+function LogToggle({ count, open, onClick }) {
+  return (
+    <button onClick={onClick} aria-expanded={count > 0 ? open : undefined} aria-controls={count > 0 ? "turn-log" : undefined}
+      className="flex items-center min-h-11 text-button-tertiary hover:text-button-tertiary-hover">
+      <span className="flex items-baseline gap-1.5">
+        <span className="type-heading text-primary">{count}</span>
+        <span className="type-body text-primary">{count === 1 ? "round" : "rounds"}</span>
+        {count > 0 && <span className="self-end py-px">{open ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}</span>}
+      </span>
+    </button>
+  );
+}
+
+function TurnLog({ log }) {
+  return (
+    <div id="turn-log" className="flex flex-col items-start gap-3 mt-4 text-left">
+      {log.map(({ round, turns }) => (
+        <div key={round} className="flex flex-col items-start gap-0.5">
+          <div className="type-caption text-primary">Round {round}</div>
+          {turns.map((t, i) => (
+            <div key={i} className="flex type-caption text-secondary">
+              <span className="inline-block w-24">{RETRO_MODES[t.role].label}</span>
+              <span className="font-mono">{formatTime(t.seconds)}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RetroScreen() {
+  const { state: s, dispatch, now, loading, notice } = useRoomState();
+  const [, setTick] = useState(0);
+  const [logOpen, setLogOpen] = useState(false); // each participant opens the log for themselves
+  const [pendingPreset, setPendingPreset] = useState(null); // the confirmation is only on the screen of whoever asked
+
+  useEffect(() => {
+    const tick = () => setTick((t) => t + 1);
+    const interval = setInterval(tick, 250);
+    const onVisible = () => !document.hidden && tick();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("resize", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("resize", tick);
+    };
+  }, []);
+
+  const t = now();
+  // left
+  const pomoTotalS = pomoTotal(s);
+  const pomoRunning = s.pomoSince != null;
+  const left = pomoLeft(s, t);
+  const breakEnding = s.breakEndAt != null;
+  // right
+  const role = roleFor(s.minutes);
+  const spTotal = s.minutes * 60;
+  const spRunning = s.spSince != null;
+  const elapsed = spElapsed(s, t);
+  const spLeft = spTotal - elapsed;
+  const over = spLeft <= 0;
+  const fresh = spFresh(s);
+
+  useEffect(() => {
+    if (pomoRunning && left <= 0) dispatch({ type: "pomoTimeUp" });
+  }, [pomoRunning, left]);
+
+  const breakEndAt = s.breakEndAt;
+  useEffect(() => {
+    if (breakEndAt == null) return;
+    const timeout = setTimeout(() => dispatch({ type: "pomoFinish" }), Math.max(0, breakEndAt + BREAK_END_MS - now()));
+    return () => clearTimeout(timeout);
+  }, [breakEndAt]);
+
+  // Break melody: a break that runs out was booked ahead and plays on time; a skipped one (or one
+  // whose booking didn't happen) plays when "Break complete" appears, unless that was long ago.
+  const breakDue = s.pomoMode === "break" && pomoRunning && !breakEnding ? s.pomoSince + pomoTotalS * 1000 - s.pomoRunMs : null;
+  const wasBreakEnding = useRef(false);
+  const bookedBreak = useRef(null);
+  useEffect(() => {
+    const b = bookedBreak.current?.current;
+    const playedOnTime = b?.at != null && breakEndAt != null && Math.abs(b.at - breakEndAt) < 1000 && audioCtx?.state === "running";
+    if (breakEnding && !wasBreakEnding.current && now() - breakEndAt < 90000 && !playedOnTime) playNotes(PENTATONIC_CLIMB);
+    wasBreakEnding.current = breakEnding;
+  }, [breakEnding]);
+  bookedBreak.current = useBookedSound(breakDue, PENTATONIC_CLIMB, now);
+
+  // Speaker: one sound, at zero, booked ahead while the turn runs. Pausing or stopping cancels it;
+  // past zero nothing is booked, so resuming in overtime stays quiet.
+  const speakerDue = spRunning && !over ? s.spSince + spTotal * 1000 - s.spRunMs : null;
+  useBookedSound(speakerDue, FANFARE_EXTENDED, now);
+
+  if (loading) return <div className="min-h-screen w-full bg-page" />;
+
+  const pomoFace = (
+    <>
+      <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[s.pomoMode].label}</h2>
+      <div className="mt-6">
+        <Ring mode={s.pomoMode} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
+          {breakEnding ? (
+            <>
+              <div className="type-emoji leading-[2.125rem]" aria-hidden="true">🙌</div>
+              <div className="type-body text-secondary mt-1">Break complete</div>
+            </>
+          ) : (
+            <RingContent mode={s.pomoMode} time={formatTime(left)} caption={s.pomoMode === "focus" ? `Round ${s.round}` : ""} />
+          )}
+        </Ring>
+      </div>
+    </>
+  );
+  const speakerFace = (
+    <>
+      <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
+      <div className="mt-6">
+        <Ring mode={role} progress={over ? 1 : 1 - spLeft / spTotal} showTip={!over}>
+          <RingContent mode={role} time={formatTime(Math.max(0, spLeft))}
+            caption={over ? `over time · total ${formatShort(elapsed)}` : formatShort(spTotal)} />
+        </Ring>
+      </div>
+    </>
+  );
+
+  // Minimised next to the video tiles the Activity is a small tile: just the two timers, scaled
+  // to fit, without the controls.
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (vh < 420 || vw < 340) {
+    const pairW = 2 * 288 + 48;
+    const pairH = 25 + 24 + 288;
+    const k = Math.min((vw * 0.92) / pairW, (vh * 0.92) / pairH);
+    return (
+      <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
+        {notice}
+        <div className="flex items-start gap-12 shrink-0" style={{ transform: `scale(${k})` }}>
+          <TimerColumn mode={s.pomoMode} label="Meeting timer">{pomoFace}</TimerColumn>
+          <TimerColumn mode={role} label="Speaker timer">{speakerFace}</TimerColumn>
+        </div>
+      </div>
+    );
+  }
+
+  const pomoLabel = pomoRunning ? "Pause" : s.pomoRunMs === 0 ? "Start" : "Resume";
+  const spLabel = spRunning ? "Pause" : fresh ? "Start" : "Resume";
+  const pickPreset = (min) => (fresh ? dispatch({ type: "spPreset", minutes: min }) : setPendingPreset(min));
+
+  return (
+    <div className="min-h-screen w-full flex flex-col bg-page">
+      {notice}
+      <div className="flex-1 flex flex-col items-center justify-center gap-10 px-4 py-10">
+        <main className="flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12">
+          <h1 className="sr-only">Retro timers</h1>
+          <TimerColumn mode={s.pomoMode} label="Meeting timer">
+            {pomoFace}
+            <div className="flex items-center gap-5 mt-6">
+              <RoundButton label="Reset current round" disabled={breakEnding} onClick={() => dispatch({ type: "pomoReset" })}><RotateCcwIcon size={20} /></RoundButton>
+              <PlayPauseButton label={pomoLabel} mode={s.pomoMode} disabled={breakEnding} onClick={() => dispatch({ type: "pomoToggle" })} />
+              <RoundButton label={s.pomoMode === "focus" ? "Skip to break" : "Skip to meeting"} disabled={breakEnding} onClick={() => dispatch({ type: "pomoSkip" })}><SkipForwardIcon size={20} /></RoundButton>
+            </div>
+          </TimerColumn>
+          <TimerColumn mode={role} label="Speaker timer">
+            {speakerFace}
+            <div className="flex items-center gap-5 mt-6">
+              <RoundButton label="Reset timer" onClick={() => dispatch({ type: "spReset" })}><RotateCcwIcon size={20} /></RoundButton>
+              <PlayPauseButton label={spLabel} mode={role} onClick={() => dispatch({ type: "spToggle" })} />
+              <RoundButton label="Stop" disabled={fresh} onClick={() => dispatch({ type: "spStop" })}><StopIcon size={20} /></RoundButton>
+            </div>
+            <div className="mt-6">
+              <PresetPills value={s.minutes} onPick={pickPreset} />
+            </div>
+          </TimerColumn>
+        </main>
+        {/* nothing until the first turn is logged, like "completed" in the timer Activity */}
+        {s.log.length > 0 && (
+          <div className="flex flex-col items-center gap-1">
+            <LogToggle count={s.log.length} open={logOpen} onClick={() => setLogOpen((o) => !o)} />
+            {logOpen && <TurnLog log={s.log} />}
+          </div>
+        )}
+      </div>
+      <Credit inert={pendingPreset != null} privacyHref="https://elenakovelskikh.github.io/pomodoro-timer/discord/privacy.html" />
+      {pendingPreset != null && (
+        <Dialog
+          title={`Set the timer to ${pendingPreset} min?`}
+          description={`This turn ends and goes into the log. The timer resets to ${formatTime(pendingPreset * 60)} and waits for Start.`}
+          onSubmit={() => { dispatch({ type: "spPreset", minutes: pendingPreset }); setPendingPreset(null); }}
+          onClose={() => setPendingPreset(null)}
+        >
+          <div className="w-full flex flex-wrap-reverse gap-2">
+            <button onClick={() => setPendingPreset(null)}
+              className="grow h-11 px-6 rounded-xl bg-button-secondary type-button text-button-secondary hover:text-button-secondary-hover hover:bg-button-secondary-hover whitespace-nowrap">
+              Cancel
+            </button>
+            <button onClick={() => { dispatch({ type: "spPreset", minutes: pendingPreset }); setPendingPreset(null); }}
+              className="grow-[999] h-11 px-6 rounded-xl text-button-primary type-button bg-button-primary hover:bg-button-primary-hover whitespace-nowrap"
+              style={{ boxShadow: `0 2px 8px -2px ${MODE_COLORS.focus.shadow}59` }}>
+              Set {pendingPreset} min
+            </button>
+          </div>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<RetroScreen />);
+</script>
+</body>
+</html>

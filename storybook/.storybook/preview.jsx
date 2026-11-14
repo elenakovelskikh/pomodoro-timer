@@ -1,12 +1,12 @@
 import "../src/index.css";
-import { MODES } from "../src/tokens";
+import { ALL_MODES } from "../src/tokens";
 
 export default {
   // Mode-dependent components have a `mode` control; like the app's screen root, the decorator
   // turns it into --mode-accent / --mode-accent-hover for everything inside the story.
   decorators: [
     (Story, { args }) => {
-      const m = MODES[args.mode ?? "focus"];
+      const m = ALL_MODES[args.mode ?? "focus"];
       return (
         <div style={{ "--mode-accent": m.accent, "--mode-accent-hover": m.accentHover }}>
           <Story />
@@ -24,7 +24,7 @@ export default {
       storySort: {
         order: [
           "Foundations", ["Colors", ["Palette", "Tokens", "Modes"], "Typography", ["Primitives", "Text styles"]],
-          "Components", ["Button", "CompactTile", "ControlRow", "IconButton", "Log", "Popup", "RadioGroup", "RoundsStepper", "SyncNotice", "TimerRing"],
+          "Components", ["Button", "CompactTile", "ControlRow", "IconButton", "Log", "Popup", "PresetPills", "RadioGroup", "RoundsStepper", "SpeakerRing", "SyncNotice", "TimerRing", "TurnLog"],
         ],
       },
     },

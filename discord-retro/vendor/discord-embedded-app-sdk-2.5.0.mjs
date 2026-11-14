@@ -1,0 +1,1 @@
+../../discord/vendor/discord-embedded-app-sdk-2.5.0.mjs
