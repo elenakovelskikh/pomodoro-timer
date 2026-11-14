@@ -34,11 +34,12 @@
 <script type="module">
 const DISCORD_CLIENT_ID = "1571261434023649370"; // the Retro app: Developer Portal → OAuth2 → Client ID (public, not a secret)
 // Firebase web config is a public identifier, not a secret; access is limited by the database rules
+// The Retro app has its own Firebase project, so the public timer's traffic and rules don't touch it
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCOwTuLww-HLUrNZsJlaEtd-7q4FCGCzoA",
-  databaseURL: "https://violet-tomato-discord-activity-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "violet-tomato-discord-activity",
-  appId: "1:304315009793:web:9de620aa871ef04d0da900",
+  apiKey: "AIzaSyC0rhHydAvVfhD2e7tkdqcZBcqYmUsi_Y4",
+  databaseURL: "https://violet-retro-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "violet-retro",
+  appId: "1:201678232815:web:37937586b12b06e94ecf1a",
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -748,13 +749,24 @@ function RetroScreen() {
       </div>
     </>
   );
+  // While the zero sound plays, the ring pulses with "Time's up" (like "Break complete"). Worked
+  // out from the turn's own times, so it shows for everyone at once and not again after a pause.
+  const zeroAt = spRunning && s.spRunMs < spTotal * 1000 ? s.spSince + spTotal * 1000 - s.spRunMs : null;
+  const timeUp = zeroAt != null && t >= zeroAt && t < zeroAt + SOUND_DURATION_MS.focusEnd;
   const speakerFace = (
     <>
       <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
       <div className="mt-6">
-        <Ring mode={role} progress={over ? 1 : 1 - spLeft / spTotal} showTip={!over}>
-          <RingContent mode={role} time={formatTime(Math.max(0, spLeft))}
-            caption={over ? `over time · total ${formatShort(elapsed)}` : formatShort(spTotal)} />
+        <Ring mode={role} progress={over ? 1 : 1 - spLeft / spTotal} showTip={!over} pulse={timeUp}>
+          {timeUp ? (
+            <>
+              <div className="type-emoji leading-[2.125rem]" aria-hidden="true">⏰</div>
+              <div className="type-body text-secondary mt-1">Time's up</div>
+            </>
+          ) : (
+            <RingContent mode={role} time={formatTime(Math.max(0, spLeft))}
+              caption={over ? `over time · total ${formatShort(elapsed)}` : formatShort(spTotal)} />
+          )}
         </Ring>
       </div>
     </>

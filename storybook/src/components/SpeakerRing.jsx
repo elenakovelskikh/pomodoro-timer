@@ -4,7 +4,8 @@ import { RETRO_MODES, roleFor, formatTime, formatShort } from "../tokens";
 // Pure view of the retro speaker timer's ring: Speaker for 5 minutes, Commentator for 2.
 // secondsLeft goes below zero once the time is up: the time then stays at 00:00 with an empty ring,
 // and the caption says how long the whole turn has taken ("over time · total 6:15").
-export function SpeakerRing({ minutes = 5, secondsLeft = 5 * 60 }) {
+// timeUp: the moment of zero, while the sound plays — the ring pulses with "Time's up".
+export function SpeakerRing({ minutes = 5, secondsLeft = 5 * 60, timeUp = false }) {
   const uid = useId().replace(/:/g, "");
   const shadowId = `speaker-tip-shadow-${uid}`;
   const bandId = `speaker-band-${uid}`;
@@ -23,7 +24,7 @@ export function SpeakerRing({ minutes = 5, secondsLeft = 5 * 60 }) {
   };
 
   return (
-    <div className="relative w-72 h-72">
+    <div className={`relative w-72 h-72 ${timeUp ? "animate-pulse" : ""}`}>
       <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
         <defs>
           <radialGradient id={shadowId}>
@@ -58,13 +59,22 @@ export function SpeakerRing({ minutes = 5, secondsLeft = 5 * 60 }) {
         </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="flex items-center justify-center h-[1.875rem] mb-3" aria-hidden="true">
-          <span className="type-emoji">{emoji}</span>
-        </div>
-        <div className="type-display tabular-nums text-primary">{formatTime(Math.max(0, secondsLeft))}</div>
-        <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">
-          {overtime ? `over time · total ${formatShort(total - secondsLeft)}` : formatShort(total)}
-        </div>
+        {timeUp ? (
+          <>
+            <div className="type-emoji leading-[2.125rem]" aria-hidden="true">⏰</div>
+            <div className="type-body text-secondary mt-1">Time's up</div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-center h-[1.875rem] mb-3" aria-hidden="true">
+              <span className="type-emoji">{emoji}</span>
+            </div>
+            <div className="type-display tabular-nums text-primary">{formatTime(Math.max(0, secondsLeft))}</div>
+            <div className="flex items-center justify-center type-body text-secondary h-[1.875rem] mt-3">
+              {overtime ? `over time · total ${formatShort(total - secondsLeft)}` : formatShort(total)}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
