@@ -77,6 +77,8 @@ const FANFARE_EXTENDED = [
 ];
 // how long the break-end melody plays: the "Break complete" message stays up this long
 const BREAK_SOUND_MS = 1400;
+// how long the focus-end melody plays at the speaker's zero: "Time's up" stays up this long
+const TIME_UP_MS = 1900;
 const PENTATONIC_CLIMB = [
   { freq: N.C5, start: 0,    dur: 0.22 },
   { freq: N.D5, start: 0.16, dur: 0.22 },
@@ -578,12 +580,22 @@ function SpeakerTimer({ now, onRunningChange, onTurn, displaySlot }) {
   const label = running ? "Pause" : fresh ? "Start" : "Resume";
   // past zero the time stays at 00:00 and the caption keeps counting the whole turn
   const caption = over ? `over time · total ${formatShort(elapsed)}` : formatShort(total);
+  // While the zero sound plays, the ring pulses with "Time's up" (like "Break complete")
+  const zeroAt = running && clock.runMs < total * 1000 ? clock.runningSince + total * 1000 - clock.runMs : null;
+  const timeUp = zeroAt != null && now >= zeroAt && now < zeroAt + TIME_UP_MS;
   const face = (
     <>
       <h2 className="type-mode-label uppercase text-mode">{MODES[role].label}</h2>
       <div className="mt-6">
-        <Ring mode={role} progress={over ? 1 : 1 - left / total} showTip={!over}>
-          <RingContent mode={role} time={formatTime(Math.max(0, left))} caption={caption} />
+        <Ring mode={role} progress={over ? 1 : 1 - left / total} showTip={!over} pulse={timeUp}>
+          {timeUp ? (
+            <>
+              <div className="type-emoji" style={{ lineHeight: "2.125rem" }} aria-hidden="true">⏰</div>
+              <div className="type-body text-secondary" style={{ marginTop: "0.25rem" }}>Time's up</div>
+            </>
+          ) : (
+            <RingContent mode={role} time={formatTime(Math.max(0, left))} caption={caption} />
+          )}
         </Ring>
       </div>
     </>
