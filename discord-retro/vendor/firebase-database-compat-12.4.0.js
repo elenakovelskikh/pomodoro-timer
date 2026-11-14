@@ -1,0 +1,1 @@
+../../discord/vendor/firebase-database-compat-12.4.0.js
