@@ -153,29 +153,17 @@ function connect(roomId) {
     db.ref(".info/serverTimeOffset").on("value", (snap) => { clockOffsetMs = snap.val() || 0; });
 
     // Delete the room's state once everyone has left, so finished sessions don't pile up in the
-    // database. There's no server to notice an empty room, so the last participant standing asks
-    // the database to remove the state the moment their connection drops, and withdraws that as
-    // soon as someone else joins. (If that last connection only blipped, the timer component puts
-    // its state back when it reconnects.) Best effort: any failure here just leaves the room behind.
-    const presenceRef = roomRef.child("presence");
-    const me = presenceRef.push();
-    let deleteOnLeave = false;
+    // database. There's no server to notice an empty room, so every participant asks the database
+    // to remove the state the moment their own connection drops (registered again on every
+    // reconnect, since a registration ends with its connection). Whenever someone leaves while
+    // others stay, the state is removed for a moment and the timer component of whoever is still
+    // here puts it straight back (see "the room is empty" in the component), so nothing visible
+    // changes; when the last one leaves, nobody puts it back. This used to be asked only by the
+    // participant who knew they were alone, which left rooms behind whenever that participant
+    // never found out: a phone asleep in the background, several people leaving at once.
     db.ref(".info/connected").on("value", (snap) => {
-      if (snap.val() !== true) return;
-      deleteOnLeave = false; // whatever was registered on the previous connection is gone with it
-      me.onDisconnect().remove().then(() => me.set(true)).catch(() => {});
+      if (snap.val() === true) stateRef.onDisconnect().remove().catch(() => {});
     });
-    presenceRef.on(
-      "value",
-      (snap) => {
-        const alone = snap.numChildren() === 1 && snap.hasChild(me.key);
-        if (alone === deleteOnLeave) return;
-        deleteOnLeave = alone;
-        const onLeave = stateRef.onDisconnect();
-        (alone ? onLeave.remove() : onLeave.cancel()).catch(() => {});
-      },
-      () => {}
-    );
 
     return {
       now: () => Date.now() + clockOffsetMs,
@@ -447,7 +435,8 @@ function useRoomState() {
             stateRef.current = next;
             setState(next);
           } else if (stateRef.current.rev > 0) {
-            // the room is empty but timers already started here before the connection came up
+            // the room is empty but timers are already going here: someone else just left (their
+            // leaving removes the state, see connect()), or they started before the connection came up
             const next = { ...stateRef.current, rev: 1 };
             stateRef.current = next;
             setState(next);
