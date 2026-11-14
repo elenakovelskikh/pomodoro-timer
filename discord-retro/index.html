@@ -770,8 +770,8 @@ function RetroScreen() {
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
   // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
-  // right corner (just its time; the ring's color tells meeting from break). Both are the full-size
-  // 288px rings scaled down; the sizes keep the two circles from touching.
+  // right corner (just its time); during a break, only the break ring. The rings are the
+  // full-size 288px ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   if (vh < 420 || vw < 340) {
@@ -782,6 +782,31 @@ function RetroScreen() {
       position: "absolute", left, top, width: 288, height: 288,
       transform: `scale(${size / 288})`, transformOrigin: "top left",
     });
+    // During a break (and its "Break complete") the tile is just the break ring, large and centered
+    if (s.pomoMode === "break") {
+      const size = 0.9 * side;
+      return (
+        <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
+          {notice}
+          <div className="relative shrink-0" style={{ width: side, height: side }}>
+            <TimerColumn mode="break" label="Break timer">
+              <div style={place((side - size) / 2, (side - size) / 2, size)}>
+                {pomoRing(
+                  breakEnding ? (
+                    <>
+                      <div className="type-emoji leading-[2.125rem]" aria-hidden="true">🙌</div>
+                      <div className="type-body text-secondary mt-1">Break complete</div>
+                    </>
+                  ) : (
+                    <RingContent mode="break" time={formatTime(left)} caption="Break" />
+                  )
+                )}
+              </div>
+            </TimerColumn>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
         {notice}
