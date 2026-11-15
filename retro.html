@@ -455,7 +455,7 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
   const breakEnding = breakEndUntil != null;
 
   // Next round is lined up but not started: it waits for Start. A break ends with the sound and the
-  // pulse, whether its time ran out or it was skipped; a meeting round ends silently, right away.
+  // pulse, whether its time ran out or it was skipped; a skipped meeting round ends silently, right away.
   function goToNext() {
     if (mode === "break") {
       playNotes(PENTATONIC_CLIMB);
@@ -475,16 +475,27 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
     setClock(idleClock());
   }, [breakEnding, now]);
 
-  // time's up: move on to the next round and wait
+  // time's up: a meeting round stops at 00:00 and waits there (Start begins the break, Skip lines
+  // it up); a break moves on to the next round and waits
   useEffect(() => {
     if (!running || left !== 0 || breakEnding) return;
-    goToNext();
+    if (mode === "focus") setClock(pauseClock(clock, Date.now()));
+    else goToNext();
   }, [running, left]);
+  const meetingDone = mode === "focus" && left === 0;
+  function toggle() {
+    if (meetingDone) {
+      setMode("break");
+      setClock(startClock(idleClock(), Date.now()));
+      return;
+    }
+    setClock(running ? pauseClock(clock, Date.now()) : startClock(clock, Date.now()));
+  }
 
   useEffect(() => onRunningChange(running), [running]);
   useEffect(() => onRoundChange(round), [round]);
 
-  const label = running ? "Pause" : left === total ? "Start" : "Resume";
+  const label = running ? "Pause" : meetingDone ? "Start break" : left === total ? "Start" : "Resume";
   const face = (
     <>
       <h2 className="type-mode-label uppercase text-mode">{MODES[mode].label}</h2>
@@ -508,7 +519,7 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
       <TimerFace mode={mode} label="Pomodoro" slot={displaySlot}>{face}</TimerFace>
       <div className="flex items-center gap-5 mt-6">
         <RoundButton label="Reset current round" disabled={breakEnding} onClick={() => setClock(idleClock())}><RotateCcwIcon /></RoundButton>
-        <PlayPauseButton label={label} mode={mode} disabled={breakEnding} onClick={() => setClock(running ? pauseClock(clock, Date.now()) : startClock(clock, Date.now()))} />
+        <PlayPauseButton label={label} mode={mode} disabled={breakEnding} onClick={toggle} />
         <RoundButton label={mode === "focus" ? "Skip to break" : "Skip to focus"} disabled={breakEnding} onClick={goToNext}><SkipForwardIcon /></RoundButton>
       </div>
     </TimerColumn>
