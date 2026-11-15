@@ -784,10 +784,11 @@ function RetroScreen() {
   if (vh < 420 || vw < 340) {
     const side = Math.min(vw, vh);
     // the big timer (the speaker's, or the break's once started) is sized like the timer Activity's
-    // tile: label and ring scaled together to 92% of the tile, centered
+    // tile: label and ring scaled together to 92% of the tile, centered (the speaker's ring 4px
+    // closer to its label, to make room for the small ring)
     const bigK = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
     // the meeting's small ring sits in the bottom right corner, small enough to clear the big one
-    const small = 0.22 * side;
+    const small = 0.22 * side + 4;
     // the small ring is the 288px one scaled down by smallK; its line (3px), time (9px) and corner gap
     // (2px) are set in real pixels, so they come out the same whatever the tile's size
     const smallK = small / 288;
@@ -805,7 +806,10 @@ function RetroScreen() {
           {breakOn ? (
             <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
           ) : (
-            <TimerColumn mode={role} label="Speaker timer">{speakerFace}</TimerColumn>
+            <TimerColumn mode={role} label="Speaker timer">
+              <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
+              <div className="mt-6" style={{ transform: `translateY(${-4 / bigK}px)` }}>{speakerRing}</div>
+            </TimerColumn>
           )}
         </div>
         {!breakOn && (
