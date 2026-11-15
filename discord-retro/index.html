@@ -252,7 +252,7 @@ window.timerSync = {
 <script type="text/babel" src="shared/ui.jsx"></script>
 <script type="text/babel">
 // Retro timers, shared by everyone in the Activity. Right: the meeting's Pomodoro, 25/5. A meeting
-// round ends silently, a break ends with the break melody and a short "Break complete" pulse;
+// round ends silently and stays at 00:00, a break ends with the break melody and a short "Break complete" pulse;
 // either way the next round waits for Start. Left: the speaker (5 min) or commentator (2 min)
 // timer. At zero it plays the focus-end melody once; after that the time stays at 00:00 while the
 // caption keeps counting the whole turn. Finished turns go into a log, grouped by meeting round.
@@ -331,6 +331,8 @@ function retroReduce(s, action, now) {
   switch (action.type) {
     case "pomoToggle":
       if (s.breakEndAt != null) return s;
+      // a finished meeting round: Start begins the break
+      if (s.pomoMode === "focus" && pomoLeft(s, now) === 0) return { ...s, pomoMode: "break", pomoRunMs: 0, pomoSince: now };
       return s.pomoSince != null
         ? { ...s, pomoRunMs: runMs(s.pomoRunMs, s.pomoSince, now), pomoSince: null }
         : { ...s, pomoSince: now };
@@ -343,6 +345,8 @@ function retroReduce(s, action, now) {
     case "pomoTimeUp": {
       // everyone's copy notices zero at about the same moment; the first write wins
       if (s.pomoSince == null || s.breakEndAt != null || pomoLeft(s, now) > 0) return s;
+      // a meeting round stops at 00:00 and waits there (Start begins the break, Skip lines it up)
+      if (s.pomoMode === "focus") return { ...s, pomoRunMs: pomoTotal(s) * 1000, pomoSince: null };
       return pomoNext(s, s.pomoSince + pomoTotal(s) * 1000 - s.pomoRunMs);
     }
     case "pomoFinish":
@@ -819,7 +823,8 @@ function RetroScreen() {
     );
   }
 
-  const pomoLabel = pomoRunning ? "Pause" : s.pomoRunMs === 0 ? "Start" : "Resume";
+  const meetingDone = s.pomoMode === "focus" && left === 0;
+  const pomoLabel = pomoRunning ? "Pause" : meetingDone ? "Start break" : s.pomoRunMs === 0 ? "Start" : "Resume";
   const spLabel = spRunning ? "Pause" : fresh ? "Start" : "Resume";
   const pickPreset = (min) => (fresh ? dispatch({ type: "spPreset", minutes: min }) : setPendingPreset(min));
 
