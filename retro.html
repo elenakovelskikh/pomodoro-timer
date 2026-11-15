@@ -31,7 +31,7 @@
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 // Two independent timers for the weekly retro, shown side by side on a shared screen.
-// Meeting timer (right): Pomodoro 25/5 that stops at zero and waits for Start before the next round. The end of a
+// Meeting timer (right): Pomodoro 25/5. A meeting round stops at zero and waits for Start; after a break the next meeting round starts by itself. The end of a
 // meeting round is silent; the end of a break plays the main timer's break-end melody.
 // Speaker timer (left): speaker (5 min) or commentator (2 min) timer. At zero it plays the focus-end sound and
 // then stays at 00:00 while
@@ -454,7 +454,7 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
   const [breakEndUntil, setBreakEndUntil] = useState(null);
   const breakEnding = breakEndUntil != null;
 
-  // Next round is lined up but not started: it waits for Start. A break ends with the sound and the
+  // A skipped meeting round lines up the break, which waits for Start. A break ends with the sound and the
   // pulse, whether its time ran out or it was skipped; a skipped meeting round ends silently, right away.
   function goToNext() {
     if (mode === "break") {
@@ -472,7 +472,8 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
     setBreakEndUntil(null);
     setRound((r) => r + 1);
     setMode("focus");
-    setClock(idleClock());
+    // the next meeting round starts by itself once "Break complete" is over
+    setClock(startClock(idleClock(), breakEndUntil));
   }, [breakEnding, now]);
 
   // time's up: a meeting round stops at 00:00 and waits there (Start begins the break, Skip lines

@@ -253,7 +253,7 @@ window.timerSync = {
 <script type="text/babel">
 // Retro timers, shared by everyone in the Activity. Right: the meeting's Pomodoro, 25/5. A meeting
 // round ends silently and stays at 00:00, a break ends with the break melody and a short "Break complete" pulse;
-// either way the next round waits for Start. Left: the speaker (5 min) or commentator (2 min)
+// a meeting round waits for Start, the meeting after a break starts by itself. Left: the speaker (5 min) or commentator (2 min)
 // timer. At zero it plays the focus-end melody once; after that the time stays at 00:00 while the
 // caption keeps counting the whole turn. Finished turns go into a log, grouped by meeting round.
 //
@@ -351,7 +351,9 @@ function retroReduce(s, action, now) {
     }
     case "pomoFinish":
       if (s.breakEndAt == null) return s;
-      return { ...s, breakEndAt: null, pomoMode: "focus", round: s.round + 1, pomoRunMs: 0, pomoSince: null };
+      // the next meeting round starts by itself once "Break complete" is over, counted from that
+      // moment (not from whenever this copy got round to it), so everyone's clock agrees
+      return { ...s, breakEndAt: null, pomoMode: "focus", round: s.round + 1, pomoRunMs: 0, pomoSince: s.breakEndAt + BREAK_END_MS };
     case "spToggle":
       if (s.spSince != null) return { ...s, spRunMs: runMs(s.spRunMs, s.spSince, now), spSince: null };
       if (s.stopped) return { ...s, spRunMs: 0, spSince: now, stopped: false };
@@ -525,7 +527,8 @@ function useBookedSound(dueAt, notes, now) {
 }
 
 // ---- Views ----
-function Ring({ mode, progress, showTip, pulse = false, children }) {
+// stroke: the ring's thickness in its 280-unit drawing (10 on the full-size 18rem ring)
+function Ring({ mode, progress, showTip, pulse = false, stroke = 10, children }) {
   const uid = useId().replace(/:/g, "");
   const { arc, shadow } = RETRO_MODES[mode];
   const radius = 120;
@@ -547,17 +550,17 @@ function Ring({ mode, progress, showTip, pulse = false, children }) {
           </radialGradient>
           <clipPath id={`band-${uid}`}>
             <path clipRule="evenodd"
-              d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
-                  M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`} />
+              d={`M 140 ${140 - radius - stroke / 2} a ${radius + stroke / 2} ${radius + stroke / 2} 0 1 0 0.01 0 Z
+                  M 140 ${140 - radius + stroke / 2} a ${radius - stroke / 2} ${radius - stroke / 2} 0 1 0 0.01 0 Z`} />
           </clipPath>
         </defs>
-        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
-        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth="10" strokeLinecap="round"
+        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth={stroke} />
+        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={circumference * progress}
           style={{ transition: "stroke-dashoffset 1s linear" }} />
         <g style={{ transform: `rotate(${tipDeg}deg)`, transformOrigin: "140px 140px", transition: "transform 1s linear", display: showTip ? undefined : "none" }}>
-          <circle cx={shadowCenter.x} cy={shadowCenter.y} r="8" fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
-          <circle cx={140 + radius} cy="140" r="5" fill={arc} />
+          <circle cx={shadowCenter.x} cy={shadowCenter.y} r={stroke * 0.8} fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
+          <circle cx={140 + radius} cy="140" r={stroke / 2} fill={arc} />
         </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
@@ -726,8 +729,8 @@ function RetroScreen() {
   if (loading) return <div className="min-h-screen w-full bg-page" />;
 
   // the ring around `content`, as the meeting timer is right now
-  const pomoRing = (content) => (
-    <Ring mode={s.pomoMode} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
+  const pomoRing = (content, stroke) => (
+    <Ring mode={s.pomoMode} stroke={stroke} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
       {content}
     </Ring>
   );
@@ -773,52 +776,59 @@ function RetroScreen() {
   );
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
-  // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
-  // right corner (its emoji and time); once a break is started, only the break ring. The rings are the
-  // full-size 288px ones scaled down; the sizes keep the two circles from touching.
+  // the speaker's timer large in the middle, the meeting timer as a small ring in the bottom
+  // right corner (just its time); once a break is started, only the break ring. The rings are the
+  // full-size 18rem ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   if (vh < 420 || vw < 340) {
     const side = Math.min(vw, vh);
-    const big = 0.72 * side;
-    const small = 0.32 * side;
-    const place = (left, top, size) => ({
-      position: "absolute", left, top, width: 288, height: 288,
-      transform: `scale(${size / 288})`, transformOrigin: "top left",
-    });
+    // Sizes are in rem like the rest of the UI; rem is the root font size in px, needed where a size
+    // has to be worked out here. The full-size ring is w-72 (18rem).
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const ring = 18 * rem;
+    // the big timer (the speaker's, or the break's once started) is sized like the timer Activity's
+    // tile: label and ring scaled together to 92% of the tile, centered (the speaker's ring 0.25rem
+    // closer to its label, to make room for the small ring)
+    const bigK = Math.min((vw * 0.92) / ring, (vh * 0.92) / ((1.25 + 1.5 + 18) * rem));
+    // the meeting's small ring sits in the bottom right corner, small enough to clear the big one
+    const small = 0.22 * side + 0.25 * rem;
+    // the small ring is the full-size one scaled down by smallK; its line (0.25rem), time (0.75rem)
+    // and corner gap (0.125rem) are set for the tile as shown, so they stay the same whatever its size
+    const smallK = small / ring;
+    const smallStroke = (0.25 * rem * 280) / ring / smallK; // in the ring drawing's 280 units
+    // the drawing leaves a margin around the circle; the corner gap is measured from the line itself
+    const smallInset = (140 - 120 - smallStroke / 2) * (ring / 280) * smallK;
+    const smallAt = side - 0.125 * rem - small + smallInset;
     // Once the break has been started (and through its "Break complete") the tile is just the break
-    // timer; a break that's only lined up stays the small ring. Laid out like the
-    // timer Activity's tile: the label, then the ring, scaled together to 92% of the tile
-    if (s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding)) {
-      const k = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
-      return (
-        <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
-          {notice}
-          <div className="shrink-0" style={{ transform: `scale(${k})` }}>
-            <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
-          </div>
-        </div>
-      );
-    }
+    // timer; a break that's only lined up stays the small ring
+    const breakOn = s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding);
     return (
-      <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
+      <div className="relative w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
         {notice}
-        <div className="relative shrink-0" style={{ width: side, height: side }}>
-          <TimerColumn mode={role} label="Speaker timer">
-            <div style={place(0.05 * side, 0.05 * side, big)}>{speakerRing}</div>
-          </TimerColumn>
+        <div className="shrink-0" style={{ transform: `scale(${bigK})` }}>
+          {breakOn ? (
+            <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
+          ) : (
+            <TimerColumn mode={role} label="Speaker timer">
+              <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
+              <div className="mt-6" style={{ transform: `translateY(${-0.25 / bigK}rem)` }}>{speakerRing}</div>
+            </TimerColumn>
+          )}
+        </div>
+        {!breakOn && (
+          <div className="absolute" style={{ width: side, height: side, left: (vw - side) / 2, top: (vh - side) / 2 }}>
           <TimerColumn mode={s.pomoMode} label="Meeting timer">
-            <div style={place(side - 0.03 * side - small, side - 0.03 * side - small, small)}>
+            <div style={{ position: "absolute", left: smallAt, top: smallAt, width: "18rem", height: "18rem",
+              transform: `scale(${smallK})`, transformOrigin: "top left" }}>
               {pomoRing(
-                breakEnding ? (
-                  <div className="type-emoji" aria-hidden="true">🙌</div>
-                ) : (
-                  <RingContent mode={s.pomoMode} time={formatTime(left)} caption="" />
-                )
+                <div className="font-bold tabular-nums text-primary" style={{ fontSize: `${0.75 / smallK}rem`, lineHeight: 1 }}>{formatTime(left)}</div>,
+                smallStroke
               )}
             </div>
           </TimerColumn>
-        </div>
+          </div>
+        )}
       </div>
     );
   }
