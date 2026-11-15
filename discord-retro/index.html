@@ -791,14 +791,15 @@ function RetroScreen() {
     // The small ring's sizes are set for a 15rem (240px) tile; a smaller tile gets all of them scaled
     // down by f, so the composition stays the same.
     const f = Math.min(1, side / (15 * rem));
-    // The meeting's small ring sits in the tile's bottom right corner, 0.125rem from its edges, with
+    // The meeting's small ring sits in the bottom right corner, 0.125rem from its edges, with
     // a 0.25rem line and the time at 0.75rem. It grows with the tile but never gets too small for the
     // time to fit inside (3.5rem).
     const small = Math.max(0.22 * side + 0.25 * rem * f, 3.5 * rem * f);
     const smallK = small / ring;
     const smallStroke = (0.25 * rem * f * 280) / ring / smallK; // in the drawing's 280 units
     const smallR = (120 / 280) * small + 0.125 * rem * f; // to the outer edge of its line
-    const smallC = { x: vw - 0.125 * rem * f - smallR, y: vh - 0.125 * rem * f - smallR };
+    // a wide tile is laid out like a square one: the corner is that of the square in its middle
+    const smallC = { x: (vw + side) / 2 - 0.125 * rem * f - smallR, y: (vh + side) / 2 - 0.125 * rem * f - smallR };
     // The big timer (the speaker's, or the break's once started) is sized like the timer Activity's
     // tile: label and ring scaled together to 92% of the tile, centered. The speaker's ring sits
     // 0.25rem closer to its label, and on a tile too small for both it shrinks until there's a
