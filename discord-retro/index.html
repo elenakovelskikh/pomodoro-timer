@@ -527,7 +527,8 @@ function useBookedSound(dueAt, notes, now) {
 }
 
 // ---- Views ----
-function Ring({ mode, progress, showTip, pulse = false, children }) {
+// stroke: the ring's thickness in its 280-unit drawing (10 on the full-size 288px ring)
+function Ring({ mode, progress, showTip, pulse = false, stroke = 10, children }) {
   const uid = useId().replace(/:/g, "");
   const { arc, shadow } = RETRO_MODES[mode];
   const radius = 120;
@@ -549,17 +550,17 @@ function Ring({ mode, progress, showTip, pulse = false, children }) {
           </radialGradient>
           <clipPath id={`band-${uid}`}>
             <path clipRule="evenodd"
-              d={`M 140 ${140 - radius - 5} a ${radius + 5} ${radius + 5} 0 1 0 0.01 0 Z
-                  M 140 ${140 - radius + 5} a ${radius - 5} ${radius - 5} 0 1 0 0.01 0 Z`} />
+              d={`M 140 ${140 - radius - stroke / 2} a ${radius + stroke / 2} ${radius + stroke / 2} 0 1 0 0.01 0 Z
+                  M 140 ${140 - radius + stroke / 2} a ${radius - stroke / 2} ${radius - stroke / 2} 0 1 0 0.01 0 Z`} />
           </clipPath>
         </defs>
-        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth="10" />
-        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth="10" strokeLinecap="round"
+        <circle cx="140" cy="140" r={radius} fill="none" className="stroke-ring-track" strokeWidth={stroke} />
+        <circle cx="140" cy="140" r={radius} fill="none" stroke={arc} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={circumference * progress}
           style={{ transition: "stroke-dashoffset 1s linear" }} />
         <g style={{ transform: `rotate(${tipDeg}deg)`, transformOrigin: "140px 140px", transition: "transform 1s linear", display: showTip ? undefined : "none" }}>
-          <circle cx={shadowCenter.x} cy={shadowCenter.y} r="8" fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
-          <circle cx={140 + radius} cy="140" r="5" fill={arc} />
+          <circle cx={shadowCenter.x} cy={shadowCenter.y} r={stroke * 0.8} fill={`url(#tip-${uid})`} clipPath={`url(#band-${uid})`} />
+          <circle cx={140 + radius} cy="140" r={stroke / 2} fill={arc} />
         </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
@@ -728,8 +729,8 @@ function RetroScreen() {
   if (loading) return <div className="min-h-screen w-full bg-page" />;
 
   // the ring around `content`, as the meeting timer is right now
-  const pomoRing = (content) => (
-    <Ring mode={s.pomoMode} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
+  const pomoRing = (content, stroke) => (
+    <Ring mode={s.pomoMode} stroke={stroke} progress={breakEnding ? 1 : 1 - left / pomoTotalS} showTip={left > 0 && !breakEnding} pulse={breakEnding}>
       {content}
     </Ring>
   );
@@ -776,7 +777,7 @@ function RetroScreen() {
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
   // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
-  // right corner (its emoji and time); once a break is started, only the break ring. The rings are the
+  // right corner (just its time); once a break is started, only the break ring. The rings are the
   // full-size 288px ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -784,6 +785,13 @@ function RetroScreen() {
     const side = Math.min(vw, vh);
     const big = 0.72 * side;
     const small = 0.32 * side;
+    // the small ring is the 288px one scaled down by smallK; its line (3px), time (9px) and corner gap
+    // (2px) are set in real pixels, so they come out the same whatever the tile's size
+    const smallK = small / 288;
+    const smallStroke = (3 * 280) / 288 / smallK;
+    // the drawing leaves a margin around the circle; the 2px gap is measured from the line itself
+    const smallInset = (140 - 120 - smallStroke / 2) * (288 / 280) * smallK;
+    const smallAt = side - 2 - small + smallInset;
     const place = (left, top, size) => ({
       position: "absolute", left, top, width: 288, height: 288,
       transform: `scale(${size / 288})`, transformOrigin: "top left",
@@ -807,16 +815,13 @@ function RetroScreen() {
         {notice}
         <div className="relative shrink-0" style={{ width: side, height: side }}>
           <TimerColumn mode={role} label="Speaker timer">
-            <div style={place(0.05 * side, 0.05 * side, big)}>{speakerRing}</div>
+            <div style={place(0.05 * side, 0.05 * side - 4, big)}>{speakerRing}</div>
           </TimerColumn>
           <TimerColumn mode={s.pomoMode} label="Meeting timer">
-            <div style={place(side - 0.03 * side - small, side - 0.03 * side - small, small)}>
+            <div style={place(smallAt, smallAt, small)}>
               {pomoRing(
-                breakEnding ? (
-                  <div className="type-emoji" aria-hidden="true">🙌</div>
-                ) : (
-                  <RingContent mode={s.pomoMode} time={formatTime(left)} caption="" />
-                )
+                <div className="font-bold tabular-nums text-primary" style={{ fontSize: 9 / smallK, lineHeight: 1 }}>{formatTime(left)}</div>,
+                smallStroke
               )}
             </div>
           </TimerColumn>
