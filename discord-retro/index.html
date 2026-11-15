@@ -770,7 +770,7 @@ function RetroScreen() {
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
   // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
-  // right corner (just its time); once a break is started, only the break ring. The rings are the
+  // right corner (its emoji and time); once a break is started, only the break ring. The rings are the
   // full-size 288px ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -809,7 +809,7 @@ function RetroScreen() {
                 breakEnding ? (
                   <div className="type-emoji" aria-hidden="true">🙌</div>
                 ) : (
-                  <div className="type-display tabular-nums text-primary">{formatTime(left)}</div>
+                  <RingContent mode={s.pomoMode} time={formatTime(left)} caption="" />
                 )
               )}
             </div>
