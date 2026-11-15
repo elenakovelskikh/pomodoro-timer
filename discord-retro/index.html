@@ -527,7 +527,7 @@ function useBookedSound(dueAt, notes, now) {
 }
 
 // ---- Views ----
-// stroke: the ring's thickness in its 280-unit drawing (10 on the full-size 288px ring)
+// stroke: the ring's thickness in its 280-unit drawing (10 on the full-size 18rem ring)
 function Ring({ mode, progress, showTip, pulse = false, stroke = 10, children }) {
   const uid = useId().replace(/:/g, "");
   const { arc, shadow } = RETRO_MODES[mode];
@@ -778,24 +778,28 @@ function RetroScreen() {
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
   // the speaker's timer large in the middle, the meeting timer as a small ring in the bottom
   // right corner (just its time); once a break is started, only the break ring. The rings are the
-  // full-size 288px ones scaled down; the sizes keep the two circles from touching.
+  // full-size 18rem ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   if (vh < 420 || vw < 340) {
     const side = Math.min(vw, vh);
+    // Sizes are in rem like the rest of the UI; rem is the root font size in px, needed where a size
+    // has to be worked out here. The full-size ring is w-72 (18rem).
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const ring = 18 * rem;
     // the big timer (the speaker's, or the break's once started) is sized like the timer Activity's
-    // tile: label and ring scaled together to 92% of the tile, centered (the speaker's ring 4px
+    // tile: label and ring scaled together to 92% of the tile, centered (the speaker's ring 0.25rem
     // closer to its label, to make room for the small ring)
-    const bigK = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
+    const bigK = Math.min((vw * 0.92) / ring, (vh * 0.92) / ((1.25 + 1.5 + 18) * rem));
     // the meeting's small ring sits in the bottom right corner, small enough to clear the big one
-    const small = 0.22 * side + 4;
-    // the small ring is the 288px one scaled down by smallK; its line (4px), time (12px) and corner gap
-    // (2px) are set in real pixels, so they come out the same whatever the tile's size
-    const smallK = small / 288;
-    const smallStroke = (4 * 280) / 288 / smallK;
-    // the drawing leaves a margin around the circle; the 2px gap is measured from the line itself
-    const smallInset = (140 - 120 - smallStroke / 2) * (288 / 280) * smallK;
-    const smallAt = side - 2 - small + smallInset;
+    const small = 0.22 * side + 0.25 * rem;
+    // the small ring is the full-size one scaled down by smallK; its line (0.25rem), time (0.75rem)
+    // and corner gap (0.125rem) are set for the tile as shown, so they stay the same whatever its size
+    const smallK = small / ring;
+    const smallStroke = (0.25 * rem * 280) / ring / smallK; // in the ring drawing's 280 units
+    // the drawing leaves a margin around the circle; the corner gap is measured from the line itself
+    const smallInset = (140 - 120 - smallStroke / 2) * (ring / 280) * smallK;
+    const smallAt = side - 0.125 * rem - small + smallInset;
     // Once the break has been started (and through its "Break complete") the tile is just the break
     // timer; a break that's only lined up stays the small ring
     const breakOn = s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding);
@@ -808,17 +812,17 @@ function RetroScreen() {
           ) : (
             <TimerColumn mode={role} label="Speaker timer">
               <h2 className="type-mode-label uppercase text-mode">{RETRO_MODES[role].label}</h2>
-              <div className="mt-6" style={{ transform: `translateY(${-4 / bigK}px)` }}>{speakerRing}</div>
+              <div className="mt-6" style={{ transform: `translateY(${-0.25 / bigK}rem)` }}>{speakerRing}</div>
             </TimerColumn>
           )}
         </div>
         {!breakOn && (
           <div className="absolute" style={{ width: side, height: side, left: (vw - side) / 2, top: (vh - side) / 2 }}>
           <TimerColumn mode={s.pomoMode} label="Meeting timer">
-            <div style={{ position: "absolute", left: smallAt, top: smallAt, width: 288, height: 288,
+            <div style={{ position: "absolute", left: smallAt, top: smallAt, width: "18rem", height: "18rem",
               transform: `scale(${smallK})`, transformOrigin: "top left" }}>
               {pomoRing(
-                <div className="font-bold tabular-nums text-primary" style={{ fontSize: 12 / smallK, lineHeight: 1 }}>{formatTime(left)}</div>,
+                <div className="font-bold tabular-nums text-primary" style={{ fontSize: `${0.75 / smallK}rem`, lineHeight: 1 }}>{formatTime(left)}</div>,
                 smallStroke
               )}
             </div>
