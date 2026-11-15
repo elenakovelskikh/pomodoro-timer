@@ -31,9 +31,9 @@
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 // Two independent timers for the weekly retro, shown side by side on a shared screen.
-// Left: Pomodoro 25/5 that stops at zero and waits for Start before the next round. The end of a
+// Meeting timer (right): Pomodoro 25/5 that stops at zero and waits for Start before the next round. The end of a
 // meeting round is silent; the end of a break plays the main timer's break-end melody.
-// Right: speaker (5 min) or commentator (2 min) timer. At zero it plays the focus-end sound and
+// Speaker timer (left): speaker (5 min) or commentator (2 min) timer. At zero it plays the focus-end sound and
 // then stays at 00:00 while
 // the caption keeps counting the whole turn, without further sounds.
 const { useState, useEffect, useRef, useId } = React;
@@ -43,7 +43,7 @@ const FOCUS_MIN = 25;
 const BREAK_MIN = 5;
 const SPEAKER_PRESETS = [2, 5];
 const SPEAKER_DEFAULT_MIN = 5;
-// who the right timer is for, by its length
+// who the speaker timer is for, by its length
 const roleFor = (minutes) => (minutes === 2 ? "commentator" : "speaker");
 
 const MODES = {
@@ -377,7 +377,7 @@ function Dialog({ title, description, confirmLabel, onConfirm, onCancel }) {
 }
 
 // ---- Turn log ----
-// Finished turns grouped by the meeting round (the left timer's "Round N") they happened in.
+// Finished turns grouped by the meeting round (the meeting timer's "Round N") they happened in.
 // log: [{ round, turns: [{ role, seconds, limit }, …] }, …]
 function addTurn(log, round, turn) {
   const last = log[log.length - 1];
@@ -439,7 +439,7 @@ function PresetPills({ presets, value, onPick }) {
   );
 }
 
-// ---- Left: Pomodoro ----
+// ---- Meeting timer (right): Pomodoro ----
 function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
   const [mode, setMode] = useState("focus");
   const [round, setRound] = useState(1);
@@ -515,7 +515,7 @@ function PomodoroTimer({ now, onRunningChange, onRoundChange, displaySlot }) {
   );
 }
 
-// ---- Right: speaker timer ----
+// ---- Speaker timer (left) ----
 function SpeakerTimer({ now, onRunningChange, onTurn, displaySlot }) {
   const [minutes, setMinutes] = useState(SPEAKER_DEFAULT_MIN);
   const [clock, setClock] = useState(idleClock);
@@ -601,8 +601,8 @@ function SpeakerTimer({ now, onRunningChange, onTurn, displaySlot }) {
     </>
   );
   return (
-    // first when the two are stacked (phones), on the right side by side
-    <TimerColumn mode={role} label="Speaker timer" className="order-first md:order-none">
+    // the speaker first: on the left side by side, on top when stacked (phones)
+    <TimerColumn mode={role} label="Speaker timer">
       {face}
       <TimerFace mode={role} label="Speaker timer" slot={displaySlot}>{face}</TimerFace>
       <div className="flex items-center gap-5 mt-6">
@@ -658,8 +658,8 @@ function RetroScreen() {
     <div className="min-h-screen flex flex-col items-center justify-center gap-10 px-4 py-10">
       <main className="flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12">
         <h1 className="sr-only">Retro timers</h1>
-        <PomodoroTimer now={now} onRunningChange={setPomodoroRunning} onRoundChange={setMeetingRound} displaySlot={display?.left} />
-        <SpeakerTimer now={now} onRunningChange={setSpeakerRunning} onTurn={(turn) => setLog((l) => addTurn(l, meetingRound, turn))} displaySlot={display?.right} />
+        <SpeakerTimer now={now} onRunningChange={setSpeakerRunning} onTurn={(turn) => setLog((l) => addTurn(l, meetingRound, turn))} displaySlot={display?.left} />
+        <PomodoroTimer now={now} onRunningChange={setPomodoroRunning} onRoundChange={setMeetingRound} displaySlot={display?.right} />
       </main>
       {/* the turn log, centered under both timers */}
       {log.length > 0 && (

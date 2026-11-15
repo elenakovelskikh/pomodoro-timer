@@ -251,9 +251,9 @@ window.timerSync = {
 <!-- constants, sounds, icons and UI pieces shared with the website (../shared/ui.jsx) -->
 <script type="text/babel" src="shared/ui.jsx"></script>
 <script type="text/babel">
-// Retro timers, shared by everyone in the Activity. Left: the meeting's Pomodoro, 25/5. A meeting
+// Retro timers, shared by everyone in the Activity. Right: the meeting's Pomodoro, 25/5. A meeting
 // round ends silently, a break ends with the break melody and a short "Break complete" pulse;
-// either way the next round waits for Start. Right: the speaker (5 min) or commentator (2 min)
+// either way the next round waits for Start. Left: the speaker (5 min) or commentator (2 min)
 // timer. At zero it plays the focus-end melody once; after that the time stays at 00:00 while the
 // caption keeps counting the whole turn. Finished turns go into a log, grouped by meeting round.
 //
@@ -268,7 +268,7 @@ const RETRO_BREAK_MIN = 5;
 const SPEAKER_PRESETS = [2, 5];
 // how long the "Break complete" pulse stays up: the length of the break melody
 const BREAK_END_MS = SOUND_DURATION_MS.breakEnd;
-// who the right timer is for, by its length
+// who the speaker timer is for, by its length
 const roleFor = (minutes) => (minutes === 2 ? "commentator" : "speaker");
 
 const RETRO_MODES = {
@@ -288,13 +288,13 @@ const StopIcon = (props) => <Icon {...props}><rect width="18" height="18" x="3" 
 // A clock is the time run so far (runMs) plus the run in progress (since, a shared-clock time).
 const RETRO_STATE = {
   rev: 0, // bumped on every change, as in the timer Activity
-  // left timer
+  // meeting timer
   pomoMode: "focus",
   round: 1,
   pomoRunMs: 0,
   pomoSince: null,
   breakEndAt: null, // set while "Break complete" shows: when the break ended
-  // right timer
+  // speaker timer
   minutes: 5,
   spRunMs: 0,
   spSince: null,
@@ -307,7 +307,7 @@ const runMs = (ms, since, now) => ms + (since != null ? Math.max(0, now - since)
 const pomoTotal = (s) => (s.pomoMode === "focus" ? MEETING_MIN : RETRO_BREAK_MIN) * 60;
 const pomoLeft = (s, now) => Math.max(0, pomoTotal(s) - Math.floor(runMs(s.pomoRunMs, s.pomoSince, now) / 1000));
 const spElapsed = (s, now) => Math.floor(runMs(s.spRunMs, s.spSince, now) / 1000);
-// nothing to lose by starting the right timer over: never started, or stopped
+// nothing to lose by starting the speaker timer over: never started, or stopped
 const spFresh = (s) => s.spSince == null && (s.spRunMs === 0 || s.stopped);
 
 // the turn under way goes into the log, under the meeting round it happened in
@@ -676,12 +676,12 @@ function RetroScreen() {
   }, []);
 
   const t = now();
-  // left
+  // meeting
   const pomoTotalS = pomoTotal(s);
   const pomoRunning = s.pomoSince != null;
   const left = pomoLeft(s, t);
   const breakEnding = s.breakEndAt != null;
-  // right
+  // speaker
   const role = roleFor(s.minutes);
   const spTotal = s.minutes * 60;
   const spRunning = s.spSince != null;
@@ -770,7 +770,7 @@ function RetroScreen() {
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
   // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
-  // right corner (just its time); during a break, only the break ring. The rings are the
+  // right corner (just its time); once a break is started, only the break ring. The rings are the
   // full-size 288px ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -782,9 +782,10 @@ function RetroScreen() {
       position: "absolute", left, top, width: 288, height: 288,
       transform: `scale(${size / 288})`, transformOrigin: "top left",
     });
-    // During a break (and its "Break complete") the tile is just the break timer, laid out like the
+    // Once the break has been started (and through its "Break complete") the tile is just the break
+    // timer; a break that's only lined up stays the small ring. Laid out like the
     // timer Activity's tile: the label, then the ring, scaled together to 92% of the tile
-    if (s.pomoMode === "break") {
+    if (s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding)) {
       const k = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
       return (
         <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
@@ -828,16 +829,8 @@ function RetroScreen() {
       <div className="flex-1 flex flex-col items-center justify-center gap-10 px-4 py-10">
         <main className="flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12">
           <h1 className="sr-only">Retro timers</h1>
-          <TimerColumn mode={s.pomoMode} label="Meeting timer">
-            {pomoFace}
-            <div className="flex items-center gap-5 mt-6">
-              <RoundButton label="Reset current round" disabled={breakEnding} onClick={() => dispatch({ type: "pomoReset" })}><RotateCcwIcon size={20} /></RoundButton>
-              <PlayPauseButton label={pomoLabel} mode={s.pomoMode} disabled={breakEnding} onClick={() => dispatch({ type: "pomoToggle" })} />
-              <RoundButton label={s.pomoMode === "focus" ? "Skip to break" : "Skip to meeting"} disabled={breakEnding} onClick={() => dispatch({ type: "pomoSkip" })}><SkipForwardIcon size={20} /></RoundButton>
-            </div>
-          </TimerColumn>
-          {/* first when the two are stacked (phones), on the right side by side */}
-          <TimerColumn mode={role} label="Speaker timer" className="order-first md:order-none">
+          {/* the speaker first: on the left side by side, on top when stacked (phones) */}
+          <TimerColumn mode={role} label="Speaker timer">
             {speakerFace}
             <div className="flex items-center gap-5 mt-6">
               <RoundButton label="Reset timer" onClick={() => dispatch({ type: "spReset" })}><RotateCcwIcon size={20} /></RoundButton>
@@ -846,6 +839,14 @@ function RetroScreen() {
             </div>
             <div className="mt-6">
               <PresetPills value={s.minutes} onPick={pickPreset} />
+            </div>
+          </TimerColumn>
+          <TimerColumn mode={s.pomoMode} label="Meeting timer">
+            {pomoFace}
+            <div className="flex items-center gap-5 mt-6">
+              <RoundButton label="Reset current round" disabled={breakEnding} onClick={() => dispatch({ type: "pomoReset" })}><RotateCcwIcon size={20} /></RoundButton>
+              <PlayPauseButton label={pomoLabel} mode={s.pomoMode} disabled={breakEnding} onClick={() => dispatch({ type: "pomoToggle" })} />
+              <RoundButton label={s.pomoMode === "focus" ? "Skip to break" : "Skip to meeting"} disabled={breakEnding} onClick={() => dispatch({ type: "pomoSkip" })}><SkipForwardIcon size={20} /></RoundButton>
             </div>
           </TimerColumn>
         </main>
