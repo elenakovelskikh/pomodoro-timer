@@ -253,7 +253,7 @@ window.timerSync = {
 <script type="text/babel">
 // Retro timers, shared by everyone in the Activity. Right: the meeting's Pomodoro, 25/5. A meeting
 // round ends silently and stays at 00:00, a break ends with the break melody and a short "Break complete" pulse;
-// either way the next round waits for Start. Left: the speaker (5 min) or commentator (2 min)
+// a meeting round waits for Start, the meeting after a break starts by itself. Left: the speaker (5 min) or commentator (2 min)
 // timer. At zero it plays the focus-end melody once; after that the time stays at 00:00 while the
 // caption keeps counting the whole turn. Finished turns go into a log, grouped by meeting round.
 //
@@ -351,7 +351,9 @@ function retroReduce(s, action, now) {
     }
     case "pomoFinish":
       if (s.breakEndAt == null) return s;
-      return { ...s, breakEndAt: null, pomoMode: "focus", round: s.round + 1, pomoRunMs: 0, pomoSince: null };
+      // the next meeting round starts by itself once "Break complete" is over, counted from that
+      // moment (not from whenever this copy got round to it), so everyone's clock agrees
+      return { ...s, breakEndAt: null, pomoMode: "focus", round: s.round + 1, pomoRunMs: 0, pomoSince: s.breakEndAt + BREAK_END_MS };
     case "spToggle":
       if (s.spSince != null) return { ...s, spRunMs: runMs(s.spRunMs, s.spSince, now), spSince: null };
       if (s.stopped) return { ...s, spRunMs: 0, spSince: now, stopped: false };
