@@ -789,10 +789,10 @@ function RetroScreen() {
     const bigK = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
     // the meeting's small ring sits in the bottom right corner, small enough to clear the big one
     const small = 0.22 * side + 4;
-    // the small ring is the 288px one scaled down by smallK; its line (4.5px), time (11px) and corner gap
+    // the small ring is the 288px one scaled down by smallK; its line (4px), time (12px) and corner gap
     // (2px) are set in real pixels, so they come out the same whatever the tile's size
     const smallK = small / 288;
-    const smallStroke = (4.5 * 280) / 288 / smallK;
+    const smallStroke = (4 * 280) / 288 / smallK;
     // the drawing leaves a margin around the circle; the 2px gap is measured from the line itself
     const smallInset = (140 - 120 - smallStroke / 2) * (288 / 280) * smallK;
     const smallAt = side - 2 - small + smallInset;
@@ -818,7 +818,7 @@ function RetroScreen() {
             <div style={{ position: "absolute", left: smallAt, top: smallAt, width: 288, height: 288,
               transform: `scale(${smallK})`, transformOrigin: "top left" }}>
               {pomoRing(
-                <div className="font-bold tabular-nums text-primary" style={{ fontSize: 11 / smallK, lineHeight: 1 }}>{formatTime(left)}</div>,
+                <div className="font-bold tabular-nums text-primary" style={{ fontSize: 12 / smallK, lineHeight: 1 }}>{formatTime(left)}</div>,
                 smallStroke
               )}
             </div>
