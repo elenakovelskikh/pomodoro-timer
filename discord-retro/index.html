@@ -776,15 +776,18 @@ function RetroScreen() {
   );
 
   // Minimised next to the video tiles the Activity is a small square tile, without the controls:
-  // the speaker's ring large in the top left, the meeting timer as a small ring in the bottom
+  // the speaker's timer large in the middle, the meeting timer as a small ring in the bottom
   // right corner (just its time); once a break is started, only the break ring. The rings are the
   // full-size 288px ones scaled down; the sizes keep the two circles from touching.
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   if (vh < 420 || vw < 340) {
     const side = Math.min(vw, vh);
-    const big = 0.72 * side;
-    const small = 0.32 * side;
+    // the big timer (the speaker's, or the break's once started) is sized like the timer Activity's
+    // tile: label and ring scaled together to 92% of the tile, centered
+    const bigK = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
+    // the meeting's small ring sits in the bottom right corner, small enough to clear the big one
+    const small = 0.22 * side;
     // the small ring is the 288px one scaled down by smallK; its line (3px), time (9px) and corner gap
     // (2px) are set in real pixels, so they come out the same whatever the tile's size
     const smallK = small / 288;
@@ -792,40 +795,32 @@ function RetroScreen() {
     // the drawing leaves a margin around the circle; the 2px gap is measured from the line itself
     const smallInset = (140 - 120 - smallStroke / 2) * (288 / 280) * smallK;
     const smallAt = side - 2 - small + smallInset;
-    const place = (left, top, size) => ({
-      position: "absolute", left, top, width: 288, height: 288,
-      transform: `scale(${size / 288})`, transformOrigin: "top left",
-    });
     // Once the break has been started (and through its "Break complete") the tile is just the break
-    // timer; a break that's only lined up stays the small ring. Laid out like the
-    // timer Activity's tile: the label, then the ring, scaled together to 92% of the tile
-    if (s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding)) {
-      const k = Math.min((vw * 0.92) / 288, (vh * 0.92) / (20 + 24 + 288));
-      return (
-        <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
-          {notice}
-          <div className="shrink-0" style={{ transform: `scale(${k})` }}>
-            <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
-          </div>
-        </div>
-      );
-    }
+    // timer; a break that's only lined up stays the small ring
+    const breakOn = s.pomoMode === "break" && (pomoRunning || s.pomoRunMs > 0 || breakEnding);
     return (
-      <div className="w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
+      <div className="relative w-full flex items-center justify-center bg-page overflow-hidden" style={{ height: "100vh" }}>
         {notice}
-        <div className="relative shrink-0" style={{ width: side, height: side }}>
-          <TimerColumn mode={role} label="Speaker timer">
-            <div style={place(0.05 * side, 0.05 * side - 4, big)}>{speakerRing}</div>
-          </TimerColumn>
+        <div className="shrink-0" style={{ transform: `scale(${bigK})` }}>
+          {breakOn ? (
+            <TimerColumn mode="break" label="Break timer">{pomoFace}</TimerColumn>
+          ) : (
+            <TimerColumn mode={role} label="Speaker timer">{speakerFace}</TimerColumn>
+          )}
+        </div>
+        {!breakOn && (
+          <div className="absolute" style={{ width: side, height: side, left: (vw - side) / 2, top: (vh - side) / 2 }}>
           <TimerColumn mode={s.pomoMode} label="Meeting timer">
-            <div style={place(smallAt, smallAt, small)}>
+            <div style={{ position: "absolute", left: smallAt, top: smallAt, width: 288, height: 288,
+              transform: `scale(${smallK})`, transformOrigin: "top left" }}>
               {pomoRing(
                 <div className="font-bold tabular-nums text-primary" style={{ fontSize: 9 / smallK, lineHeight: 1 }}>{formatTime(left)}</div>,
                 smallStroke
               )}
             </div>
           </TimerColumn>
-        </div>
+          </div>
+        )}
       </div>
     );
   }
