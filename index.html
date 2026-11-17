@@ -196,8 +196,6 @@ function PomodoroTimer() {
   // real-time countdown recompute below subtracts this out instead.
   const pausedMsRef = useRef(0);
   const pauseStartedAtRef = useRef(null);
-  // the end-of-segment sound booked ahead for the running segment: when it's due, and how to cancel it
-  const bookedSoundRef = useRef({ at: null, cancel: null });
 
   const totalSeconds = segmentTotal;
   const progress = 1 - secondsLeft / totalSeconds;
@@ -240,12 +238,10 @@ function PomodoroTimer() {
     const nextStart = new Date(endTime.getTime() + SOUND_DURATION_MS[soundKind]);
 
     setPreTransitionLabel(labelOverride ?? "Pause");
-    // a timer that ran out by itself has usually had its sound played on time already (see the
-    // booking effect below); otherwise play it now, unless the segment ended long ago
-    const booked = bookedSoundRef.current;
-    const playedOnTime =
-      labelOverride === undefined && booked.at != null && Math.abs(booked.at - endTime.getTime()) < 1000 && audioCtx?.state === "running";
-    if (!playedOnTime && now - endTime < 90000) playSound(soundKind);
+    // no sound for a segment that ended long ago (caught up after the page was asleep). The sound
+    // used to be booked ahead on the audio clock, but on some devices that clock drifts from the
+    // real one and the sound came minutes early; a background tab now plays it up to a minute late.
+    if (now - endTime < 90000) playSound(soundKind);
     setIsRunning(false);
     setIsTransitioning(true);
     logSegment(endedMode, startTime, endTime);
@@ -376,22 +372,6 @@ function PomodoroTimer() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [isRunning, syncSecondsLeft]);
-
-  // Books the end-of-segment sound ahead whenever a segment is running, so it plays on time even
-  // while the page is in the background; booked again when the end moves (Reset, Add another 5 min,
-  // a new segment) and cancelled on pause. A sound that has already started is left to finish.
-  const dueAt =
-    isRunning && !isTransitioning && segmentStartRef.current
-      ? segmentStartRef.current.getTime() + pausedMsRef.current + segmentTotal * 1000
-      : null;
-  useEffect(() => {
-    const booked = bookedSoundRef.current;
-    if (dueAt != null && booked.at != null && Math.abs(dueAt - booked.at) < 1000) return;
-    if (booked.at != null && Date.now() < booked.at) booked.cancel();
-    bookedSoundRef.current = { at: null, cancel: null };
-    if (dueAt == null || dueAt <= Date.now()) return;
-    bookedSoundRef.current = { at: dueAt, cancel: playSound(mode === "focus" ? "focusEnd" : "breakEnd", dueAt - Date.now()) };
-  });
 
   // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
   // the tab is in view. Released automatically by the browser once the tab is hidden, and
