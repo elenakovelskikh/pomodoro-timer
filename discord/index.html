@@ -665,37 +665,16 @@ function PomodoroTimer() {
   // The sound plays on each participant's own device, whenever a segment ends — whoever caused it.
   // During a transition `mode` is still the segment that just ended. Segments that ended more than
   // a minute and a half ago (caught up after everyone was away) end silently, so coming back doesn't
-  // set off a string of sounds; a page in the background, checking the time about once a minute,
-  // still plays its sound. A segment that ran out on schedule has usually had its sound played on
-  // time already by the booking below, so it isn't played twice.
+  // set off a string of sounds; a minimised Activity, checking the time about once a minute, still
+  // plays its sound, just up to a minute late. (The sound used to be booked ahead on the audio
+  // clock, but on some devices that clock drifts from the real one and the sound came minutes early.)
   const wasTransitioningRef = useRef(false);
-  const bookedSoundRef = useRef({ at: null, cancel: null });
   useEffect(() => {
     const endedAt = state.next?.endedAt;
     const recent = endedAt == null || now() - endedAt < 90000;
-    const booked = bookedSoundRef.current;
-    const playedOnTime = endedAt != null && booked.at != null && Math.abs(booked.at - endedAt) < 1000 && audioCtx?.state === "running";
-    if (isTransitioning && !wasTransitioningRef.current && recent && !playedOnTime) playSound(mode === "work" ? "focusEnd" : "breakEnd");
+    if (isTransitioning && !wasTransitioningRef.current && recent) playSound(mode === "work" ? "focusEnd" : "breakEnd");
     wasTransitioningRef.current = isTransitioning;
   }, [isTransitioning]);
-
-  // Books the end-of-segment sound ahead on each participant's device whenever a segment is
-  // running, so it plays on time even while the Activity is minimised; booked again when the end
-  // moves (Reset, Add another 5 min, a new segment — whoever caused it) and cancelled on pause.
-  // A sound that has already started is left to finish. (Runs after the effect above, which needs
-  // the booking as it was.)
-  const dueAt =
-    isRunning && !isTransitioning && state.segmentStart != null
-      ? state.segmentStart + state.pausedMs + segmentTotal * 1000
-      : null;
-  useEffect(() => {
-    const booked = bookedSoundRef.current;
-    if (dueAt != null && booked.at != null && Math.abs(dueAt - booked.at) < 1000) return;
-    if (booked.at != null && now() < booked.at) booked.cancel();
-    bookedSoundRef.current = { at: null, cancel: null };
-    if (dueAt == null || dueAt <= now()) return;
-    bookedSoundRef.current = { at: dueAt, cancel: playSound(mode === "work" ? "focusEnd" : "breakEnd", dueAt - now()) };
-  });
 
   // Screen Wake Lock: keeps the screen from auto-dimming/locking while a round is running and
   // the tab is in view. Released automatically by the browser once the tab is hidden, and
