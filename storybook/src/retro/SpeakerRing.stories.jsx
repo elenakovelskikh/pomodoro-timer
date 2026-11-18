@@ -1,7 +1,7 @@
 import { SpeakerRing } from "../components/SpeakerRing";
 
 export default {
-  title: "Components/SpeakerRing",
+  title: "Retro/SpeakerRing",
   parameters: { docs: { description: { component: "Retro speaker timer: 5 minutes for a speaker, 2 for a commentator. Past zero the time stays at 00:00 and the caption shows the whole turn's time." } } },
   component: SpeakerRing,
   tags: ["autodocs"],

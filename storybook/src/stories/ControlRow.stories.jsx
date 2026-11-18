@@ -25,25 +25,21 @@ export default {
     </Live>
   ),
   argTypes: {
-    mode: {
-      ...modeArg,
-      control: { type: "inline-radio", labels: { ...modeArg.control.labels, speaker: "Speaker" } },
-      options: [...modeArg.options, "speaker"],
-    },
+    mode: modeArg,
     buttonLabel: { control: "radio", options: ["Pause", "Resume", "Start"], description: "State of the middle button", table: { type: { summary: '"Pause" | "Resume" | "Start"' } } },
     disabled: { control: "boolean", description: "Disables all three buttons", table: { type: { summary: "boolean" } } },
-    endButton: { control: "inline-radio", options: ["skip", "stop"], description: "Right button: Skip (Pomodoro) or Stop (retro speaker timer)", table: { type: { summary: '"skip" | "stop"' } } },
-    stopDisabled: { control: "boolean", description: "Stop is off until the turn has started", table: { type: { summary: "boolean" } } },
+    // the retro speaker timer's Stop button is documented in the Retro Storybook
+    endButton: { table: { disable: true } },
+    stopDisabled: { table: { disable: true } },
+    onStop: { table: { disable: true } },
     onReset: { action: "reset", ...fn("Restart the round") },
     onPlayPause: { action: "playPause", ...fn("Start, pause or resume") },
     onSkip: { action: "skip", ...fn("Skip to the next round") },
-    onStop: { action: "stop", ...fn("End the speaker's turn, keeping the final time") },
   },
-  args: { mode: "focus", buttonLabel: "Pause", disabled: false, endButton: "skip", stopDisabled: false },
+  args: { mode: "focus", buttonLabel: "Pause", disabled: false },
 };
 
 export const Running = {};
 export const Paused = { args: { buttonLabel: "Resume" } };
 export const NotStarted = { args: { buttonLabel: "Start" } };
 export const Disabled = { args: { disabled: true } };
-export const SpeakerTimer = { args: { mode: "speaker", buttonLabel: "Pause", endButton: "stop" } };

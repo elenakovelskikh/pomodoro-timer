@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook:retro": "storybook dev -p 6007 -c .storybook-retro",
+    "build-storybook": "storybook build",
+    "build-storybook:retro": "storybook build -c .storybook-retro"
   },
   "dependencies": {
     "react": "18.2.0",
