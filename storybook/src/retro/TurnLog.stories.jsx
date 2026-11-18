@@ -1,4 +1,4 @@
-import { Live } from "./Live";
+import { Live } from "../stories/Live";
 import { LogToggle } from "../components/LogToggle";
 import { TurnLog } from "../components/TurnLog";
 
@@ -10,7 +10,7 @@ const sample = [
 ];
 
 export default {
-  title: "Components/TurnLog",
+  title: "Retro/TurnLog",
   parameters: { docs: { description: { component: "Retro page log, centered under both timers: finished speaker and commentator turns grouped by the meeting round they happened in." } } },
   component: TurnLog,
   tags: ["autodocs"],

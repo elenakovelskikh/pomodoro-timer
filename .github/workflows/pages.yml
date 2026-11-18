@@ -4,6 +4,7 @@
 #                ../vendor/…) become real copies, since Discord's proxy only serves that folder
 #   /discord-retro/  the Retro Activity (its own Discord app), built the same way as /discord/
 #   /storybook/  the built Storybook
+#   /storybook-retro/  the Retro Storybook: the components only the retro timers use
 # Needs Settings → Pages → Source set to "GitHub Actions".
 name: Deploy to GitHub Pages
 
@@ -54,11 +55,12 @@ jobs:
               open(page, "w", encoding="utf-8").write(html.replace(tag, '<script type="text/babel">\n' + code + '</script>'))
           EOF
 
-      - name: Build Storybook
+      - name: Build the Storybooks
         working-directory: storybook
         run: |
           npm ci
           npx storybook build -o ../_site/storybook --quiet
+          npx storybook build -c .storybook-retro -o ../_site/storybook-retro --quiet
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

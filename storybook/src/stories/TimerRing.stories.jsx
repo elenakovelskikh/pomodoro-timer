@@ -7,11 +7,7 @@ export default {
   component: TimerRing,
   tags: ["autodocs"],
   argTypes: {
-    mode: {
-      ...modeArg,
-      control: { type: "inline-radio", labels: { ...modeArg.control.labels, meeting: "Meeting (retro)" } },
-      options: [...modeArg.options, "meeting"],
-    },
+    mode: modeArg,
     progress: { control: { type: "range", min: 0, max: 1, step: 0.01 }, description: "How much of the round has passed, 0–1", table: { type: { summary: "number" } } },
     secondsLeft: { control: { type: "number", min: 0 }, description: "Time left, in seconds", table: { type: { summary: "number" } } },
     round: { control: { type: "number", min: 1 }, description: "Round number (Focus only)", table: { type: { summary: "number" } } },
@@ -23,4 +19,3 @@ export default {
 export const Running = {};
 export const JustStarted = { args: { progress: 0, secondsLeft: 1500 } };
 export const Transitioning = { args: { progress: 1, secondsLeft: 0, isTransitioning: true } };
-export const Meeting = { args: { mode: "meeting" } };

@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default {
-  stories: ["../src/**/*.stories.jsx"],
+  // retro-only stories live in src/retro and go to the Retro Storybook (../.storybook-retro)
+  stories: ["../src/stories/**/*.stories.jsx"],
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",
   // the site's own icon, served next to Storybook for the sidebar header
