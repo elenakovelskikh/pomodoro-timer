@@ -192,7 +192,7 @@ function HistoryLog({ history }) {
 // does before starting it. activity: the Discord Activity's version, where everyone shares one timer.
 function About({ inert, activity = false }) {
   const h = "type-heading text-primary";
-  const p = "type-body text-secondary";
+  const p = "type-body text-primary";
   return (
     <section inert={inert ? "" : undefined} aria-labelledby="about-heading" className="w-full max-w-xl mx-auto px-6 pt-16 pb-12 flex flex-col gap-10 text-left">
       <div className="flex flex-col gap-3">
@@ -264,7 +264,7 @@ function About({ inert, activity = false }) {
   );
 }
 
-// The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 10px;
+// The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 12px;
 // the row's padding is trimmed to match, so the footer keeps its height.
 // privacyHref: the page's privacy policy — the site's own relative page; the Activity passes a full
 // address, since inside Discord only full links open (in the browser, through Discord).
@@ -273,21 +273,18 @@ function Credit({ inert, privacyHref = "privacy.html" }) {
   return (
     <footer
       inert={inert ? "" : undefined}
-      className="w-full flex items-center justify-center gap-1 py-[0.6875rem] type-credit text-muted"
+      className="w-full flex items-center justify-center gap-1 py-[0.6875rem] type-caption text-muted"
     >
       <a href={privacyHref} target="_blank" rel="noopener noreferrer" className={link}>
         Privacy<span className="sr-only"> (opens in a new tab)</span>
       </a>
       <span aria-hidden="true">·</span>
-      <span>Made by Elena Kovelskikh</span>
-      <span aria-hidden="true">·</span>
-      <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className={link}>
-        LinkedIn<span className="sr-only"> (opens in a new tab)</span>
-      </a>
-      <span aria-hidden="true">·</span>
-      <a href="https://github.com/elenakovelskikh" target="_blank" rel="noopener noreferrer" className={link}>
-        GitHub<span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      <span>
+        Made by{" "}
+        <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className={link}>
+          Elena Kovelskikh<span className="sr-only"> on LinkedIn (opens in a new tab)</span>
+        </a>
+      </span>
     </footer>
   );
 }

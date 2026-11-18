@@ -12,7 +12,6 @@ const styles = [
   ["type-control", "control", "Number of rounds"],
   ["type-body", "body", "Start once: 25-minute focus rounds and 5-minute breaks switch automatically."],
   ["type-caption", "caption", "focus  10:00 – 10:25"],
-  ["type-credit", "credit", "Made by Elena Kovelskikh"],
 ];
 
 const WEIGHT_NAMES = { 400: "Regular", 500: "Medium", 700: "Bold" };
