@@ -192,7 +192,7 @@ function HistoryLog({ history }) {
 // does before starting it. activity: the Discord Activity's version, where everyone shares one timer.
 function About({ inert, activity = false }) {
   const h = "type-heading text-primary";
-  const p = "type-body text-secondary";
+  const p = "type-body text-primary";
   return (
     <section inert={inert ? "" : undefined} aria-labelledby="about-heading" className="w-full max-w-xl mx-auto px-6 pt-16 pb-12 flex flex-col gap-10 text-left">
       <div className="flex flex-col gap-3">
@@ -220,35 +220,35 @@ function About({ inert, activity = false }) {
             engines read the collapsed answers too */}
         <div className="flex flex-col">
           <details className="group border-b border-subtle">
-            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-button text-primary">
               {"What is the Pomodoro Technique?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
             <p className={`${p} pb-3`}>A way of working in short focused intervals, traditionally 25 minutes, separated by short breaks, with a longer break after every four rounds.</p>
           </details>
           <details className="group border-b border-subtle">
-            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-button text-primary">
               {"Why do I need breaks?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
             <p className={`${p} pb-3`}>Attention fades during long stretches of work. A short break every 25 minutes lets you rest before you're drained, so you can keep focusing for longer over the day. The timer starts the break for you, so you don't have to remember.</p>
           </details>
           <details className="group border-b border-subtle">
-            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-button text-primary">
               {"Can it help with ADHD?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
             <p className={`${p} pb-3`}>Many people with ADHD or AuDHD find that outside structure helps them focus and burn out less: short, clear rounds, switches that happen on their own, and a sound when it's time to change.</p>
           </details>
           <details className="group border-b border-subtle">
-            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-button text-primary">
               {"I'm in hyperfocus. Why should I stop?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
             <p className={`${p} pb-3`}>Hyperfocus can be productive, but it's also easy to lose track of time, skip food and water, and crash afterwards. Tension can also make your back and neck ache. To avoid that, we recommend getting up during the break, even briefly: check whether you need the bathroom, drink a glass of water or have a snack. It's also a good moment to ask yourself whether you want to keep doing the same thing in the next round. Five minutes is short, so you won't forget what you were working on and can easily pick up where you left off.</p>
           </details>
           <details className="group border-b border-subtle">
-            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-button text-primary">
               {"Is it free? Do I need an account?"}
               <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
             </summary>
@@ -264,7 +264,7 @@ function About({ inert, activity = false }) {
   );
 }
 
-// The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 10px;
+// The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 12px;
 // the row's padding is trimmed to match, so the footer keeps its height.
 // privacyHref: the page's privacy policy — the site's own relative page; the Activity passes a full
 // address, since inside Discord only full links open (in the browser, through Discord).
@@ -273,21 +273,18 @@ function Credit({ inert, privacyHref = "privacy.html" }) {
   return (
     <footer
       inert={inert ? "" : undefined}
-      className="w-full flex items-center justify-center gap-1 py-[0.6875rem] type-credit text-muted"
+      className="w-full flex items-center justify-center gap-1 py-[0.6875rem] type-caption text-muted"
     >
       <a href={privacyHref} target="_blank" rel="noopener noreferrer" className={link}>
         Privacy<span className="sr-only"> (opens in a new tab)</span>
       </a>
       <span aria-hidden="true">·</span>
-      <span>Made by Elena Kovelskikh</span>
-      <span aria-hidden="true">·</span>
-      <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className={link}>
-        LinkedIn<span className="sr-only"> (opens in a new tab)</span>
-      </a>
-      <span aria-hidden="true">·</span>
-      <a href="https://github.com/elenakovelskikh" target="_blank" rel="noopener noreferrer" className={link}>
-        GitHub<span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      <span>
+        Made by{" "}
+        <a href="https://www.linkedin.com/in/kovelskikh/" target="_blank" rel="noopener noreferrer" className={link}>
+          Elena Kovelskikh<span className="sr-only"> on LinkedIn (opens in a new tab)</span>
+        </a>
+      </span>
     </footer>
   );
 }

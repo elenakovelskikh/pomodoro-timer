@@ -82,7 +82,7 @@
 
   // Text styles: size, line height and weight (and tracking) in one class, named type-<name>.
   // Line height: 125% for headings, 145% for running text, rounded down to whole pixels
-  // (16 / 23, 14 / 20, 12 / 17, 10 / 14) and kept in rem so it scales with the text.
+  // (16 / 23, 14 / 20, 12 / 17) and kept in rem so it scales with the text.
   const TYPE = {
     display: { fontSize: "3rem", lineHeight: "1.25", fontWeight: "700" },
     heading: { fontSize: "1.25rem", lineHeight: "1.25", fontWeight: "700" },
@@ -91,7 +91,6 @@
     control: { fontSize: "0.875rem", lineHeight: "1.25rem", fontWeight: "500" },
     body: { fontSize: "0.875rem", lineHeight: "1.25rem", fontWeight: "400" },
     caption: { fontSize: "0.75rem", lineHeight: "1.0625rem", fontWeight: "400" },
-    credit: { fontSize: "0.625rem", lineHeight: "0.875rem", fontWeight: "400" },
     // not a text style: the size of emoji used as icons
     emoji: { fontSize: "1.875rem", lineHeight: "1" },
   };

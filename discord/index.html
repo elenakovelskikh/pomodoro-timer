@@ -934,10 +934,11 @@ function PomodoroTimer() {
       setAddRoundsModalOpen(true);
     };
     return (
-      <div className="min-h-screen w-full flex flex-col bg-page">
+      <div className="w-full flex flex-col bg-page">
         {announcer}
         {syncNotice}
-        <main className="flex-1 w-full flex items-center justify-center p-6">
+        {/* the summary fills the first screen, like on the site; About starts after a scroll */}
+        <main className="min-h-[100svh] w-full flex items-center justify-center p-6">
         <h1 className="sr-only">Violet Tomato – Automatic Pomodoro Timer for Study &amp; Coworking</h1>
         <div inert={addRoundsModalOpen || newSessionModalOpen ? "" : undefined} className="w-full max-w-xs bg-page rounded-2xl border border-subtle p-6 flex flex-col items-center text-center">
           <div className="type-emoji leading-normal" aria-hidden="true">🎉</div>
@@ -1029,10 +1030,11 @@ function PomodoroTimer() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-page" style={modeVars}>
+    <div className="w-full flex flex-col bg-page" style={modeVars}>
       {announcer}
       {syncNotice}
-      <div className="flex-1 w-full flex items-start justify-center p-6 pt-16">
+      {/* the timer fills the first screen, like on the site; About starts after a scroll */}
+      <div className="min-h-[100svh] w-full flex items-start justify-center p-6 pt-16">
       {!setupComplete && (
         <Dialog
           title="Automatic Pomodoro Focus Timer"
