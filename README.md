@@ -16,7 +16,7 @@ An automatic Pomodoro timer for study and coworking. Press Start once: focus rou
 
 ## Discord Activity
 
-There is also a version for Discord, so friends can focus together with one shared timer. It's in testing for now: if you'd like to try it, [message me on LinkedIn](https://www.linkedin.com/in/kovelskikh/) and I'll share it with you.
+There is also a version for Discord, so friends can focus together with one shared timer. It's in testing for now.
 
 ## Design system
 
@@ -31,6 +31,14 @@ python3 -m http.server 8000
 ```
 
 and open http://localhost:8000.
+
+The Discord Activity pages (`discord/`, `discord-retro/`) read their Discord app ID and Firebase settings from a `config.js` next to the page, which isn't in the repository. On the live site it's generated on deploy from the repository secrets `TIMER_ACTIVITY_CONFIG` and `RETRO_ACTIVITY_CONFIG`. To run an Activity page locally, create the file with the same content:
+
+```js
+window.ACTIVITY_CONFIG = { "DISCORD_CLIENT_ID": "…", "FIREBASE_CONFIG": { "apiKey": "…", "databaseURL": "…", "projectId": "…", "appId": "…" } };
+```
+
+Without it the timer still works, but on its own, without syncing.
 
 Storybook:
 

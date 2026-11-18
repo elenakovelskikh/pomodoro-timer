@@ -187,6 +187,83 @@ function HistoryLog({ history }) {
   );
 }
 
+// What the timer is, below it: the timer fills the first screen and this starts after a scroll,
+// followed by the footer. Mostly for people (and search engines) who want to know what the timer
+// does before starting it. activity: the Discord Activity's version, where everyone shares one timer.
+function About({ inert, activity = false }) {
+  const h = "type-heading text-primary";
+  const p = "type-body text-secondary";
+  return (
+    <section inert={inert ? "" : undefined} aria-labelledby="about-heading" className="w-full max-w-xl mx-auto px-6 pt-16 pb-12 flex flex-col gap-10 text-left">
+      <div className="flex flex-col gap-3">
+        <h2 id="about-heading" className={h}>An automatic Pomodoro timer for study and coworking</h2>
+        <p className={p}>
+          Violet Tomato runs your focus rounds and breaks back to back, so you only press Start once. Each
+          round ends with a short sound, and every round and break goes into a session log with its start
+          and end time.
+        </p>
+      </div>
+      <div className="flex flex-col gap-3">
+        <h2 className={h}>How it works</h2>
+        <ul className={`${p} list-disc pl-5 flex flex-col gap-1`}>
+          <li>Focus for 25 minutes, then take a 5-minute break. The next round starts by itself.</li>
+          <li>Every 4th round can end with a longer break of 15 or 30 minutes, or with none.</li>
+          <li>Choose 1 to 16 rounds or no limit, and add more rounds when the session ends.</li>
+          <li>Pause, reset or skip a round at any time, or start a long break early.</li>
+          {activity && <li>Everyone in the Activity sees the same timer, and anyone can control it.</li>}
+          <li>The timer keeps time in a background tab and plays its sound on time.</li>
+        </ul>
+      </div>
+      <div className="flex flex-col gap-3">
+        <h2 className={h}>FAQ</h2>
+        {/* native disclosure widgets: keyboard and screen reader support come with them, and search
+            engines read the collapsed answers too */}
+        <div className="flex flex-col">
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"What is the Pomodoro Technique?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>A way of working in short focused intervals, traditionally 25 minutes, separated by short breaks, with a longer break after every four rounds.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Why do I need breaks?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>Attention fades during long stretches of work. A short break every 25 minutes lets you rest before you're drained, so you can keep focusing for longer over the day. The timer starts the break for you, so you don't have to remember.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Can it help with ADHD?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>Many people with ADHD or AuDHD find that outside structure helps them focus and burn out less: short, clear rounds, switches that happen on their own, and a sound when it's time to change.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"I'm in hyperfocus. Why should I stop?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>Hyperfocus can be productive, but it's also easy to lose track of time, skip food and water, and crash afterwards. Tension can also make your back and neck ache. To avoid that, we recommend getting up during the break, even briefly: check whether you need the bathroom, drink a glass of water or have a snack. It's also a good moment to ask yourself whether you want to keep doing the same thing in the next round. Five minutes is short, so you won't forget what you were working on and can easily pick up where you left off.</p>
+          </details>
+          <details className="group border-b border-subtle">
+            <summary className="flex items-center justify-between gap-3 min-h-11 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden type-control text-primary">
+              {"Is it free? Do I need an account?"}
+              <ChevronDownIcon size={16} className="shrink-0 text-button-tertiary transition-transform group-open:rotate-180" />
+            </summary>
+            <p className={`${p} pb-3`}>
+              {activity
+                ? "It's free and works without an account. The session is kept only while someone is in the Activity and is deleted when the last person leaves."
+                : "It's free and works without an account. Nothing is saved: the log covers the current session and is cleared when you reload or close the page."}
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // The links are 24px tall (WCAG 2.5.8 minimum target size) even though the text is 10px;
 // the row's padding is trimmed to match, so the footer keeps its height.
 // privacyHref: the page's privacy policy — the site's own relative page; the Activity passes a full
