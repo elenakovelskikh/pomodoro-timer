@@ -16,7 +16,7 @@ An automatic Pomodoro timer for study and coworking. Press Start once: focus rou
 
 ## Discord Activity
 
-There is also a version for Discord, so friends can focus together with one shared timer. It's in testing for now.
+There is also a version for [Discord](https://discord.com/activities/1552028275574964275?referrer_id=1549688047958884412), so friends can focus together with one shared timer.
 
 ## Design system
 
