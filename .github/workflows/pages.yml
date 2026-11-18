@@ -57,18 +57,18 @@ jobs:
 
       # The Activities' Discord app ID and Firebase settings aren't in the repository (Discord's
       # Developer Terms don't allow app IDs in open-source code); they're kept in repository
-      # variables (Settings → Secrets and variables → Actions → Variables) and written next to each
+      # secrets (Settings → Secrets and variables → Actions → Secrets) and written next to each
       # Activity page here. The deploy stops if one is missing or isn't valid JSON.
       - name: Write the Activities' config.js
         env:
-          TIMER_ACTIVITY_CONFIG: ${{ vars.TIMER_ACTIVITY_CONFIG }}
-          RETRO_ACTIVITY_CONFIG: ${{ vars.RETRO_ACTIVITY_CONFIG }}
+          TIMER_ACTIVITY_CONFIG: ${{ secrets.TIMER_ACTIVITY_CONFIG }}
+          RETRO_ACTIVITY_CONFIG: ${{ secrets.RETRO_ACTIVITY_CONFIG }}
         run: |
           python3 - <<'EOF'
           import json, os
           for var, folder in [("TIMER_ACTIVITY_CONFIG", "discord"), ("RETRO_ACTIVITY_CONFIG", "discord-retro")]:
               config = json.loads(os.environ[var] or "null")
-              assert config and config.get("DISCORD_CLIENT_ID") and config.get("FIREBASE_CONFIG"), f"repository variable {var} is missing or incomplete"
+              assert config and config.get("DISCORD_CLIENT_ID") and config.get("FIREBASE_CONFIG"), f"repository secret {var} is missing or incomplete"
               open(f"_site/{folder}/config.js", "w", encoding="utf-8").write("window.ACTIVITY_CONFIG = " + json.dumps(config) + ";\n")
           EOF
 
