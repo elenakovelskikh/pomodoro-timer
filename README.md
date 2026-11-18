@@ -20,7 +20,7 @@ There is also a version for Discord, so friends can focus together with one shar
 
 ## Design system
 
-The components are documented in [Storybook](https://elenakovelskikh.github.io/pomodoro-timer/storybook/); the ones only the retro timers use are in a separate [Retro Storybook](https://elenakovelskikh.github.io/pomodoro-timer/storybook-retro/).
+The components are documented in [Storybook](https://elenakovelskikh.github.io/pomodoro-timer/storybook/).
 
 ## Running locally
 
@@ -37,12 +37,6 @@ Storybook:
 ```bash
 npm --prefix storybook install
 npm --prefix storybook run storybook
-```
-
-The Retro Storybook runs on its own port (6007):
-
-```bash
-npm --prefix storybook run storybook:retro
 ```
 
 ## Author
