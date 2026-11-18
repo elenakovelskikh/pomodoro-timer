@@ -25,18 +25,18 @@
   // theme + plugin: the tokens from design-tokens.js replace Tailwind's palette and type scale
   tailwind.config = { future: { hoverOnlyWhenSupported: true }, theme: DESIGN_TOKENS.THEME, plugins: [DESIGN_TOKENS.typePlugin] };
 </script>
+<!-- Discord app ID and Firebase settings: generated on deploy, see the comment below -->
+<script src="config.js"></script>
 <!-- Discord Activity wrapper + shared timer state. Inside Discord the room is the Activity instance,
      so everyone in the voice channel sees one timer; in a plain browser, open the page with
      ?room=<name> to test syncing between tabs. Without a room the timer runs standalone. -->
 <script type="module">
-const DISCORD_CLIENT_ID = "1552028275574964275"; // Developer Portal → OAuth2 → Client ID (public, not a secret)
-// Firebase web config is a public identifier, not a secret; access is limited by the database rules
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCOwTuLww-HLUrNZsJlaEtd-7q4FCGCzoA",
-  databaseURL: "https://violet-tomato-discord-activity-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "violet-tomato-discord-activity",
-  appId: "1:304315009793:web:9de620aa871ef04d0da900",
-};
+// The Discord app ID and the Firebase settings come from config.js next to this page (see README):
+// on the live site it's generated on deploy from a GitHub repository variable, locally it's a
+// file that isn't committed. Both are public in the browser anyway; they're kept out of the
+// repository because Discord's Developer Terms don't allow app IDs in open-source code.
+const { DISCORD_CLIENT_ID, FIREBASE_CONFIG } = window.ACTIVITY_CONFIG || {};
+if (!DISCORD_CLIENT_ID || !FIREBASE_CONFIG) console.error("config.js is missing: the Activity can't connect to Discord or sync");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
