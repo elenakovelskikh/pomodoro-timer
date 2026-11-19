@@ -32,7 +32,7 @@ python3 -m http.server 8000
 
 and open http://localhost:8000.
 
-The Discord Activity pages (`discord/`, `discord-retro/`) read their Discord app ID and Firebase settings from a `config.js` next to the page, which isn't in the repository. On the live site it's generated on deploy from the repository secrets `TIMER_ACTIVITY_CONFIG` and `RETRO_ACTIVITY_CONFIG`. To run an Activity page locally, create the file with the same content:
+The Discord Activity page (`discord/`) reads its Discord app ID and Firebase settings from a `config.js` next to the page, which isn't in the repository. On the live site it's generated on deploy from a repository secret. To run it locally, create the file with the same content:
 
 ```js
 window.ACTIVITY_CONFIG = { "DISCORD_CLIENT_ID": "…", "FIREBASE_CONFIG": { "apiKey": "…", "databaseURL": "…", "projectId": "…", "appId": "…" } };
